@@ -3,115 +3,30 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Bee Face recognition project</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>Backup Bee Face recognition interface</title>
+  <style>
+    :root { color-scheme: dark; --bg:#07101f; --line:#31415f; --gold:#ffd057; --text:#eef5ff; --muted:#a9b8d2; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; background:var(--bg); color:var(--text); font-family:Segoe UI,Arial,sans-serif; }
+    header { min-height:76px; display:flex; align-items:center; justify-content:space-between; gap:18px; padding:16px 24px; border-bottom:1px solid var(--line); background:#0b1324; }
+    h1 { margin:0; color:var(--gold); font-size:28px; }
+    p { margin:4px 0 0; color:var(--muted); }
+    a { color:var(--gold); font-weight:800; }
+    iframe { display:block; width:100%; height:calc(100vh - 76px); border:0; background:#050a14; }
+  </style>
 </head>
 <body>
-  <header class="topbar">
+  <header>
     <div>
-      <div class="eyebrow">AI MIPS / BEE SWARM CONTROL</div>
-      <h1>Bee Face recognition project</h1>
+      <h1>Backup old project interface</h1>
+      <p>Reserved live interface from the connected Colab service.</p>
     </div>
-    <nav class="nav">
-      <button class="lang active" data-lang="en">EN</button>
-      <button class="lang" data-lang="ru">RU</button>
-      <button class="lang" data-lang="he">HE</button>
-    </nav>
+    <a href="../">Main site</a>
   </header>
-
-  <main>
-    <section id="home" class="hero view active">
-      <div class="hero-copy">
-        <p class="kicker" data-i18n="kicker">COLAB GPU / FACE DETECTION / HIVE INTERFACE</p>
-        <h2 data-i18n="title">Welcome to Bee Face recognition project</h2>
-        <p class="lead" data-i18n="lead">
-          Upload screenshots, recognize faces through the Colab detector, and inspect the same result stream inside the AI MIPS hive interface.
-        </p>
-        <div class="actions">
-          <button class="primary" data-target="simple" data-i18n="simple">Simple demonstration</button>
-          <button class="secondary" data-target="complex" data-i18n="complex">Complex demonstration integrated into the project</button>
-        </div>
-        <div class="tool-links" aria-label="Connected project tools">
-          <a class="tool-card" href="https://colab.research.google.com/github/Holodininyaroslav/bee-face-recognition-project/blob/main/colab/colab_public_one_image_site.ipynb" target="_blank" rel="noreferrer">
-            <strong data-i18n="toolColab">Colab project notebook</strong>
-            <span data-i18n="toolColabText">Open the CUDA/Colab detector project from this repository.</span>
-          </a>
-          <a class="tool-card" href="https://ee07e4d13143a83c91.gradio.live/hive-web" target="_blank" rel="noreferrer">
-            <strong data-i18n="toolHive">Hive Web interface</strong>
-            <span data-i18n="toolHiveText">Open the live Colab-backed project interface.</span>
-          </a>
-          <a class="tool-card" href="https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_ursina_game_installer.zip" target="_blank" rel="noreferrer">
-            <strong data-i18n="toolUrsina">Ursina game installer</strong>
-            <span data-i18n="toolUrsinaText">Download the local Ursina game package.</span>
-          </a>
-          <a class="tool-card" href="https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip" target="_blank" rel="noreferrer">
-            <strong data-i18n="toolBeeBoard">BeeBoard installer</strong>
-            <span data-i18n="toolBeeBoardText">Download the local BeeBoard interface package.</span>
-          </a>
-          <a class="tool-card" href="https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip" target="_blank" rel="noreferrer">
-            <strong data-i18n="toolPhysical">Physical simulation installer</strong>
-            <span data-i18n="toolPhysicalText">Download the local physical simulation package.</span>
-          </a>
-        </div>
-      </div>
-      <div class="honey-art" aria-hidden="true">
-        <span></span><span></span><span></span><span></span><span></span>
-        <span></span><span></span><span></span><span></span>
-      </div>
-    </section>
-
-    <section id="simple" class="view panel">
-      <div class="panel-head">
-        <div>
-          <p class="kicker" data-i18n="simpleKicker">SIMPLE MODE</p>
-          <h2 data-i18n="simpleTitle">Simple face recognition demo</h2>
-        </div>
-        <button class="ghost" data-target="home" data-i18n="back">Back</button>
-      </div>
-      <div class="split">
-        <div class="drop">
-          <input id="imageInput" type="file" accept="image/*">
-          <img id="preview" alt="">
-          <p id="dropText" data-i18n="drop">Choose an image, then open the live Colab detector.</p>
-        </div>
-        <div class="result">
-          <h3 data-i18n="liveDetector">Live detector</h3>
-          <p data-i18n="simpleNote">
-            GitHub Pages is static, so recognition runs on the connected Colab service.
-          </p>
-          <a class="primary link" href="https://ee07e4d13143a83c91.gradio.live/" target="_blank" rel="noreferrer" data-i18n="openColab">
-            Open Colab detector
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <section id="complex" class="view panel full">
-      <div class="panel-head">
-        <div>
-          <p class="kicker" data-i18n="complexKicker">INTEGRATED MODE</p>
-          <h2 data-i18n="complexTitle">AI MIPS Hive Web</h2>
-        </div>
-        <div class="panel-actions">
-          <a class="ghost link" href="https://colab.research.google.com/github/Holodininyaroslav/bee-face-recognition-project/blob/main/colab/colab_public_one_image_site.ipynb" target="_blank" rel="noreferrer" data-i18n="openColabProject">Open Colab project</a>
-          <a class="ghost link" href="https://ee07e4d13143a83c91.gradio.live/hive-web" target="_blank" rel="noreferrer" data-i18n="openHive">Open Hive Web</a>
-          <a class="ghost link" href="https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_ursina_game_installer.zip" target="_blank" rel="noreferrer" data-i18n="downloadUrsina">Ursina installer</a>
-          <a class="ghost link" href="https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip" target="_blank" rel="noreferrer" data-i18n="downloadBeeBoard">BeeBoard installer</a>
-          <a class="ghost link" href="https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip" target="_blank" rel="noreferrer" data-i18n="downloadPhysical">Physical installer</a>
-          <button class="ghost" data-target="home" data-i18n="back">Back</button>
-        </div>
-      </div>
-      <div class="iframe-shell">
-        <iframe
-          title="AI MIPS Hive Web"
-          src="https://ee07e4d13143a83c91.gradio.live/hive-web"
-          loading="lazy"
-          referrerpolicy="no-referrer">
-        </iframe>
-      </div>
-    </section>
-  </main>
-
-  <script src="script.js"></script>
+  <iframe
+    title="Backup Hive interface"
+    src="https://3a91b5263b48ae2436.gradio.live/hive-web"
+    referrerpolicy="no-referrer">
+  </iframe>
 </body>
 </html>
