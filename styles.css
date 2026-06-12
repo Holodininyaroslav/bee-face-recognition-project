@@ -255,6 +255,68 @@ button:disabled { opacity: .65; cursor: wait; }
   min-height: 520px;
 }
 
+.explain-card {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  background: rgba(11, 19, 36, .96);
+  padding: 22px;
+}
+
+.explain-head {
+  max-width: 980px;
+}
+
+.explain-head h3 {
+  margin-bottom: 12px;
+  font-size: clamp(24px, 3vw, 34px);
+}
+
+.explain-head p,
+.explain-note p,
+.pipeline p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.pipeline {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.pipeline article,
+.explain-note {
+  border: 1px solid rgba(255, 176, 0, .25);
+  background: #111b2d;
+  padding: 16px;
+}
+
+.pipeline strong {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: var(--cyan);
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.pipeline h4,
+.explain-note h4 {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: 18px;
+}
+
+.pipeline p,
+.explain-note p {
+  margin-bottom: 0;
+}
+
+.explain-note {
+  margin-top: 12px;
+  border-left: 4px solid var(--green);
+}
+
 .file-input {
   width: 100%;
   margin-bottom: 16px;
@@ -438,6 +500,9 @@ iframe {
   }
   .simple-card {
     margin-bottom: 16px;
+  }
+  .pipeline {
+    grid-template-columns: 1fr;
   }
   .honey-art {
     opacity: .28;

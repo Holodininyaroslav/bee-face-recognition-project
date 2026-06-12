@@ -113,6 +113,54 @@
           </details>
         </section>
       </div>
+
+      <section class="explain-card" aria-labelledby="howItWorksTitle">
+        <div class="explain-head">
+          <p class="kicker" data-i18n="howKicker">HOW THE DETECTOR WORKS</p>
+          <h3 id="howItWorksTitle" data-i18n="howTitle">What happens to the image inside the neural network</h3>
+          <p data-i18n="howIntro">
+            The demo sends the selected image to the connected Colab detector. The same recognition chain is used whether the request comes from this simple window or from the integrated Hive interface.
+          </p>
+        </div>
+        <div class="pipeline">
+          <article>
+            <strong>01</strong>
+            <h4 data-i18n="step1Title">Image input</h4>
+            <p data-i18n="step1Text">The uploaded screenshot is decoded as pixels. If a batch is selected, the same steps are repeated for each file one by one.</p>
+          </article>
+          <article>
+            <strong>02</strong>
+            <h4 data-i18n="step2Title">Face crop and normalization</h4>
+            <p data-i18n="step2Text">The detector searches for the face area, crops the useful region, resizes it to the network input size, and normalizes color and brightness values.</p>
+          </article>
+          <article>
+            <strong>03</strong>
+            <h4 data-i18n="step3Title">Feature extraction</h4>
+            <p data-i18n="step3Text">The neural network converts the face image into a numeric feature vector, also called an embedding. This vector describes the face pattern more compactly than raw pixels.</p>
+          </article>
+          <article>
+            <strong>04</strong>
+            <h4 data-i18n="step4Title">Reference comparison</h4>
+            <p data-i18n="step4Text">The new embedding is compared with stored reference embeddings for known identities. The closest identity becomes the best label, and the second closest result is kept as the runner up.</p>
+          </article>
+          <article>
+            <strong>05</strong>
+            <h4 data-i18n="step5Title">Score and margin decision</h4>
+            <p data-i18n="step5Text">The answer is accepted only if the best score is high enough and the margin from the runner up is large enough. Otherwise the result is returned as Unknown instead of forcing a wrong name.</p>
+          </article>
+          <article>
+            <strong>06</strong>
+            <h4 data-i18n="step6Title">Response JSON</h4>
+            <p data-i18n="step6Text">The interface receives a readable summary and a JSON object with the identity, best score, runner up, margin, backend mode, elapsed time, and acceptance flag.</p>
+          </article>
+        </div>
+        <div class="explain-note">
+          <h4 data-i18n="modeExplainTitle">GPU and CPU mode</h4>
+          <p data-i18n="modeExplainText">
+            GPU mode runs the heavy vector and image operations through the accelerator path. CPU mode runs the same recognition logic on the processor. The expected identity result should stay the same; the difference is mainly where the computation runs and how long it takes.
+          </p>
+        </div>
+      </section>
     </section>
 
     <section id="complex" class="view panel full">
