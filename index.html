@@ -122,36 +122,42 @@
             The demo sends the selected image to the connected Colab detector. The same recognition chain is used whether the request comes from this simple window or from the integrated Hive interface.
           </p>
         </div>
-        <div class="pipeline">
-          <article>
+        <div class="pipeline" aria-label="Detector pipeline stages">
+          <article class="pipeline-step" role="button" tabindex="0" data-stage="0">
             <strong>01</strong>
             <h4 data-i18n="step1Title">Image input</h4>
             <p data-i18n="step1Text">The uploaded screenshot is decoded as pixels. If a batch is selected, the same steps are repeated for each file one by one.</p>
+            <span data-i18n="openStage">Open scheme</span>
           </article>
-          <article>
+          <article class="pipeline-step" role="button" tabindex="0" data-stage="1">
             <strong>02</strong>
             <h4 data-i18n="step2Title">Face crop and normalization</h4>
             <p data-i18n="step2Text">The detector searches for the face area, crops the useful region, resizes it to the network input size, and normalizes color and brightness values.</p>
+            <span data-i18n="openStage">Open scheme</span>
           </article>
-          <article>
+          <article class="pipeline-step" role="button" tabindex="0" data-stage="2">
             <strong>03</strong>
             <h4 data-i18n="step3Title">Feature extraction</h4>
             <p data-i18n="step3Text">The neural network converts the face image into a numeric feature vector, also called an embedding. This vector describes the face pattern more compactly than raw pixels.</p>
+            <span data-i18n="openStage">Open scheme</span>
           </article>
-          <article>
+          <article class="pipeline-step" role="button" tabindex="0" data-stage="3">
             <strong>04</strong>
             <h4 data-i18n="step4Title">Reference comparison</h4>
             <p data-i18n="step4Text">The new embedding is compared with stored reference embeddings for known identities. The closest identity becomes the best label, and the second closest result is kept as the runner up.</p>
+            <span data-i18n="openStage">Open scheme</span>
           </article>
-          <article>
+          <article class="pipeline-step" role="button" tabindex="0" data-stage="4">
             <strong>05</strong>
             <h4 data-i18n="step5Title">Score and margin decision</h4>
             <p data-i18n="step5Text">The answer is accepted only if the best score is high enough and the margin from the runner up is large enough. Otherwise the result is returned as Unknown instead of forcing a wrong name.</p>
+            <span data-i18n="openStage">Open scheme</span>
           </article>
-          <article>
+          <article class="pipeline-step" role="button" tabindex="0" data-stage="5">
             <strong>06</strong>
             <h4 data-i18n="step6Title">Response JSON</h4>
             <p data-i18n="step6Text">The interface receives a readable summary and a JSON object with the identity, best score, runner up, margin, backend mode, elapsed time, and acceptance flag.</p>
+            <span data-i18n="openStage">Open scheme</span>
           </article>
         </div>
         <div class="explain-note">
@@ -160,6 +166,53 @@
             GPU mode runs the heavy vector and image operations through the accelerator path. CPU mode runs the same recognition logic on the processor. The expected identity result should stay the same; the difference is mainly where the computation runs and how long it takes.
           </p>
         </div>
+        <section id="stageDetail" class="stage-detail hidden" aria-live="polite">
+          <div class="stage-detail-head">
+            <div>
+              <p id="stageDetailKicker" class="kicker">LEVEL 01</p>
+              <h3 id="stageDetailTitle">Image input</h3>
+              <p id="stageDetailSummary"></p>
+            </div>
+            <button id="stageReturnTop" class="ghost" type="button" data-i18n="backToSimple">Return to simple demonstration</button>
+          </div>
+          <div class="stage-detail-grid">
+            <section>
+              <h4 data-i18n="schemeTitle">Scheme</h4>
+              <div id="stageDiagram" class="stage-diagram"></div>
+            </section>
+            <section class="stage-stats">
+              <h4 data-i18n="stageStatsTitle">Layers and neural connections</h4>
+              <dl>
+                <div>
+                  <dt data-i18n="layersLabel">Layers / operations</dt>
+                  <dd id="stageLayers">0</dd>
+                </div>
+                <div>
+                  <dt data-i18n="connectionsLabel">Neuron connections / MACs</dt>
+                  <dd id="stageConnections">0</dd>
+                </div>
+                <div>
+                  <dt data-i18n="tensorLabel">Tensor / vector size</dt>
+                  <dd id="stageTensor">55 x 47 x 3</dd>
+                </div>
+                <div>
+                  <dt data-i18n="cudaLabel">CUDA mapping</dt>
+                  <dd id="stageCudaShort">Host decode</dd>
+                </div>
+              </dl>
+            </section>
+          </div>
+          <section class="cuda-panel">
+            <h4 data-i18n="cudaTitle">CUDA implementation in this project</h4>
+            <p id="stageCudaText"></p>
+            <pre id="stageCode"></pre>
+          </section>
+          <div class="stage-nav">
+            <button id="stagePrev" class="ghost" type="button" data-i18n="prevLevel">Previous level</button>
+            <button id="stageNext" class="primary" type="button" data-i18n="nextLevel">Next level</button>
+            <button id="stageReturnBottom" class="ghost" type="button" data-i18n="backToSimple">Return to simple demonstration</button>
+          </div>
+        </section>
       </section>
     </section>
 
