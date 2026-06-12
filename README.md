@@ -6,7 +6,7 @@ Public GitHub Pages interface for the Bee Face recognition project.
 
 - Main GitHub Pages site: https://holodininyaroslav.github.io/bee-face-recognition-project/
 - Backup old interface: https://holodininyaroslav.github.io/bee-face-recognition-project/backup/
-- Live Colab service: https://3a91b5263b48ae2436.gradio.live/
+- Live Colab service: https://2dc91c822cc59fc2a5.gradio.live/
 
 ## Colab
 
