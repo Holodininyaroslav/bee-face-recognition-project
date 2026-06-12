@@ -254,9 +254,13 @@ const stageDetails = [
       ru: "В Colab/CUDA-пути декодированный тензор лица копируется в память устройства перед прямым проходом DeepID. Локальная AMD-версия повторяет тот же контракт через OpenCL-буферы.",
       he: "במסלול Colab/CUDA טנזור הפנים המפוענח מועתק לזיכרון ההתקן לפני המעבר הקדמי של DeepID. גרסת AMD המקומית משקפת אותו חוזה דרך באפרים של OpenCL."
     },
-    code: `// host side
+    code: `// CUDA commands used in this stage
 float input[55 * 47 * 3];
-cudaMemcpy(d_input, input, bytes, cudaMemcpyHostToDevice);`
+cudaMalloc(&d_input, 55 * 47 * 3 * sizeof(float));
+cudaMemcpy(d_input, input, bytes, cudaMemcpyHostToDevice);
+
+// Project meaning:
+// the image is only prepared here; the neural kernels start after this buffer exists.`
   },
   {
     level: "02",
@@ -280,9 +284,13 @@ cudaMemcpy(d_input, input, bytes, cudaMemcpyHostToDevice);`
       ru: "Этот этап готовит тензор для CUDA. Он легкий по сравнению с прямым проходом нейросети, поэтому проект держит его как preprocessing и отправляет итоговый тензор в GPU kernels.",
       he: "שלב זה מכין את הטנזור ל-CUDA. הוא קל יחסית למעבר הרשת, לכן הפרויקט שומר אותו כעיבוד מקדים ושולח את הטנזור הסופי לקרנלים של GPU."
     },
-    code: `// preprocess result
-normalize_rgb(face_crop, input_55x47x3);
-cudaMemcpy(d_input, input_55x47x3, bytes, H2D);`
+    code: `// CUDA commands used in this stage
+normalize_rgb(face_crop, input_55x47x3);  // host preprocessing
+cudaMemcpy(d_input, input_55x47x3, bytes, cudaMemcpyHostToDevice);
+
+// Optional CUDA form for this same step:
+normalize_resize_kernel<<<grid2d, block2d>>>(d_raw, d_input);
+cudaDeviceSynchronize();`
   },
   {
     level: "03",
@@ -306,7 +314,20 @@ cudaMemcpy(d_input, input_55x47x3, bytes, H2D);`
       ru: "CUDA раскладывает convolution, pooling, dense, add/ReLU и normalization на отдельные kernels. Каждый output activation независим, поэтому блоки потоков параллельно считают пиксели и каналы. Локальный OpenCL-файл использует ту же идею kernels.",
       he: "CUDA ממפה convolution, pooling, dense, add/ReLU ונרמול לקרנלים נפרדים. כל activation פלט בלתי תלוי, ולכן בלוקים של תהליכונים מחשבים פיקסלים וערוצים במקביל. קובץ OpenCL המקומי משתמש באותו רעיון."
     },
-    code: `__global__ void conv_relu(...) {
+    code: `// CUDA kernels used in the DeepID forward stage
+conv_relu<<<gridConv1, block>>>(d_input, d_w1, d_b1, d_conv1);
+max_pool_2x2<<<gridPool1, block>>>(d_conv1, d_pool1);
+conv_relu<<<gridConv2, block>>>(d_pool1, d_w2, d_b2, d_conv2);
+max_pool_2x2<<<gridPool2, block>>>(d_conv2, d_pool2);
+conv_relu<<<gridConv3, block>>>(d_pool2, d_w3, d_b3, d_conv3);
+max_pool_2x2<<<gridPool3, block>>>(d_conv3, d_pool3);
+dense<<<gridDense, block>>>(d_pool3, d_fc11_w, d_fc11_b, d_fc11);
+conv_relu<<<gridConv4, block>>>(d_conv3, d_w4, d_b4, d_conv4);
+dense<<<gridDense, block>>>(d_conv4, d_fc12_w, d_fc12_b, d_fc12);
+add_relu_l2<<<1, 256>>>(d_fc11, d_fc12, d_embedding160);
+cudaDeviceSynchronize();
+
+__global__ void conv_relu(...) {
   int out = blockIdx.x * blockDim.x + threadIdx.x;
   // one thread accumulates one output pixel/channel
 }
@@ -334,7 +355,12 @@ __global__ void dense(...) { /* one thread per output neuron */ }`
       ru: "CUDA-версия может назначать один block на каждый эталон и сворачивать 160 произведений в один similarity score. CPU-режим выполняет ту же математику последовательно или обычными векторными циклами.",
       he: "גרסת CUDA יכולה להקצות בלוק לכל זהות ייחוס ולצמצם 160 מכפלות לציון similarity אחד. מצב CPU מריץ את אותה מתמטיקה בלולאות רגילות."
     },
-    code: `__global__ void cosine_scores(...) {
+    code: `// CUDA commands used in the reference comparison stage
+cosine_scores<<<referenceCount, 256>>>(d_embedding160, d_refs, d_scores);
+top2_reduce<<<1, 256>>>(d_scores, d_best, d_runner_up);
+cudaMemcpy(&best, d_best, sizeof(Result), cudaMemcpyDeviceToHost);
+
+__global__ void cosine_scores(...) {
   int ref = blockIdx.x;
   float partial = query[threadIdx.x] * refs[ref][threadIdx.x];
   // reduce 160 products to one score
@@ -362,7 +388,12 @@ __global__ void dense(...) { /* one thread per output neuron */ }`
       ru: "Этот этап специально простой. В CUDA он может быть маленьким final kernel после reduction score, но на host ответ тот же, а пороги легче настраивать из веб-интерфейса.",
       he: "שלב זה פשוט בכוונה. ב-CUDA הוא יכול להיות קרנל סופי קטן אחרי reduction, אבל ב-host התשובה זהה וקל יותר לכוון ספים מהממשק."
     },
-    code: `accepted = best_score >= min_score &&
+    code: `// CUDA command if the decision is kept on GPU
+decision_kernel<<<1, 1>>>(d_best, min_score, min_margin, d_accepted);
+cudaMemcpy(&accepted, d_accepted, sizeof(bool), cudaMemcpyDeviceToHost);
+
+// Same project rule when executed on host:
+accepted = best_score >= min_score &&
            (best_score - runner_up_score) >= min_margin;`
   },
   {
@@ -387,7 +418,11 @@ __global__ void dense(...) { /* one thread per output neuron */ }`
       ru: "После завершения CUDA/OpenCL-вычислений результат копируется обратно на host. Colab-сервис сериализует его в JSON для GitHub Pages и интегрированного интерфейса проекта.",
       he: "לאחר ש-CUDA/OpenCL מסיים את העבודה המספרית, התוצאה מועתקת חזרה ל-host. שירות Colab מסדר אותה כ-JSON עבור GitHub Pages והממשק המשולב."
     },
-    code: `return {
+    code: `// CUDA/OpenCL numeric result is already back on host here
+cudaMemcpy(&host_result, d_result, sizeof(Result), cudaMemcpyDeviceToHost);
+
+// Web/Colab response object used by the site
+return {
   identity, best_score, runner_up, margin,
   backend: mode, elapsed_ms, accepted
 };`
