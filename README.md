@@ -2,16 +2,19 @@
 
 Public GitHub Pages interface for the Bee Face recognition project.
 
-## Sites
+## Main Site
 
-- Main GitHub Pages site: https://holodininyaroslav.github.io/bee-face-recognition-project/
-- Backup old interface: https://holodininyaroslav.github.io/bee-face-recognition-project/backup/
-- Live Colab service: https://cd62fec11ae74cedd1.gradio.live/
+https://holodininyaroslav.github.io/bee-face-recognition-project/
 
-## Colab
+## Connected Colab Runtime
 
-- Open the notebook in Colab:
-  https://colab.research.google.com/github/Holodininyaroslav/bee-face-recognition-project/blob/main/colab/colab_public_one_image_site.ipynb
+The current live detector backend URL is:
+
+https://b780ca63576abeb03d.gradio.live/
+
+Open the notebook in Colab:
+
+https://colab.research.google.com/github/Holodininyaroslav/bee-face-recognition-project/blob/main/colab/colab_public_one_image_site.ipynb
 
 ## Installers
 
@@ -27,6 +30,6 @@ Installers are published as GitHub Release assets because the Ursina package is 
 ## Repository Layout
 
 - `/` is the primary GitHub Pages site.
-- `/backup/` is the reserved old project interface.
+- `/backup/` keeps the reserved old project interface.
 - `/colab/` contains the Colab notebook.
 - `/installers/README.md` documents the release-hosted installers.

@@ -1,10 +1,15 @@
+const COLAB_BASE_URL = "https://b780ca63576abeb03d.gradio.live";
+const API_PREFIX = `${COLAB_BASE_URL}/gradio_api`;
+
 const translations = {
   en: {
     kicker: "COLAB GPU / FACE DETECTION / PROJECT INTERFACE",
     title: "Welcome to Bee Face recognition project",
-    lead: "Upload screenshots, recognize faces through the Colab detector, and inspect the same result stream inside the integrated AI MIPS project view.",
+    lead: "Upload screenshots, recognize faces through the connected Colab detector, and inspect the same result stream inside the integrated AI MIPS project view.",
     simple: "Simple demonstration",
     complex: "Complex demonstration integrated into the project",
+    toolColab: "Colab project notebook",
+    toolColabText: "Open the CUDA/Colab detector notebook from this repository.",
     toolUrsina: "Ursina game installer",
     toolUrsinaText: "Download the local Ursina game package.",
     toolBeeBoard: "BeeBoard installer",
@@ -13,6 +18,15 @@ const translations = {
     toolPhysicalText: "Download the local physical simulation package.",
     simpleKicker: "SIMPLE MODE",
     simpleTitle: "Simple face recognition demo",
+    simpleNote: "Upload one image or a batch, choose GPU or CPU, and press Recognize.",
+    imageTitle: "Image / screenshot",
+    dropHint: "Choose one or more images for GPU/CPU analysis.",
+    score: "Minimum score",
+    margin: "Minimum margin",
+    recognize: "Recognize",
+    resultTitle: "Detector result",
+    summary: "Upload an image and press Recognize.",
+    json: "Detector JSON",
     complexKicker: "INTEGRATED MODE",
     complexTitle: "Integrated project interface",
     downloadUrsina: "Ursina installer",
@@ -23,7 +37,7 @@ const translations = {
   ru: {
     kicker: "COLAB GPU / РАСПОЗНАВАНИЕ ЛИЦ / ИНТЕРФЕЙС ПРОЕКТА",
     title: "Добро пожаловать в Bee Face recognition project",
-    lead: "Загружайте скриншоты, распознавайте лица через Colab-детектор и смотрите тот же поток результатов в интегрированном AI MIPS проекте.",
+    lead: "Загружайте скриншоты, распознавайте лица через подключенный Colab-детектор и смотрите тот же поток результатов в интегрированном интерфейсе AI MIPS.",
     simple: "Простая демонстрация",
     complex: "Сложная демонстрация, интегрированная в проект",
     toolColab: "Colab notebook проекта",
@@ -36,9 +50,17 @@ const translations = {
     toolPhysicalText: "Скачать локальный пакет физической симуляции.",
     simpleKicker: "ПРОСТОЙ РЕЖИМ",
     simpleTitle: "Простая демонстрация распознавания лиц",
+    simpleNote: "Загрузите одно изображение или пачку, выберите GPU или CPU и нажмите Recognize.",
+    imageTitle: "Изображение / скриншот",
+    dropHint: "Выберите одно или несколько изображений для GPU/CPU анализа.",
+    score: "Минимальный score",
+    margin: "Минимальный margin",
+    recognize: "Recognize",
+    resultTitle: "Результат детектора",
+    summary: "Загрузите изображение и нажмите Recognize.",
+    json: "JSON детектора",
     complexKicker: "ИНТЕГРИРОВАННЫЙ РЕЖИМ",
     complexTitle: "Интегрированный интерфейс проекта",
-    openColabProject: "Открыть Colab проект",
     downloadUrsina: "Ursina инсталлер",
     downloadBeeBoard: "BeeBoard инсталлер",
     downloadPhysical: "Физический инсталлер",
@@ -47,11 +69,11 @@ const translations = {
   he: {
     kicker: "COLAB GPU / זיהוי פנים / ממשק פרויקט",
     title: "ברוכים הבאים אל Bee Face recognition project",
-    lead: "העלו צילומי מסך, הפעילו זיהוי פנים דרך Colab, וצפו באותו זרם תוצאות בממשק הפרויקט המשולב.",
+    lead: "העלו צילומי מסך, הפעילו זיהוי פנים דרך גלאי Colab המחובר, וצפו באותו זרם תוצאות בממשק AI MIPS המשולב.",
     simple: "הדגמה פשוטה",
     complex: "הדגמה מורכבת המשולבת בפרויקט",
     toolColab: "מחברת Colab של הפרויקט",
-    toolColabText: "פתחו את גרסת CUDA/Colab של הגלאי מהמאגר.",
+    toolColabText: "פתיחת גרסת CUDA/Colab של הגלאי מתוך המאגר.",
     toolUrsina: "מתקין משחק Ursina",
     toolUrsinaText: "הורדת חבילת משחק Ursina מקומית.",
     toolBeeBoard: "מתקין BeeBoard",
@@ -60,15 +82,35 @@ const translations = {
     toolPhysicalText: "הורדת חבילת הסימולציה הפיזית המקומית.",
     simpleKicker: "מצב פשוט",
     simpleTitle: "הדגמת זיהוי פנים פשוטה",
+    simpleNote: "העלו תמונה אחת או קבוצה, בחרו GPU או CPU ולחצו Recognize.",
+    imageTitle: "תמונה / צילום מסך",
+    dropHint: "בחרו תמונה אחת או יותר לניתוח GPU/CPU.",
+    score: "סף score מינימלי",
+    margin: "סף margin מינימלי",
+    recognize: "Recognize",
+    resultTitle: "תוצאת הגלאי",
+    summary: "העלו תמונה ולחצו Recognize.",
+    json: "JSON של הגלאי",
     complexKicker: "מצב משולב",
-    complexTitle: "ממשק פרויקט משולב",
-    openColabProject: "פתח פרויקט Colab",
+    complexTitle: "ממשק הפרויקט המשולב",
     downloadUrsina: "מתקין Ursina",
     downloadBeeBoard: "מתקין BeeBoard",
     downloadPhysical: "מתקין פיזי",
     back: "חזרה"
   }
 };
+
+const imageInput = document.getElementById("imageInput");
+const previewGrid = document.getElementById("previewGrid");
+const scoreInput = document.getElementById("scoreInput");
+const scoreValue = document.getElementById("scoreValue");
+const marginInput = document.getElementById("marginInput");
+const marginValue = document.getElementById("marginValue");
+const recognizeButton = document.getElementById("recognizeButton");
+const summaryBox = document.getElementById("summaryBox");
+const resultList = document.getElementById("resultList");
+const jsonBox = document.getElementById("jsonBox");
+const backendStatus = document.getElementById("backendStatus");
 
 function setLanguage(lang) {
   const dict = translations[lang] || translations.en;
@@ -90,6 +132,129 @@ function showView(id) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+function selectedMode() {
+  return document.querySelector("input[name='computeMode']:checked")?.value || "GPU";
+}
+
+function renderPreviews(files) {
+  previewGrid.innerHTML = "";
+  if (!files.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-preview";
+    empty.textContent = translations[document.documentElement.lang]?.dropHint || translations.en.dropHint;
+    previewGrid.appendChild(empty);
+    return;
+  }
+  files.forEach((file) => {
+    const card = document.createElement("article");
+    card.className = "preview-card";
+    const img = document.createElement("img");
+    img.alt = file.name;
+    img.src = URL.createObjectURL(file);
+    const name = document.createElement("span");
+    name.textContent = file.name;
+    card.append(img, name);
+    previewGrid.appendChild(card);
+  });
+}
+
+async function uploadFile(file) {
+  const form = new FormData();
+  form.append("files", file, file.name || "image.png");
+  const response = await fetch(`${API_PREFIX}/upload`, { method: "POST", body: form });
+  if (!response.ok) throw new Error(`Upload failed: HTTP ${response.status}`);
+  const uploaded = await response.json();
+  if (!uploaded?.[0]) throw new Error("Upload returned no file path.");
+  return uploaded[0];
+}
+
+function parseSseData(text) {
+  const lines = text.split(/\r?\n/);
+  const dataLine = lines.find((line) => line.startsWith("data: "));
+  if (!dataLine) throw new Error("Detector did not return data.");
+  return JSON.parse(dataLine.slice(6));
+}
+
+async function runRecognition(file, mode, score, margin) {
+  const uploadedPath = await uploadFile(file);
+  const payload = {
+    data: [
+      { path: uploadedPath, orig_name: file.name || "image.png", meta: { _type: "gradio.FileData" } },
+      mode,
+      score,
+      margin
+    ]
+  };
+  const callResponse = await fetch(`${API_PREFIX}/call/recognize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!callResponse.ok) throw new Error(`Recognize call failed: HTTP ${callResponse.status}`);
+  const call = await callResponse.json();
+  if (!call.event_id) throw new Error("Detector returned no event id.");
+  const resultResponse = await fetch(`${API_PREFIX}/call/recognize/${encodeURIComponent(call.event_id)}`);
+  if (!resultResponse.ok) throw new Error(`Recognize result failed: HTTP ${resultResponse.status}`);
+  const result = parseSseData(await resultResponse.text());
+  return { markdown: result[0], json: result[1] };
+}
+
+function renderResults(results) {
+  resultList.innerHTML = "";
+  const accepted = results.filter((item) => item.json?.accepted).length;
+  summaryBox.textContent = `${results.length} image(s) processed. Accepted: ${accepted}.`;
+  results.forEach((item) => {
+    const row = document.createElement("article");
+    row.className = `result-row ${item.json?.accepted ? "accepted" : "unknown"}`;
+    const title = document.createElement("strong");
+    title.textContent = `${item.file}: ${item.json?.identity || "Unknown"}`;
+    const meta = document.createElement("span");
+    const score = item.json?.best_score;
+    const margin = item.json?.margin;
+    meta.textContent = `${item.json?.mode || selectedMode()} | best ${item.json?.best_label || "-"} | score ${Number(score ?? 0).toFixed(6)} | margin ${Number(margin ?? 0).toFixed(6)}`;
+    row.append(title, meta);
+    resultList.appendChild(row);
+  });
+  jsonBox.textContent = JSON.stringify(results.map((item) => item.json), null, 2);
+}
+
+function renderError(error) {
+  summaryBox.textContent = error.message || String(error);
+  resultList.innerHTML = "";
+  jsonBox.textContent = JSON.stringify({ ok: false, error: error.message || String(error), backend: COLAB_BASE_URL }, null, 2);
+}
+
+async function recognizeSelectedFiles() {
+  const files = Array.from(imageInput.files || []);
+  if (!files.length) {
+    summaryBox.textContent = translations[document.documentElement.lang]?.dropHint || translations.en.dropHint;
+    return;
+  }
+  const mode = selectedMode();
+  const score = Number(scoreInput.value);
+  const margin = Number(marginInput.value);
+  recognizeButton.disabled = true;
+  backendStatus.textContent = "Running...";
+  summaryBox.textContent = `Processing ${files.length} image(s) on ${mode}...`;
+  resultList.innerHTML = "";
+  jsonBox.textContent = "{}";
+  try {
+    const results = [];
+    for (const file of files) {
+      summaryBox.textContent = `Processing ${file.name} on ${mode}...`;
+      const result = await runRecognition(file, mode, score, margin);
+      results.push({ file: file.name, ...result });
+      renderResults(results);
+    }
+    backendStatus.textContent = "Colab connected";
+  } catch (error) {
+    backendStatus.textContent = "Colab error";
+    renderError(error);
+  } finally {
+    recognizeButton.disabled = false;
+  }
+}
+
 document.querySelectorAll("[data-target]").forEach((button) => {
   button.addEventListener("click", () => showView(button.dataset.target));
 });
@@ -98,4 +263,10 @@ document.querySelectorAll(".lang").forEach((button) => {
   button.addEventListener("click", () => setLanguage(button.dataset.lang));
 });
 
+imageInput.addEventListener("change", () => renderPreviews(Array.from(imageInput.files || [])));
+scoreInput.addEventListener("input", () => { scoreValue.textContent = Number(scoreInput.value).toFixed(2); });
+marginInput.addEventListener("input", () => { marginValue.textContent = Number(marginInput.value).toFixed(3).replace(/0$/, ""); });
+recognizeButton.addEventListener("click", recognizeSelectedFiles);
+
 setLanguage("en");
+renderPreviews([]);
