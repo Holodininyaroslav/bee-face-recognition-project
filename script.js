@@ -394,6 +394,144 @@ __global__ void dense(...) { /* one thread per output neuron */ }`
   }
 ];
 
+const stageDiagramNotes = [
+  {
+    en: [
+      "The user chooses one or more photos or screenshots in the browser.",
+      "The file is transferred as raw image data, not as a final identity yet.",
+      "The backend decodes the image into RGB pixel values that the detector can read.",
+      "Pixels are arranged into the fixed input format expected by the neural network."
+    ],
+    ru: [
+      "Пользователь выбирает одну или несколько фотографий или скриншотов в браузере.",
+      "Файл передается как данные изображения, здесь имени человека еще нет.",
+      "Backend декодирует картинку в RGB-пиксели, которые может читать детектор.",
+      "Пиксели укладываются в фиксированный входной формат нейросети."
+    ],
+    he: [
+      "המשתמש בוחר תמונה אחת או כמה תמונות בדפדפן.",
+      "הקובץ נשלח כנתוני תמונה, עדיין בלי זהות של אדם.",
+      "ה-backend מפענח את התמונה לערכי RGB שהגלאי יכול לקרוא.",
+      "הפיקסלים מסודרים בפורמט קלט קבוע של הרשת העצבית."
+    ]
+  },
+  {
+    en: [
+      "The full screenshot may contain background, UI, or several objects.",
+      "The detector searches for the part that most likely contains the face.",
+      "Only the useful face area is kept for recognition.",
+      "The crop is resized and normalized so every face enters the network in the same format."
+    ],
+    ru: [
+      "Полный скриншот может содержать фон, интерфейс или лишние объекты.",
+      "Детектор ищет участок, где вероятнее всего находится лицо.",
+      "Для распознавания оставляется только полезная область лица.",
+      "Фрагмент приводится к одному размеру и нормализуется, чтобы все лица входили в сеть одинаково."
+    ],
+    he: [
+      "צילום המסך יכול לכלול רקע, ממשק או אובייקטים מיותרים.",
+      "הגלאי מחפש את האזור שבו סביר שנמצאות הפנים.",
+      "רק אזור הפנים החשוב נשמר לזיהוי.",
+      "החיתוך משתנה לגודל קבוע ומנורמל כדי שכל פנים ייכנסו לרשת באותו פורמט."
+    ]
+  },
+  {
+    en: [
+      "The normalized face image enters the DeepID network.",
+      "The first filters detect simple local patterns and reduce the map size.",
+      "The next filters combine simple patterns into stronger face features.",
+      "The last convolution keeps compact spatial information from the face.",
+      "Dense layers mix all important features into one internal representation.",
+      "The final 160-number embedding is the compact digital fingerprint of the face."
+    ],
+    ru: [
+      "Нормализованное лицо поступает в сеть DeepID.",
+      "Первые фильтры находят простые локальные признаки и уменьшают карту.",
+      "Следующие фильтры собирают простые признаки в более сильные признаки лица.",
+      "Последняя свертка сохраняет компактную пространственную информацию лица.",
+      "Полносвязные слои смешивают важные признаки в одно внутреннее представление.",
+      "Итоговый embedding из 160 чисел является компактным цифровым отпечатком лица."
+    ],
+    he: [
+      "תמונת הפנים המנורמלת נכנסת לרשת DeepID.",
+      "הפילטרים הראשונים מוצאים תבניות מקומיות פשוטות ומקטינים את המפה.",
+      "הפילטרים הבאים מחברים תבניות פשוטות למאפייני פנים חזקים יותר.",
+      "ה-convolution האחרון שומר מידע מרחבי קומפקטי של הפנים.",
+      "השכבות הצפופות מערבבות את המאפיינים החשובים לייצוג פנימי אחד.",
+      "ה-embedding הסופי בן 160 מספרים הוא טביעת האצבע הדיגיטלית של הפנים."
+    ]
+  },
+  {
+    en: [
+      "This is the new face vector produced by the network.",
+      "These are saved vectors of known people from the project reference set.",
+      "Each reference is compared with the new vector by cosine similarity.",
+      "The system keeps the closest person and the second closest person for confidence checking."
+    ],
+    ru: [
+      "Это новый вектор лица, который выдала нейросеть.",
+      "Это сохраненные векторы известных людей из эталонного набора проекта.",
+      "Каждый эталон сравнивается с новым вектором через cosine similarity.",
+      "Система сохраняет ближайшего человека и второго ближайшего для проверки уверенности."
+    ],
+    he: [
+      "זה וקטור הפנים החדש שהרשת יצרה.",
+      "אלו וקטורים שמורים של אנשים מוכרים ממאגר הייחוס של הפרויקט.",
+      "כל ייחוס מושווה לווקטור החדש בעזרת cosine similarity.",
+      "המערכת שומרת את האדם הקרוב ביותר ואת השני הקרוב ביותר לבדיקת ביטחון."
+    ]
+  },
+  {
+    en: [
+      "The best score shows how close the strongest match is.",
+      "The runner up shows which identity was the nearest competitor.",
+      "This threshold blocks weak matches that are not similar enough.",
+      "This threshold requires the winner to be clearly better than the second result.",
+      "Only a confident match is accepted; otherwise the result is Unknown."
+    ],
+    ru: [
+      "Best score показывает, насколько близко самое сильное совпадение.",
+      "Runner up показывает ближайшего конкурента среди других людей.",
+      "Этот порог отсекает слабые совпадения, которые недостаточно похожи.",
+      "Этот порог требует, чтобы победитель был заметно лучше второго результата.",
+      "Принимается только уверенное совпадение; иначе результат становится Unknown."
+    ],
+    he: [
+      "Best score מראה כמה ההתאמה החזקה ביותר קרובה.",
+      "Runner up מראה מי המתחרה הקרוב ביותר מבין הזהויות.",
+      "הסף הזה חוסם התאמות חלשות שאינן דומות מספיק.",
+      "הסף הזה דורש שהמנצח יהיה טוב בבירור מהתוצאה השנייה.",
+      "רק התאמה בטוחה מתקבלת; אחרת התוצאה היא Unknown."
+    ]
+  },
+  {
+    en: [
+      "A true/false value tells the UI whether the recognition was accepted.",
+      "The chosen name is returned only when the confidence checks pass.",
+      "Scores are included so the result can be inspected and tuned.",
+      "The response records whether the GPU/Colab or CPU path was used.",
+      "Elapsed time shows how long the recognition request took.",
+      "The web interface reads this JSON and shows the same answer in the simple and integrated views."
+    ],
+    ru: [
+      "Значение true/false говорит интерфейсу, принято ли распознавание.",
+      "Выбранное имя возвращается только если проверки уверенности прошли.",
+      "Scores добавлены, чтобы результат можно было проверить и настроить.",
+      "Ответ записывает, использовался ли GPU/Colab или CPU-путь.",
+      "Elapsed time показывает, сколько занял запрос распознавания.",
+      "Веб-интерфейс читает этот JSON и показывает один и тот же ответ в простой и интегрированной демонстрации."
+    ],
+    he: [
+      "ערך true/false אומר לממשק אם הזיהוי התקבל.",
+      "השם שנבחר מוחזר רק אם בדיקות הביטחון עברו.",
+      "הציונים נכללים כדי שאפשר יהיה לבדוק ולכוון את התוצאה.",
+      "התשובה מציינת אם נעשה שימוש במסלול GPU/Colab או CPU.",
+      "Elapsed time מראה כמה זמן לקחה בקשת הזיהוי.",
+      "ממשק הווב קורא את ה-JSON ומציג את אותה תשובה בהדגמה הפשוטה והמשולבת."
+    ]
+  }
+];
+
 let currentStageIndex = -1;
 
 
@@ -428,12 +566,16 @@ function localized(value) {
   return value[lang] || value.en || "";
 }
 
-function buildStageDiagram(labels) {
+function buildStageDiagram(labels, notes) {
   stageDiagram.innerHTML = "";
   labels.forEach((label, index) => {
     const node = document.createElement("div");
     node.className = "diagram-node";
-    node.textContent = label;
+    const title = document.createElement("strong");
+    title.textContent = label;
+    const note = document.createElement("p");
+    note.textContent = notes[index] || "";
+    node.append(title, note);
     stageDiagram.appendChild(node);
     if (index < labels.length - 1) {
       const arrow = document.createElement("div");
@@ -457,7 +599,7 @@ function renderStageDetail(index, shouldScroll = true) {
   stageCudaShort.textContent = localized(data.cudaShort);
   stageCudaText.textContent = localized(data.cuda);
   stageCode.textContent = data.code;
-  buildStageDiagram(localized(data.diagram));
+  buildStageDiagram(localized(data.diagram), localized(stageDiagramNotes[currentStageIndex]));
   stageDetail.classList.remove("hidden");
   document.querySelectorAll(".pipeline-step").forEach((step) => {
     step.classList.toggle("active", Number(step.dataset.stage) === currentStageIndex);
