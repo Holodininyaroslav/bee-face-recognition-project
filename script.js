@@ -1,5 +1,5 @@
-const COLAB_BASE_URL = "https://b780ca63576abeb03d.gradio.live";
-const API_PREFIX = `${COLAB_BASE_URL}/gradio_api`;
+const COLAB_BASE_URL = "";
+const API_PREFIX = COLAB_BASE_URL ? `${COLAB_BASE_URL}/gradio_api` : "";
 
 const translations = {
   en: {
@@ -676,6 +676,9 @@ function renderPreviews(files) {
 }
 
 async function uploadFile(file) {
+  if (!API_PREFIX) {
+    throw new Error("Colab bridge is disabled for safety. Enable it only when you intentionally start a new Colab/Gradio session.");
+  }
   const form = new FormData();
   form.append("files", file, file.name || "image.png");
   const response = await fetch(`${API_PREFIX}/upload`, { method: "POST", body: form });

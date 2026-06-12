@@ -8,9 +8,7 @@ https://holodininyaroslav.github.io/bee-face-recognition-project/
 
 ## Connected Colab Runtime
 
-The current live detector backend URL is:
-
-https://b780ca63576abeb03d.gradio.live/
+No live Colab/Gradio bridge is enabled by default. Start a new approved runtime manually when a public demo is needed.
 
 Open the notebook in Colab:
 
@@ -30,6 +28,6 @@ Installers are published as GitHub Release assets because the Ursina package is 
 ## Repository Layout
 
 - `/` is the primary GitHub Pages site.
-- `/backup/` keeps the reserved old project interface.
+- `/backup/` keeps the reserved old project interface placeholder.
 - `/colab/` contains the Colab notebook.
 - `/installers/README.md` documents the release-hosted installers.
