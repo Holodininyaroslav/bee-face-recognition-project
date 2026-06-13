@@ -1,5 +1,7 @@
-const COLAB_BASE_URL = "";
-const API_PREFIX = COLAB_BASE_URL ? `${COLAB_BASE_URL}/gradio_api` : "";
+const LOCAL_HIVE_BASE = "http://127.0.0.1:8876";
+const LOCAL_BEEBOARD_BASE = "http://127.0.0.1:8877";
+const LOCAL_HIVE_URL = `${LOCAL_HIVE_BASE}/?fresh=github-pages-local`;
+const LOCAL_BEEBOARD_VIEWER_URL = `${LOCAL_BEEBOARD_BASE}/?hive=${encodeURIComponent(LOCAL_HIVE_URL)}&processor=0#viewer`;
 
 const translations = {
   en: {
@@ -57,6 +59,10 @@ const translations = {
     backToSimple: "Return to simple demonstration",
     complexKicker: "INTEGRATED MODE",
     complexTitle: "Integrated project interface",
+    openHive: "Open local Hive",
+    openBeeBoard: "Open BeeBoard 3D",
+    openPhysical: "Open physical wings",
+    openUrsina: "Open Ursina 3D",
     downloadUrsina: "Ursina installer",
     downloadBeeBoard: "BeeBoard installer",
     downloadPhysical: "Physical installer",
@@ -106,6 +112,10 @@ const translations = {
     modeExplainText: "GPU-режим выполняет тяжелые операции над изображениями и векторами через ускоритель. CPU-режим выполняет ту же логику распознавания на процессоре. Ожидаемый ответ по личности должен оставаться тем же; разница в основном в том, где идут вычисления и сколько времени они занимают.",
     complexKicker: "ИНТЕГРИРОВАННЫЙ РЕЖИМ",
     complexTitle: "Интегрированный интерфейс проекта",
+    openHive: "Открыть локальный Hive",
+    openBeeBoard: "Открыть BeeBoard 3D",
+    openPhysical: "Открыть калибровку крыльев",
+    openUrsina: "Открыть Ursina 3D",
     downloadUrsina: "Ursina инсталлер",
     downloadBeeBoard: "BeeBoard инсталлер",
     downloadPhysical: "Физический инсталлер",
@@ -155,6 +165,10 @@ const translations = {
     modeExplainText: "מצב GPU מריץ את פעולות התמונה והווקטורים הכבדות במסלול המאיץ. מצב CPU מריץ את אותה לוגיקת זיהוי על המעבד. תוצאת הזהות הצפויה אמורה להישאר זהה; ההבדל הוא בעיקר היכן החישוב מתבצע וכמה זמן הוא לוקח.",
     complexKicker: "מצב משולב",
     complexTitle: "ממשק הפרויקט המשולב",
+    openHive: "פתיחת Hive מקומי",
+    openBeeBoard: "פתיחת BeeBoard 3D",
+    openPhysical: "פתיחת כיול כנפיים",
+    openUrsina: "פתיחת Ursina 3D",
     downloadUrsina: "מתקין Ursina",
     downloadBeeBoard: "מתקין BeeBoard",
     downloadPhysical: "מתקין פיזי",
@@ -675,19 +689,6 @@ function renderPreviews(files) {
   });
 }
 
-async function uploadFile(file) {
-  if (!API_PREFIX) {
-    throw new Error("Colab bridge is disabled for safety. Enable it only when you intentionally start a new Colab/Gradio session.");
-  }
-  const form = new FormData();
-  form.append("files", file, file.name || "image.png");
-  const response = await fetch(`${API_PREFIX}/upload`, { method: "POST", body: form });
-  if (!response.ok) throw new Error(`Upload failed: HTTP ${response.status}`);
-  const uploaded = await response.json();
-  if (!uploaded?.[0]) throw new Error("Upload returned no file path.");
-  return uploaded[0];
-}
-
 function parseSseData(text) {
   const lines = text.split(/\r?\n/);
   const dataLine = lines.find((line) => line.startsWith("data: "));
@@ -696,27 +697,19 @@ function parseSseData(text) {
 }
 
 async function runRecognition(file, mode, score, margin) {
-  const uploadedPath = await uploadFile(file);
-  const payload = {
-    data: [
-      { path: uploadedPath, orig_name: file.name || "image.png", meta: { _type: "gradio.FileData" } },
-      mode,
-      score,
-      margin
-    ]
-  };
-  const callResponse = await fetch(`${API_PREFIX}/call/recognize`, {
+  const endpoint = `${LOCAL_HIVE_BASE}/api/detect?mode=${encodeURIComponent(mode)}&processor_id=0&source=github-pages-simple`;
+  const response = await fetch(endpoint, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    headers: { "Content-Type": file.type || "image/png", "Accept": "application/json" },
+    body: file
   });
-  if (!callResponse.ok) throw new Error(`Recognize call failed: HTTP ${callResponse.status}`);
-  const call = await callResponse.json();
-  if (!call.event_id) throw new Error("Detector returned no event id.");
-  const resultResponse = await fetch(`${API_PREFIX}/call/recognize/${encodeURIComponent(call.event_id)}`);
-  if (!resultResponse.ok) throw new Error(`Recognize result failed: HTTP ${resultResponse.status}`);
-  const result = parseSseData(await resultResponse.text());
-  return { markdown: result[0], json: result[1] };
+  if (!response.ok) {
+    throw new Error(`Local Hive detector failed: HTTP ${response.status}. Start the approved local Hive service on 127.0.0.1:8876.`);
+  }
+  const payload = await response.json();
+  payload.requested_min_score = score;
+  payload.requested_min_margin = margin;
+  return { markdown: payload.identity || payload.best_label || "Unknown", json: payload };
 }
 
 function renderResults(results) {
@@ -741,7 +734,7 @@ function renderResults(results) {
 function renderError(error) {
   summaryBox.textContent = error.message || String(error);
   resultList.innerHTML = "";
-  jsonBox.textContent = JSON.stringify({ ok: false, error: error.message || String(error), backend: COLAB_BASE_URL }, null, 2);
+  jsonBox.textContent = JSON.stringify({ ok: false, error: error.message || String(error), backend: LOCAL_HIVE_BASE }, null, 2);
 }
 
 async function recognizeSelectedFiles() {
@@ -812,3 +805,23 @@ recognizeButton.addEventListener("click", recognizeSelectedFiles);
 
 setLanguage("en");
 renderPreviews([]);
+
+const complexFrame = document.getElementById("complexFrame");
+if (complexFrame) {
+  complexFrame.src = LOCAL_HIVE_URL;
+}
+
+document.querySelectorAll("[data-local-open]").forEach((node) => {
+  node.addEventListener("click", (event) => {
+    const target = node.dataset.localOpen;
+    if (target === "hive") {
+      node.href = LOCAL_HIVE_URL;
+    } else if (target === "beeboard") {
+      node.href = LOCAL_BEEBOARD_VIEWER_URL;
+    } else if (target === "physical") {
+      node.href = `${LOCAL_HIVE_BASE}/physical-simulator`;
+    } else if (target === "ursina") {
+      node.href = `${LOCAL_HIVE_BASE}/local-ursina-simulator?api=${encodeURIComponent(LOCAL_HIVE_BASE)}&processor_id=0`;
+    }
+  });
+});
