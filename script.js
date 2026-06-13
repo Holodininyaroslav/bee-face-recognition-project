@@ -2,6 +2,16 @@ const LOCAL_HIVE_BASE = "http://127.0.0.1:8876";
 const LOCAL_BEEBOARD_BASE = "http://127.0.0.1:8877";
 const LOCAL_HIVE_URL = `${LOCAL_HIVE_BASE}/?fresh=github-pages-local`;
 const LOCAL_BEEBOARD_VIEWER_URL = `${LOCAL_BEEBOARD_BASE}/?hive=${encodeURIComponent(LOCAL_HIVE_URL)}&processor=0#viewer`;
+const START_PARAMS = new URLSearchParams(window.location.search);
+const LOCAL_BRIDGE_TOKEN = START_PARAMS.get("local_token") || "";
+const LOCAL_BRIDGE_ALLOWED = START_PARAMS.get("local_bridge") === "1" && /^[A-Za-z0-9._~-]{24,}$/.test(LOCAL_BRIDGE_TOKEN);
+
+function withLocalToken(url) {
+  if (!LOCAL_BRIDGE_ALLOWED) return url;
+  const parsed = new URL(url, window.location.href);
+  parsed.searchParams.set("local_token", LOCAL_BRIDGE_TOKEN);
+  return parsed.toString();
+}
 
 const translations = {
   en: {
@@ -1490,10 +1500,13 @@ function parseSseData(text) {
 }
 
 async function runRecognition(file, mode, score, margin) {
-  const endpoint = `${LOCAL_HIVE_BASE}/api/detect?mode=${encodeURIComponent(mode)}&processor_id=0&source=github-pages-simple`;
+  if (!LOCAL_BRIDGE_ALLOWED) {
+    throw new Error("Local bridge is disabled. Start an approved local session and open this page with local_bridge=1 and a private local_token before sending images to localhost.");
+  }
+  const endpoint = withLocalToken(`${LOCAL_HIVE_BASE}/api/detect?mode=${encodeURIComponent(mode)}&processor_id=0&source=github-pages-simple`);
   const response = await fetch(endpoint, {
     method: "POST",
-    headers: { "Content-Type": file.type || "image/png", "Accept": "application/json" },
+    headers: { "Content-Type": file.type || "image/png", "Accept": "application/json", "X-Bee-Local-Token": LOCAL_BRIDGE_TOKEN },
     body: file
   });
   if (!response.ok) {
@@ -1633,20 +1646,38 @@ applyDeepLink();
 
 const complexFrame = document.getElementById("complexFrame");
 if (complexFrame) {
-  complexFrame.src = LOCAL_HIVE_URL;
+  if (LOCAL_BRIDGE_ALLOWED) {
+    complexFrame.src = withLocalToken(LOCAL_HIVE_URL);
+  } else {
+    complexFrame.removeAttribute("src");
+    complexFrame.srcdoc = `
+      <!doctype html>
+      <meta charset="utf-8">
+      <body style="margin:0;font-family:Segoe UI,Arial,sans-serif;background:#07101e;color:#eef5ff;padding:28px">
+        <h1 style="color:#ffd052">Local bridge disabled</h1>
+        <p>This public GitHub Pages view does not connect to 127.0.0.1 by default.</p>
+        <p>Start a separately approved local session and open this page with <code>local_bridge=1</code> and your private <code>local_token</code> only when you want browser-to-local-app access.</p>
+      </body>
+    `;
+  }
 }
 
 document.querySelectorAll("[data-local-open]").forEach((node) => {
   node.addEventListener("click", (event) => {
+    if (!LOCAL_BRIDGE_ALLOWED) {
+      event.preventDefault();
+      alert("Local bridge is disabled. Open an approved session with local_bridge=1 and a private local_token before connecting this public page to local apps.");
+      return;
+    }
     const target = node.dataset.localOpen;
     if (target === "hive") {
-      node.href = LOCAL_HIVE_URL;
+      node.href = withLocalToken(LOCAL_HIVE_URL);
     } else if (target === "beeboard") {
-      node.href = LOCAL_BEEBOARD_VIEWER_URL;
+      node.href = withLocalToken(LOCAL_BEEBOARD_VIEWER_URL);
     } else if (target === "physical") {
-      node.href = `${LOCAL_HIVE_BASE}/physical-simulator`;
+      node.href = withLocalToken(`${LOCAL_HIVE_BASE}/physical-simulator`);
     } else if (target === "ursina") {
-      node.href = `${LOCAL_HIVE_BASE}/local-ursina-simulator?api=${encodeURIComponent(LOCAL_HIVE_BASE)}&processor_id=0`;
+      node.href = withLocalToken(`${LOCAL_HIVE_BASE}/local-ursina-simulator?api=${encodeURIComponent(LOCAL_HIVE_BASE)}&processor_id=0`);
     }
   });
 });

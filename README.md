@@ -14,6 +14,14 @@ Open the notebook in Colab:
 
 https://colab.research.google.com/github/Holodininyaroslav/bee-face-recognition-project/blob/main/colab/colab_public_one_image_site.ipynb
 
+## Local Bridge Safety
+
+The public site does not connect to local apps by default. Browser-to-local-app access requires an explicit private token and a per-action allowlist.
+
+Russian safety checklist:
+
+https://github.com/Holodininyaroslav/bee-face-recognition-project/blob/main/SECURITY_LOCAL_BRIDGE_RU.md
+
 ## Installers
 
 Installers are published as GitHub Release assets because the Ursina package is larger than GitHub's normal git file limit.
