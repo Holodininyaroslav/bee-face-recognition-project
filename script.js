@@ -759,9 +759,9 @@ async function recognizeSelectedFiles() {
       results.push({ file: file.name, ...result });
       renderResults(results);
     }
-    backendStatus.textContent = "Colab connected";
+    backendStatus.textContent = "Local Hive ready";
   } catch (error) {
-    backendStatus.textContent = "Colab error";
+    backendStatus.textContent = "Local Hive error";
     renderError(error);
   } finally {
     recognizeButton.disabled = false;
