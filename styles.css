@@ -541,6 +541,55 @@ html[dir="rtl"] .code-note {
   padding: 0 20px 20px;
 }
 
+.source-panel {
+  margin-top: 16px;
+  border: 1px solid rgba(56, 215, 255, .35);
+  background: #0b1424;
+}
+
+.source-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+  padding: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.source-head h3 {
+  margin: 6px 0 10px;
+  color: var(--yellow);
+  font-size: clamp(28px, 4vw, 48px);
+}
+
+.source-head p {
+  max-width: 1080px;
+}
+
+.source-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.source-meta {
+  margin: 0;
+  padding: 14px 20px;
+  color: var(--muted);
+  background: rgba(56, 215, 255, .06);
+  border-bottom: 1px solid var(--line);
+}
+
+.source-code {
+  margin: 0;
+  max-height: 760px;
+  overflow: auto;
+  padding: 0;
+  white-space: normal;
+  background: #050912;
+}
+
 .file-input {
   width: 100%;
   margin-bottom: 16px;
@@ -729,12 +778,21 @@ iframe {
     grid-template-columns: 1fr;
   }
   .stage-detail-head,
-  .stage-detail-grid {
+  .stage-detail-grid,
+  .source-head {
     display: block;
   }
   .stage-detail-head .ghost,
-  .stage-stats {
+  .stage-stats,
+  .source-actions {
     margin-top: 16px;
+  }
+  .source-actions {
+    justify-content: stretch;
+  }
+  .source-actions .ghost,
+  .source-actions .link {
+    width: 100%;
   }
   .stage-diagram {
     overflow-x: auto;

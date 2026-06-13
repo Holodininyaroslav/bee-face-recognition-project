@@ -180,6 +180,45 @@ const translations = {
   }
 };
 
+Object.assign(translations.en, {
+  sourceKicker: "FULL DETECTOR SOURCE",
+  sourceTitle: "Complete neural detector implementation",
+  sourceIntro: "Open the full Colab detector module when you need to inspect the pieces that sit around the six computation stages: imports, weight loading, CUDA selection, the DeepID model, preprocessing, reference embeddings, batch recognition, decision rules, and JSON/API glue.",
+  openDetectorSource: "Open full detector source",
+  hideDetectorSource: "Hide full detector source",
+  openRawDetectorSource: "Open raw source file",
+  sourceClosed: "Closed. Use this when the stage snippets are not enough.",
+  sourceLoading: "Loading detector source from the repository...",
+  sourceLoaded: "Showing the exact neural detector source copied from the Colab module. The raw file link opens the full module.",
+  sourceError: "Could not load the detector source file from this site."
+});
+
+Object.assign(translations.ru, {
+  sourceKicker: "ПОЛНЫЙ ИСХОДНИК ДЕТЕКТОРА",
+  sourceTitle: "Полная реализация нейросетевого распознавателя",
+  sourceIntro: "Откройте полный модуль Colab-детектора, когда нужно увидеть все части вокруг шести этапов вычислений: импорты, загрузку весов, выбор CUDA, модель DeepID, препроцессинг, эталонные embeddings, batch-распознавание, правила решения и JSON/API-связку.",
+  openDetectorSource: "Открыть полный исходник детектора",
+  hideDetectorSource: "Скрыть полный исходник детектора",
+  openRawDetectorSource: "Открыть raw-файл исходника",
+  sourceClosed: "Закрыто. Используйте это, когда фрагментов этапов недостаточно.",
+  sourceLoading: "Загружаю исходник детектора из репозитория...",
+  sourceLoaded: "Показан точный исходник нейросетевого детектора, скопированный из Colab-модуля. Ссылка raw открывает полный модуль.",
+  sourceError: "Не удалось загрузить файл исходника детектора с этого сайта."
+});
+
+Object.assign(translations.he, {
+  sourceKicker: "קוד מקור מלא של הגלאי",
+  sourceTitle: "מימוש מלא של מזהה הפנים הנוירוני",
+  sourceIntro: "פתחו את מודול גלאי ה-Colab המלא כאשר צריך לבדוק את כל החלקים שמסביב לששת שלבי החישוב: יבוא ספריות, טעינת משקלים, בחירת CUDA, מודל DeepID, עיבוד מקדים, embeddings לייחוס, זיהוי באצווה, כללי החלטה וחיבור JSON/API.",
+  openDetectorSource: "פתח קוד מקור מלא של הגלאי",
+  hideDetectorSource: "הסתר קוד מקור מלא של הגלאי",
+  openRawDetectorSource: "פתח קובץ מקור raw",
+  sourceClosed: "סגור. השתמשו בזה כאשר קטעי השלבים אינם מספיקים.",
+  sourceLoading: "טוען את קוד המקור של הגלאי מהמאגר...",
+  sourceLoaded: "מוצג קוד המקור המדויק של הגלאי הנוירוני שהועתק ממודול Colab. קישור raw פותח את המודול המלא.",
+  sourceError: "לא ניתן לטעון את קובץ המקור של הגלאי מהאתר."
+});
+
 const detailUi = {
   en: {
     openStage: "Open scheme",
@@ -264,6 +303,9 @@ const stagePrev = document.getElementById("stagePrev");
 const stageNext = document.getElementById("stageNext");
 const stageReturnTop = document.getElementById("stageReturnTop");
 const stageReturnBottom = document.getElementById("stageReturnBottom");
+const loadFullDetectorSource = document.getElementById("loadFullDetectorSource");
+const fullDetectorSource = document.getElementById("fullDetectorSource");
+const fullSourceMeta = document.getElementById("fullSourceMeta");
 
 const stageDetails = [
   {
@@ -833,6 +875,9 @@ const stageDiagramNotes = [
 
 let currentStageIndex = -1;
 let stageCodeMode = "short";
+let detectorSourceLoaded = false;
+let detectorSourceVisible = false;
+let detectorSourceText = "";
 
 
 function setLanguage(lang) {
@@ -849,6 +894,10 @@ function setLanguage(lang) {
   });
   if (currentStageIndex >= 0 && !stageDetail.classList.contains("hidden")) {
     renderStageDetail(currentStageIndex, false);
+  }
+  updateDetectorSourceUi();
+  if (detectorSourceLoaded && detectorSourceVisible) {
+    renderDetectorSource(detectorSourceText);
   }
 }
 
@@ -1277,6 +1326,88 @@ function renderStageCode(stage) {
   });
 }
 
+function updateDetectorSourceUi() {
+  if (!loadFullDetectorSource || !fullSourceMeta || !fullDetectorSource) return;
+  loadFullDetectorSource.textContent = uiText(detectorSourceVisible ? "hideDetectorSource" : "openDetectorSource");
+  if (!detectorSourceVisible) {
+    fullSourceMeta.textContent = uiText("sourceClosed");
+  } else if (detectorSourceLoaded) {
+    fullSourceMeta.textContent = uiText("sourceLoaded");
+  }
+}
+
+function findBlockEnd(lines, startIndex, matcher) {
+  if (startIndex < 0) return -1;
+  for (let index = startIndex + 1; index < lines.length; index += 1) {
+    if (matcher(lines[index])) return index;
+  }
+  return lines.length;
+}
+
+function extractDetectorSource(source) {
+  const lines = source.split(/\r?\n/);
+  const importLines = lines
+    .slice(0, 90)
+    .filter((line) => /^(import|from)\s+/.test(line.trim()));
+  const helperStart = lines.findIndex((line) => /^def _image_paths\b/.test(line));
+  const helperEnd = findBlockEnd(lines, helperStart, (line) => /^def\s+/.test(line));
+  const classStart = lines.findIndex((line) => /^class DeepIDIdentityDetector\b/.test(line));
+  const classEnd = findBlockEnd(lines, classStart, (line) => /^def create_colab_ui\b/.test(line) || /^class\s+/.test(line));
+  const helperBlock = helperStart >= 0 ? lines.slice(helperStart, helperEnd) : [];
+  const classBlock = classStart >= 0 ? lines.slice(classStart, classEnd) : lines;
+  return [
+    "# Exact neural detector source excerpt from source/colab_ai_mips_bee_world.py",
+    "# Raw link beside this panel opens the complete Colab module.",
+    "",
+    ...importLines,
+    "",
+    ...helperBlock,
+    "",
+    ...classBlock
+  ].join("\n");
+}
+
+function renderDetectorSource(source) {
+  if (!fullDetectorSource) return;
+  fullDetectorSource.innerHTML = "";
+  const lang = document.documentElement.lang || "en";
+  fullDetectorSource.setAttribute("dir", lang === "he" ? "rtl" : "ltr");
+  extractDetectorSource(source).split("\n").forEach((line) => {
+    const row = document.createElement("div");
+    row.className = `code-line-note${line.trim() ? "" : " blank"}`;
+    const code = document.createElement("code");
+    code.textContent = line || " ";
+    const note = document.createElement("span");
+    note.className = "code-note";
+    note.textContent = line.trim() ? patternCodeAnnotation(line) : (codeBlankAnnotation[lang] || codeBlankAnnotation.en);
+    row.append(code, note);
+    fullDetectorSource.appendChild(row);
+  });
+}
+
+async function toggleDetectorSource() {
+  if (!loadFullDetectorSource || !fullSourceMeta || !fullDetectorSource) return;
+  detectorSourceVisible = !detectorSourceVisible;
+  fullDetectorSource.classList.toggle("hidden", !detectorSourceVisible);
+  updateDetectorSourceUi();
+  if (!detectorSourceVisible) return;
+  if (!detectorSourceLoaded) {
+    fullSourceMeta.textContent = uiText("sourceLoading");
+    try {
+      const response = await fetch("source/colab_ai_mips_bee_world.py", { cache: "no-store" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      detectorSourceText = await response.text();
+      detectorSourceLoaded = true;
+      renderDetectorSource(detectorSourceText);
+      fullSourceMeta.textContent = uiText("sourceLoaded");
+    } catch (error) {
+      fullSourceMeta.textContent = `${uiText("sourceError")} ${error.message || error}`;
+      detectorSourceVisible = false;
+      fullDetectorSource.classList.add("hidden");
+    }
+  }
+}
+
 function buildStageDiagram(labels, notes) {
   stageDiagram.innerHTML = "";
   labels.forEach((label, index) => {
@@ -1455,6 +1586,7 @@ stageCodeModeButton?.addEventListener("click", () => {
   stageCodeMode = stageCodeMode === "full" ? "short" : "full";
   if (currentStageIndex >= 0) renderStageDetail(currentStageIndex, false);
 });
+loadFullDetectorSource?.addEventListener("click", toggleDetectorSource);
 stageReturnTop.addEventListener("click", () => {
   hideStageDetail();
   document.getElementById("howItWorksTitle").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1488,6 +1620,10 @@ function applyDeepLink() {
     showView("simple");
     stageCodeMode = params.get("code") === "full" ? "full" : "short";
     renderStageDetail(index, false);
+  }
+  if (params.get("source") === "detector") {
+    showView("simple");
+    if (!detectorSourceVisible) toggleDetectorSource();
   }
 }
 

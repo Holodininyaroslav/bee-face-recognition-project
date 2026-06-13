@@ -217,6 +217,23 @@
             <button id="stageReturnBottom" class="ghost" type="button" data-i18n="backToSimple">Return to simple demonstration</button>
           </div>
         </section>
+        <section class="source-panel" aria-labelledby="fullSourceTitle">
+          <div class="source-head">
+            <div>
+              <p class="kicker" data-i18n="sourceKicker">FULL DETECTOR SOURCE</p>
+              <h3 id="fullSourceTitle" data-i18n="sourceTitle">Complete neural detector implementation</h3>
+              <p data-i18n="sourceIntro">
+                Open the full Colab detector module when you need to inspect the pieces that sit around the six computation stages: imports, weight loading, CUDA selection, the DeepID model, preprocessing, reference embeddings, batch recognition, decision rules, and JSON/API glue.
+              </p>
+            </div>
+            <div class="source-actions">
+              <button id="loadFullDetectorSource" class="ghost" type="button" data-i18n="openDetectorSource">Open full detector source</button>
+              <a class="ghost link" href="source/colab_ai_mips_bee_world.py" target="_blank" rel="noreferrer" data-i18n="openRawDetectorSource">Open raw source file</a>
+            </div>
+          </div>
+          <p id="fullSourceMeta" class="source-meta" data-i18n="sourceClosed">Closed. Use this when the stage snippets are not enough.</p>
+          <pre id="fullDetectorSource" class="source-code hidden"></pre>
+        </section>
       </section>
     </section>
 
