@@ -459,6 +459,23 @@ button:disabled { opacity: .65; cursor: wait; }
   background: #111b2d;
 }
 
+.code-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.code-toolbar .ghost {
+  min-height: 44px;
+}
+
+.code-source {
+  color: var(--muted);
+  font-weight: 800;
+}
+
 .cuda-panel pre {
   margin-top: 12px;
   border: 1px solid var(--line);
@@ -466,6 +483,11 @@ button:disabled { opacity: .65; cursor: wait; }
   padding: 0;
   white-space: normal;
   overflow: auto;
+  max-height: 520px;
+}
+
+.cuda-panel pre.full-code {
+  max-height: 720px;
 }
 
 .code-line-note {

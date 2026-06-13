@@ -54,6 +54,10 @@ const translations = {
     tensorLabel: "Tensor / vector size",
     cudaLabel: "CUDA mapping",
     cudaTitle: "CUDA implementation in this project",
+    openFullCode: "Open full Colab/CUDA code for this stage",
+    showShortCode: "Show short stage sketch",
+    codeSourceShort: "Short CUDA-stage sketch",
+    codeSourceFull: "Full code used by the Colab detector for this stage",
     nextLevel: "Next level",
     prevLevel: "Previous level",
     backToSimple: "Return to simple demonstration",
@@ -218,6 +222,20 @@ const detailUi = {
   }
 };
 
+Object.assign(detailUi.ru, {
+  openFullCode: "Открыть полный Colab/CUDA код этого этапа",
+  showShortCode: "Показать короткую схему этапа",
+  codeSourceShort: "Короткая CUDA-схема этапа",
+  codeSourceFull: "Полный код из Colab-детектора для этого этапа"
+});
+
+Object.assign(detailUi.he, {
+  openFullCode: "פתח את קוד Colab/CUDA המלא של השלב",
+  showShortCode: "הצג תרשים קוד קצר",
+  codeSourceShort: "תרשים CUDA קצר של השלב",
+  codeSourceFull: "הקוד המלא של גלאי Colab לשלב הזה"
+});
+
 const imageInput = document.getElementById("imageInput");
 const previewGrid = document.getElementById("previewGrid");
 const scoreInput = document.getElementById("scoreInput");
@@ -240,6 +258,8 @@ const stageTensor = document.getElementById("stageTensor");
 const stageCudaShort = document.getElementById("stageCudaShort");
 const stageCudaText = document.getElementById("stageCudaText");
 const stageCode = document.getElementById("stageCode");
+const stageCodeModeButton = document.getElementById("stageCodeMode");
+const stageCodeSource = document.getElementById("stageCodeSource");
 const stagePrev = document.getElementById("stagePrev");
 const stageNext = document.getElementById("stageNext");
 const stageReturnTop = document.getElementById("stageReturnTop");
@@ -443,6 +463,236 @@ return {
   }
 ];
 
+const fullColabStageCode = {
+  "01": `# Colab notebook: CUDA runtime and project payload setup
+from pathlib import Path
+import sys, zipfile
+import torch
+
+WORK = Path("/content/ai_mips_bee_identity")
+WORK.mkdir(parents=True, exist_ok=True)
+
+print("torch:", torch.__version__)
+print("cuda:", torch.cuda.is_available())
+if torch.cuda.is_available():
+    print(torch.cuda.get_device_name(0))
+
+from google.colab import files
+payload_name = "colab_cuda_payload.zip"
+payload_path = Path("/content") / payload_name
+
+if not payload_path.exists() and not (WORK / "colab_ai_mips_bee_world.py").exists():
+    uploaded = files.upload()
+    for name, data in uploaded.items():
+        if name.lower().endswith(".zip"):
+            payload_path = Path("/content") / name
+            payload_path.write_bytes(data)
+            break
+
+if payload_path.exists():
+    with zipfile.ZipFile(payload_path) as z:
+        z.extractall(WORK)
+
+sys.path.insert(0, str(WORK))`,
+  "02": `# colab_ai_mips_bee_world.py: image crop/resize/normalization path
+def _preprocess_pil(self, img: Image.Image, device: str):
+    torch, _, _ = self._ensure_torch()
+    img = img.convert("RGB")
+    src_w, src_h = img.size
+    target_w, target_h = 47, 55
+    scale = min(target_w / src_w, target_h / src_h)
+    resized_w = max(1, int(src_w * scale))
+    resized_h = max(1, int(src_h * scale))
+    resized = img.resize((resized_w, resized_h), Image.BILINEAR)
+    canvas = Image.new("RGB", (target_w, target_h), (0, 0, 0))
+    pad_x = (target_w - resized_w) // 2
+    pad_y = (target_h - resized_h) // 2
+    canvas.paste(resized, (pad_x, pad_y))
+    arr = np.asarray(canvas, dtype=np.float32) / 255.0
+    arr = arr[..., ::-1].copy()
+    arr = np.transpose(arr, (2, 0, 1))
+    return torch.from_numpy(arr).to(device, non_blocking=True)
+
+def _variants(self, path: str | Path) -> list[tuple[str, Image.Image]]:
+    img = Image.open(path).convert("RGB")
+    variants = [("full", img)]
+    w, h = img.size
+    for ratio in (0.86, 0.74, 0.62, 0.50, 0.40):
+        side = int(min(w, h) * ratio)
+        if side < 60:
+            continue
+        left = (w - side) // 2
+        top = (h - side) // 2
+        variants.append((f"center_{int(ratio * 100)}", img.crop((left, top, left + side, top + side))))
+    return variants`,
+  "03": `# colab_ai_mips_bee_world.py: DeepID forward pass executed on CUDA when device == "cuda"
+def _device_name(self, mode: str) -> str:
+    torch, _, _ = self._ensure_torch()
+    if mode.lower() in ("gpu", "cuda") and torch.cuda.is_available():
+        return "cuda"
+    if mode.lower() in ("cpu",):
+        return "cpu"
+    return "cuda" if torch.cuda.is_available() else "cpu"
+
+class DeepIDTorch(nn.Module):
+    def forward(self, x):
+        x = F.relu(F.conv2d(x, self.conv1_w, self.conv1_b))
+        x = F.max_pool2d(x, 2, 2)
+        x = F.relu(F.conv2d(x, self.conv2_w, self.conv2_b))
+        x = F.max_pool2d(x, 2, 2)
+        x = F.relu(F.conv2d(x, self.conv3_w, self.conv3_b))
+        pool3 = F.max_pool2d(x, 2, 2)
+        fc11 = pool3.flatten(1) @ self.fc11_w + self.fc11_b
+        conv4 = F.relu(F.conv2d(pool3, self.conv4_w, self.conv4_b))
+        fc12 = conv4.flatten(1) @ self.fc12_w + self.fc12_b
+        emb = F.relu(fc11 + fc12)
+        return F.normalize(emb, p=2, dim=1)
+
+def _embed_variants(self, variants, mode: str):
+    model, device = self._model(mode)
+    tensors = [self._preprocess_pil(img, device) for _, img in variants]
+    x = torch.stack(tensors, dim=0)
+    with torch.inference_mode():
+        emb = model(x).detach()
+    return emb, device`,
+  "04": `# colab_ai_mips_bee_world.py: reference bank and cosine comparison
+def load_references(self, mode: str = "auto") -> None:
+    torch, _, _ = self._ensure_torch()
+    model, device = self._model(mode)
+    if device in self.ref_emb:
+        return
+    if not self.ref_items:
+        items = []
+        for label in self.identities:
+            folders = [
+                self.work_dir / "identity_references" / label,
+                self.work_dir / "Face_detector" / "references" / label,
+            ]
+            seen_paths = set()
+            for folder in folders:
+                for path in _image_paths(folder):
+                    key = str(path.resolve())
+                    if key in seen_paths:
+                        continue
+                    seen_paths.add(key)
+                    items.append((label, path))
+        if not items:
+            raise FileNotFoundError("No identity references found")
+        self.ref_items = items
+    tensors = []
+    for _label, path in self.ref_items:
+        tensors.append(self._preprocess_pil(Image.open(path), device))
+    x = torch.stack(tensors, dim=0)
+    with torch.inference_mode():
+        emb = model(x).detach()
+    if device == "cuda":
+        torch.cuda.synchronize()
+    self.ref_emb[device] = emb
+
+def detect_image(self, image_path: str | Path, mode: str = "gpu", scene_hint: str | None = None) -> dict[str, Any]:
+    torch, _, _ = self._ensure_torch()
+    variants = self._variants(image_path)
+    start = time.perf_counter()
+    emb, device = self._embed_variants(variants, mode)
+    sims = emb @ self.ref_emb[device].T
+    if device == "cuda":
+        torch.cuda.synchronize()
+    elapsed_ms = (time.perf_counter() - start) * 1000.0
+    return self._decide(variants, sims, device, image_path, elapsed_ms, scene_hint)`,
+  "05": `# colab_ai_mips_bee_world.py: score, margin and identity decision
+def _decide(self, variants, sims, device: str, image_path: str | Path, elapsed_ms: float, scene_hint: str | None):
+    attempts = []
+    row_np = sims.detach().cpu().numpy()
+    for row_index, (variant_name, _img) in enumerate(variants):
+        row = row_np[row_index]
+        best_by_label: dict[str, dict[str, Any]] = {}
+        for ref_index, score in enumerate(row):
+            label, ref_path = self.ref_items[ref_index]
+            score = float(score)
+            if score > best_by_label.get(label, {}).get("score", -1.0):
+                best_by_label[label] = {
+                    "label": label,
+                    "score": score,
+                    "variant": variant_name,
+                    "matched_reference": str(ref_path),
+                }
+        attempts.extend(best_by_label.values())
+    best_by_label: dict[str, dict[str, Any]] = {}
+    for attempt in attempts:
+        label = attempt["label"]
+        if attempt["score"] > best_by_label.get(label, {}).get("score", -1.0):
+            best_by_label[label] = attempt
+    ranked = sorted(best_by_label.values(), key=lambda item: item["score"], reverse=True)
+    if not ranked:
+        return {
+            "accepted": False,
+            "identity": "Unknown",
+            "best_label": "Unknown",
+            "elapsed_ms": elapsed_ms,
+            "image": str(image_path),
+            "device": device,
+        }
+    best = dict(ranked[0])
+    runner = ranked[1] if len(ranked) > 1 else {"label": "Unknown", "score": -1.0}
+    source = "deepid"
+    if scene_hint in best_by_label:
+        hint = best_by_label[str(scene_hint)]
+        if hint["score"] >= self.min_score and (best["label"] == scene_hint or best["score"] - hint["score"] <= 0.06):
+            best = dict(hint)
+            source = "scene_hint_tiebreak"
+            runner = next((r for r in ranked if r["label"] != best["label"]), runner)
+    margin = float(best["score"]) - float(runner.get("score", -1.0))
+    accepted = float(best["score"]) >= self.min_score and (margin >= self.min_margin or source == "scene_hint_tiebreak")
+    return {
+        "accepted": bool(accepted),
+        "identity": best["label"] if accepted else "Unknown",
+        "best_label": best["label"],
+        "best_score": round(float(best["score"]), 6),
+        "runner_up_label": runner.get("label", "Unknown"),
+        "runner_up_score": round(float(runner.get("score", -1.0)), 6),
+        "margin": round(margin, 6),
+        "best_variant": best.get("variant", "none"),
+        "matched_reference": best.get("matched_reference", ""),
+        "elapsed_ms": float(elapsed_ms),
+        "image": str(image_path),
+        "device": device,
+        "source": source,
+    }`,
+  "06": `# colab_public_one_image_site.ipynb / colab_http_detector_service.py: public detector API
+def detect_file_ui(file_obj, mode, min_score, min_margin):
+    mode = (mode or "GPU").lower()
+    with _DETECTOR_UI_LOCK:
+        old_min_score, old_min_margin = detector.min_score, detector.min_margin
+        detector.min_score = float(min_score)
+        detector.min_margin = float(min_margin)
+        try:
+            detector.load_references(mode)
+            payload = detector.detect_image(file_obj.name, mode=mode, processor="P0")
+        finally:
+            detector.min_score, detector.min_margin = old_min_score, old_min_margin
+    summary = f"{payload['identity']} | {payload['backend']} | {payload['elapsed_ms']} ms"
+    return summary, payload
+
+@app.post("/api/detect")
+async def api_detect(file: UploadFile = File(...), mode: str = Form("gpu"), min_score: float = Form(0.89), min_margin: float = Form(0.02)):
+    suffix = Path(file.filename or "image.png").suffix or ".png"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(await file.read())
+        tmp_path = tmp.name
+    try:
+        detector.min_score = float(min_score)
+        detector.min_margin = float(min_margin)
+        detector.load_references(mode)
+        payload = detector.detect_image(tmp_path, mode=mode, processor="P0")
+        return JSONResponse(payload)
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)`
+};
+
+stageDetails.forEach((stage) => {
+  stage.fullCode = fullColabStageCode[stage.level] || stage.code;
+});
+
 const stageDiagramNotes = [
   {
     en: [
@@ -582,6 +832,7 @@ const stageDiagramNotes = [
 ];
 
 let currentStageIndex = -1;
+let stageCodeMode = "short";
 
 
 function setLanguage(lang) {
@@ -897,19 +1148,123 @@ const codeLineAnnotations = {
   }
 };
 
+const colabCodePatternAnnotations = [
+  [/^# /, {
+    en: "Comment from the real Colab detector code block: it names the stage or source file.",
+    ru: "Комментарий из реального блока Colab-детектора: он называет этап или исходный файл.",
+    he: "הערה מתוך קוד גלאי Colab האמיתי: היא מציינת את השלב או קובץ המקור."
+  }],
+  [/^from pathlib import Path/, {
+    en: "Imports Path so Colab can build reliable file paths for the detector payload.",
+    ru: "Подключает Path, чтобы Colab надёжно собирал пути к файлам детектора.",
+    he: "מייבא Path כדי ש-Colab יבנה נתיבי קבצים אמינים עבור חבילת הגלאי."
+  }],
+  [/^import sys, zipfile|^import torch|^from google\.colab import files/, {
+    en: "Imports the library used on this line: Python system tools, ZIP extraction, CUDA tensor runtime, or Colab upload.",
+    ru: "Подключает библиотеку этой строки: системные инструменты Python, распаковку ZIP, CUDA-тензоры или загрузку Colab.",
+    he: "מייבא את הספרייה של השורה: כלי מערכת של Python, חילוץ ZIP, זמן ריצה של CUDA tensors או העלאה ב-Colab."
+  }],
+  [/^WORK = |^WORK\.mkdir|^payload_name|^payload_path|^sys\.path\.insert/, {
+    en: "Sets the working folder or Python import path used by the Colab detector.",
+    ru: "Задаёт рабочую папку или путь импорта Python, который использует Colab-детектор.",
+    he: "קובע את תיקיית העבודה או נתיב הייבוא של Python שבו משתמש גלאי Colab."
+  }],
+  [/torch\.cuda\.is_available|torch\.cuda\.get_device_name|return "cuda"|device == "cuda"|torch\.cuda\.synchronize/, {
+    en: "This is the CUDA control point: it checks, selects, or synchronizes GPU execution.",
+    ru: "Это точка управления CUDA: проверка, выбор или синхронизация выполнения на GPU.",
+    he: "זו נקודת הבקרה של CUDA: בדיקה, בחירה או סנכרון של הרצה על GPU."
+  }],
+  [/files\.upload|zipfile\.ZipFile|extractall|write_bytes/, {
+    en: "Loads or extracts the project payload that contains the same detector code and reference data.",
+    ru: "Загружает или распаковывает payload проекта с тем же кодом детектора и эталонными данными.",
+    he: "טוען או מחלץ את חבילת הפרויקט שמכילה את אותו קוד גלאי ונתוני ייחוס."
+  }],
+  [/def _preprocess_pil|img\.convert|img\.resize|Image\.new|canvas\.paste|np\.asarray|np\.transpose|torch\.from_numpy/, {
+    en: "Preprocessing line: it converts the image into the fixed tensor format passed to CUDA/PyTorch.",
+    ru: "Строка preprocessing: превращает картинку в фиксированный тензор, который передаётся в CUDA/PyTorch.",
+    he: "שורת עיבוד מקדים: ממירה את התמונה לטנזור קבוע שנשלח אל CUDA/PyTorch."
+  }],
+  [/def _variants|Image\.open|variants =|for ratio|img\.crop|variants\.append/, {
+    en: "Creates recognition variants so the detector can try the full image and several center crops.",
+    ru: "Создаёт варианты распознавания: полную картинку и несколько центральных обрезок.",
+    he: "יוצר וריאציות זיהוי: תמונה מלאה וכמה חיתוכים מרכזיים."
+  }],
+  [/class DeepIDTorch|def forward|F\.conv2d|F\.max_pool2d|flatten\(1\) @|F\.normalize|F\.relu/, {
+    en: "Neural-network forward line: PyTorch dispatches this operation to CUDA when tensors are on the GPU.",
+    ru: "Строка прямого прохода нейросети: PyTorch отправляет эту операцию в CUDA, если тензоры на GPU.",
+    he: "שורת מעבר קדמי של הרשת: PyTorch שולח את הפעולה ל-CUDA כאשר הטנזורים על ה-GPU."
+  }],
+  [/def _embed_variants|torch\.stack|with torch\.inference_mode|model\(x\)\.detach/, {
+    en: "Builds a batch tensor and runs inference without training gradients.",
+    ru: "Собирает batch-тензор и запускает inference без обучающих градиентов.",
+    he: "בונה טנזור אצווה ומריץ inference ללא גרדיאנטים של אימון."
+  }],
+  [/def load_references|self\.ref_emb|self\.ref_labels|for label|for path|items\.append|labels\.append/, {
+    en: "Reference-bank line: it loads known people and stores their embeddings for comparison.",
+    ru: "Строка банка эталонов: загружает известных людей и хранит их embeddings для сравнения.",
+    he: "שורת מאגר ייחוס: טוענת אנשים מוכרים ושומרת embeddings להשוואה."
+  }],
+  [/def detect_image|self\._variants|time\.perf_counter|self\._embed_variants|sims = emb @|self\._decide/, {
+    en: "Main detection flow: variants become embeddings, then matrix multiplication produces similarity scores.",
+    ru: "Основной поток детектора: варианты становятся embeddings, затем матричное умножение даёт similarity scores.",
+    he: "זרימת הזיהוי הראשית: וריאציות הופכות ל-embeddings ואז כפל מטריצות יוצר ציוני דמיון."
+  }],
+  [/def _decide|row_np|best_by_label|ranked|runner|margin|accepted|identity =|return \{/, {
+    en: "Decision line: it ranks labels, computes margin, and decides whether the identity is accepted.",
+    ru: "Строка решения: ранжирует имена, считает margin и решает, принимать ли identity.",
+    he: "שורת החלטה: מדרגת שמות, מחשבת margin ומחליטה אם לקבל את הזהות."
+  }],
+  [/def detect_file_ui|_DETECTOR_UI_LOCK|detector\.min_score|detector\.detect_image|JSONResponse|@app\.post|UploadFile|NamedTemporaryFile|unlink/, {
+    en: "Web API line: it receives an uploaded file, runs the detector, and returns JSON to the site.",
+    ru: "Строка Web API: принимает загруженный файл, запускает детектор и возвращает JSON сайту.",
+    he: "שורת Web API: מקבלת קובץ שהועלה, מריצה את הגלאי ומחזירה JSON לאתר."
+  }],
+  [/^\s*(if|for|with|try|finally|break|continue|return|else|elif)\b/, {
+    en: "Python control-flow line that chooses a branch, repeats work, protects cleanup, or returns a value.",
+    ru: "Строка управления Python: выбирает ветку, повторяет работу, защищает очистку или возвращает значение.",
+    he: "שורת בקרת זרימה ב-Python: בוחרת ענף, חוזרת על עבודה, מגנה על ניקוי או מחזירה ערך."
+  }],
+  [/./, {
+    en: "Project code line used by the connected Colab detector for this computation stage.",
+    ru: "Строка кода проекта, которую использует подключённый Colab-детектор на этом этапе вычислений.",
+    he: "שורת קוד של הפרויקט שבה משתמש גלאי Colab המחובר בשלב החישוב הזה."
+  }]
+];
+
+function patternCodeAnnotation(line) {
+  const lang = document.documentElement.lang || "en";
+  const trimmed = line.trim();
+  const found = colabCodePatternAnnotations.find(([pattern]) => pattern.test(trimmed));
+  return (found && (found[1][lang] || found[1].en)) || codeAnnotationFallback[lang] || codeAnnotationFallback.en;
+}
+
 function codeAnnotation(stage, line) {
   const lang = document.documentElement.lang || "en";
   const trimmed = line.trim();
   if (!trimmed) return codeBlankAnnotation[lang] || codeBlankAnnotation.en;
   const match = codeLineAnnotations[stage.level]?.[trimmed];
-  return (match && (match[lang] || match.en)) || codeAnnotationFallback[lang] || codeAnnotationFallback.en;
+  return (match && (match[lang] || match.en)) || patternCodeAnnotation(line);
+}
+
+function uiText(key) {
+  const lang = document.documentElement.lang || "en";
+  return detailUi[lang]?.[key] || translations[lang]?.[key] || detailUi.en[key] || translations.en[key] || key;
 }
 
 function renderStageCode(stage) {
   stageCode.innerHTML = "";
   const lang = document.documentElement.lang || "en";
+  const fullMode = stageCodeMode === "full" && stage.fullCode;
+  const source = fullMode ? stage.fullCode : stage.code;
   stageCode.setAttribute("dir", lang === "he" ? "rtl" : "ltr");
-  stage.code.split("\n").forEach((line, index) => {
+  stageCode.classList.toggle("full-code", Boolean(fullMode));
+  if (stageCodeModeButton) {
+    stageCodeModeButton.textContent = uiText(fullMode ? "showShortCode" : "openFullCode");
+  }
+  if (stageCodeSource) {
+    stageCodeSource.textContent = uiText(fullMode ? "codeSourceFull" : "codeSourceShort");
+  }
+  source.split("\n").forEach((line, index) => {
     const row = document.createElement("div");
     row.className = `code-line-note${line.trim() ? "" : " blank"}`;
     const code = document.createElement("code");
@@ -1096,6 +1451,10 @@ document.querySelectorAll(".pipeline-step").forEach((step) => {
 
 stagePrev.addEventListener("click", () => renderStageDetail(currentStageIndex - 1));
 stageNext.addEventListener("click", () => renderStageDetail(currentStageIndex + 1));
+stageCodeModeButton?.addEventListener("click", () => {
+  stageCodeMode = stageCodeMode === "full" ? "short" : "full";
+  if (currentStageIndex >= 0) renderStageDetail(currentStageIndex, false);
+});
 stageReturnTop.addEventListener("click", () => {
   hideStageDetail();
   document.getElementById("howItWorksTitle").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1110,8 +1469,31 @@ scoreInput.addEventListener("input", () => { scoreValue.textContent = Number(sco
 marginInput.addEventListener("input", () => { marginValue.textContent = Number(marginInput.value).toFixed(3).replace(/0$/, ""); });
 recognizeButton.addEventListener("click", recognizeSelectedFiles);
 
+function applyDeepLink() {
+  const params = new URLSearchParams(window.location.search);
+  const hash = window.location.hash.replace("#", "");
+  const requestedLang = params.get("lang");
+  if (requestedLang && translations[requestedLang]) {
+    setLanguage(requestedLang);
+  }
+  if (hash === "simple" || hash === "simple-demo" || params.get("view") === "simple") {
+    showView("simple");
+  }
+  if (hash === "complex" || params.get("view") === "complex") {
+    showView("complex");
+  }
+  const stage = params.get("stage");
+  if (stage !== null) {
+    const index = Math.max(0, Math.min(stageDetails.length - 1, Number(stage) || 0));
+    showView("simple");
+    stageCodeMode = params.get("code") === "full" ? "full" : "short";
+    renderStageDetail(index, false);
+  }
+}
+
 setLanguage("en");
 renderPreviews([]);
+applyDeepLink();
 
 const complexFrame = document.getElementById("complexFrame");
 if (complexFrame) {
