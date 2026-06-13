@@ -615,6 +615,313 @@ function localized(value) {
   return value[lang] || value.en || "";
 }
 
+const codeAnnotationFallback = {
+  en: "This line belongs to the CUDA/OpenCL detector pipeline for the selected stage.",
+  ru: "Эта строка относится к CUDA/OpenCL-цепочке детектора на выбранном этапе.",
+  he: "שורה זו שייכת לשרשרת CUDA/OpenCL של הגלאי בשלב הנבחר."
+};
+
+const codeBlankAnnotation = {
+  en: "Visual separator between logical parts of the stage.",
+  ru: "Визуальный разделитель между логическими частями этапа.",
+  he: "מפריד חזותי בין חלקים לוגיים של השלב."
+};
+
+const codeLineAnnotations = {
+  "01": {
+    "// CUDA commands used in this stage": {
+      en: "Introduces the CUDA memory commands used to prepare the image tensor for this first stage.",
+      ru: "Обозначает CUDA-команды памяти, которые подготавливают тензор изображения на первом этапе.",
+      he: "מציין את פקודות הזיכרון של CUDA שמכינות את טנזור התמונה בשלב הראשון."
+    },
+    "float input[55 * 47 * 3];": {
+      en: "Creates the host-side float tensor for one normalized face: 55 by 47 pixels and 3 RGB channels.",
+      ru: "Создает тензор float на стороне host для одного нормализованного лица: 55 на 47 пикселей и 3 RGB-канала.",
+      he: "יוצר טנזור float בצד ה-host עבור פנים מנורמלות אחת: 55 על 47 פיקסלים ו-3 ערוצי RGB."
+    },
+    "cudaMalloc(&d_input, 55 * 47 * 3 * sizeof(float));": {
+      en: "Allocates GPU memory for exactly the same input tensor before the neural forward pass starts.",
+      ru: "Выделяет память GPU под такой же входной тензор перед началом прямого прохода нейросети.",
+      he: "מקצה זיכרון GPU לאותו טנזור קלט לפני תחילת המעבר הקדמי של הרשת."
+    },
+    "cudaMemcpy(d_input, input, bytes, cudaMemcpyHostToDevice);": {
+      en: "Copies the prepared face tensor from CPU/host memory into the CUDA device buffer.",
+      ru: "Копирует подготовленный тензор лица из памяти CPU/host в буфер CUDA-устройства.",
+      he: "מעתיק את טנזור הפנים המוכן מזיכרון CPU/host אל באפר התקן CUDA."
+    },
+    "// Project meaning:": {
+      en: "Starts a short project-specific note, not an executable CUDA command.",
+      ru: "Начинает короткое пояснение по проекту; это не исполняемая CUDA-команда.",
+      he: "פותח הערה קצרה על הפרויקט; זו אינה פקודת CUDA שמורצת."
+    },
+    "// the image is only prepared here; the neural kernels start after this buffer exists.": {
+      en: "Explains that this stage only prepares input; convolution and dense kernels run after the buffer is ready.",
+      ru: "Объясняет, что этот этап только готовит вход; convolution и dense kernels запускаются после готовности буфера.",
+      he: "מסביר שהשלב רק מכין קלט; קרנלי convolution ו-dense רצים לאחר שהבאפר מוכן."
+    }
+  },
+  "02": {
+    "// CUDA commands used in this stage": {
+      en: "Introduces the CUDA-side commands related to crop, resize and normalization.",
+      ru: "Обозначает CUDA-команды, связанные с обрезкой, resize и нормализацией.",
+      he: "מציין את פקודות CUDA הקשורות לחיתוך, שינוי גודל ונרמול."
+    },
+    "normalize_rgb(face_crop, input_55x47x3);  // host preprocessing": {
+      en: "Normalizes the cropped face on the host so all pixels enter the network in the expected numeric range.",
+      ru: "Нормализует вырезанное лицо на host, чтобы пиксели попали в сеть в ожидаемом числовом диапазоне.",
+      he: "מנרמל את חיתוך הפנים בצד host כך שכל הפיקסלים ייכנסו לרשת בטווח המספרי הצפוי."
+    },
+    "cudaMemcpy(d_input, input_55x47x3, bytes, cudaMemcpyHostToDevice);": {
+      en: "Uploads the final 55x47x3 tensor to GPU memory after crop, resize and normalization.",
+      ru: "Загружает итоговый тензор 55x47x3 в память GPU после обрезки, resize и нормализации.",
+      he: "מעלה את הטנזור הסופי 55x47x3 לזיכרון GPU אחרי חיתוך, שינוי גודל ונרמול."
+    },
+    "// Optional CUDA form for this same step:": {
+      en: "Shows how the same preprocessing could be moved from host code into a CUDA kernel.",
+      ru: "Показывает, как тот же preprocessing можно перенести из host-кода в CUDA kernel.",
+      he: "מציג איך אפשר להעביר אותו עיבוד מקדים מקוד host אל קרנל CUDA."
+    },
+    "normalize_resize_kernel<<<grid2d, block2d>>>(d_raw, d_input);": {
+      en: "Runs one CUDA preprocessing kernel over the image grid to resize and normalize pixels in parallel.",
+      ru: "Запускает CUDA-kernel preprocessing по сетке изображения, чтобы параллельно resize и нормализовать пиксели.",
+      he: "מריץ קרנל CUDA לעיבוד מקדים על גריד התמונה כדי לשנות גודל ולנרמל פיקסלים במקביל."
+    },
+    "cudaDeviceSynchronize();": {
+      en: "Waits until all GPU work in this stage is complete before the next detector stage reads the buffer.",
+      ru: "Ждет завершения всей GPU-работы этого этапа перед тем, как следующий этап детектора читает буфер.",
+      he: "ממתין עד שכל עבודת ה-GPU בשלב הזה הסתיימה לפני שהשלב הבא קורא את הבאפר."
+    }
+  },
+  "03": {
+    "// CUDA kernels used in the DeepID forward stage": {
+      en: "Introduces the CUDA kernel sequence that performs the DeepID neural forward pass.",
+      ru: "Обозначает последовательность CUDA kernels для прямого прохода нейросети DeepID.",
+      he: "מציין את רצף קרנלי CUDA שמבצע את המעבר הקדמי של רשת DeepID."
+    },
+    "conv_relu<<<gridConv1, block>>>(d_input, d_w1, d_b1, d_conv1);": {
+      en: "Launches the first convolution plus ReLU kernel: threads scan the input face and produce Conv1 feature maps.",
+      ru: "Запускает первый convolution + ReLU kernel: потоки сканируют вход лица и создают карты признаков Conv1.",
+      he: "מריץ את קרנל convolution+ReLU הראשון: תהליכונים סורקים את קלט הפנים ומפיקים מפות Conv1."
+    },
+    "max_pool_2x2<<<gridPool1, block>>>(d_conv1, d_pool1);": {
+      en: "Downsamples Conv1 features with 2x2 max pooling so the next layer works on a smaller tensor.",
+      ru: "Уменьшает карты Conv1 через 2x2 max pooling, чтобы следующий слой работал с меньшим тензором.",
+      he: "מקטין את תכונות Conv1 בעזרת 2x2 max pooling כדי שהשכבה הבאה תעבוד על טנזור קטן יותר."
+    },
+    "conv_relu<<<gridConv2, block>>>(d_pool1, d_w2, d_b2, d_conv2);": {
+      en: "Runs the second convolution/ReLU layer over pooled Conv1 features to build stronger face patterns.",
+      ru: "Выполняет второй convolution/ReLU слой по pooled Conv1, чтобы собрать более сильные признаки лица.",
+      he: "מריץ שכבת convolution/ReLU שנייה מעל Conv1 אחרי pooling כדי לבנות דפוסי פנים חזקים יותר."
+    },
+    "max_pool_2x2<<<gridPool2, block>>>(d_conv2, d_pool2);": {
+      en: "Compresses Conv2 feature maps while keeping the strongest local activations.",
+      ru: "Сжимает карты признаков Conv2, сохраняя самые сильные локальные активации.",
+      he: "דוחס את מפות Conv2 תוך שמירה על האקטיבציות המקומיות החזקות ביותר."
+    },
+    "conv_relu<<<gridConv3, block>>>(d_pool2, d_w3, d_b3, d_conv3);": {
+      en: "Runs the third convolution/ReLU layer, producing higher-level facial features.",
+      ru: "Запускает третий convolution/ReLU слой, который формирует признаки лица более высокого уровня.",
+      he: "מריץ שכבת convolution/ReLU שלישית שמפיקה מאפייני פנים ברמה גבוהה יותר."
+    },
+    "max_pool_2x2<<<gridPool3, block>>>(d_conv3, d_pool3);": {
+      en: "Reduces Conv3 spatial size before dense layers, lowering the number of following operations.",
+      ru: "Уменьшает пространственный размер Conv3 перед dense layers, снижая число следующих операций.",
+      he: "מקטין את הגודל המרחבי של Conv3 לפני שכבות dense ומפחית את כמות הפעולות הבאות."
+    },
+    "dense<<<gridDense, block>>>(d_pool3, d_fc11_w, d_fc11_b, d_fc11);": {
+      en: "Computes the FC11 dense projection from pooled features; each output neuron can be parallelized.",
+      ru: "Считает dense-проекцию FC11 из pooled-признаков; каждый выходной нейрон можно параллелить.",
+      he: "מחשב את ההטלה הצפופה FC11 מהמאפיינים אחרי pooling; כל נוירון פלט ניתן למקבול."
+    },
+    "conv_relu<<<gridConv4, block>>>(d_conv3, d_w4, d_b4, d_conv4);": {
+      en: "Runs the side Conv4 branch from Conv3, matching the DeepID-style two-branch feature path.",
+      ru: "Запускает боковую ветку Conv4 от Conv3, как в DeepID-подобном двухветочном пути признаков.",
+      he: "מריץ ענף צדדי Conv4 מתוך Conv3, בהתאם למסלול מאפיינים דו-ענפי בסגנון DeepID."
+    },
+    "dense<<<gridDense, block>>>(d_conv4, d_fc12_w, d_fc12_b, d_fc12);": {
+      en: "Projects the Conv4 branch through FC12 so it can be combined with FC11.",
+      ru: "Проецирует ветку Conv4 через FC12, чтобы затем объединить ее с FC11.",
+      he: "מקרין את ענף Conv4 דרך FC12 כדי שאפשר יהיה לשלב אותו עם FC11."
+    },
+    "add_relu_l2<<<1, 256>>>(d_fc11, d_fc12, d_embedding160);": {
+      en: "Adds FC11 and FC12, applies ReLU, then L2-normalizes the final 160D face embedding.",
+      ru: "Складывает FC11 и FC12, применяет ReLU и L2-нормализует финальный 160D embedding лица.",
+      he: "מחבר FC11 ו-FC12, מפעיל ReLU ואז מנרמל L2 את embedding הפנים הסופי בגודל 160D."
+    },
+    "cudaDeviceSynchronize();": {
+      en: "Stops the host from reading the embedding until all neural CUDA kernels finish.",
+      ru: "Не дает host читать embedding, пока все нейросетевые CUDA kernels не завершились.",
+      he: "מונע מה-host לקרוא את ה-embedding עד שכל קרנלי CUDA של הרשת הסתיימו."
+    },
+    "__global__ void conv_relu(...) {": {
+      en: "Sketches the CUDA kernel body used for convolution plus activation.",
+      ru: "Показывает набросок тела CUDA-kernel для convolution плюс activation.",
+      he: "מציג שלד של גוף קרנל CUDA עבור convolution ואקטיבציה."
+    },
+    "int out = blockIdx.x * blockDim.x + threadIdx.x;": {
+      en: "Computes the global output index handled by the current CUDA thread.",
+      ru: "Вычисляет глобальный индекс выхода, который обрабатывает текущий CUDA-поток.",
+      he: "מחשב את אינדקס הפלט הגלובלי שבו מטפל תהליכון CUDA הנוכחי."
+    },
+    "// one thread accumulates one output pixel/channel": {
+      en: "Explains the parallel mapping: one thread accumulates one output activation for a pixel/channel.",
+      ru: "Объясняет параллельную раскладку: один поток накапливает одну выходную активацию пикселя/канала.",
+      he: "מסביר את המיפוי המקבילי: תהליכון אחד צובר אקטיבציית פלט אחת לפיקסל/ערוץ."
+    },
+    "}": {
+      en: "Closes the CUDA kernel sketch.",
+      ru: "Закрывает набросок CUDA-kernel.",
+      he: "סוגר את שלד קרנל CUDA."
+    },
+    "__global__ void dense(...) { /* one thread per output neuron */ }": {
+      en: "Sketches the dense-layer kernel where each CUDA thread computes one output neuron.",
+      ru: "Показывает dense-layer kernel, где каждый CUDA-поток считает один выходной нейрон.",
+      he: "מציג קרנל שכבה צפופה שבו כל תהליכון CUDA מחשב נוירון פלט אחד."
+    }
+  },
+  "04": {
+    "// CUDA commands used in the reference comparison stage": {
+      en: "Introduces the CUDA commands that compare the new embedding against the reference bank.",
+      ru: "Обозначает CUDA-команды, которые сравнивают новый embedding с банком эталонов.",
+      he: "מציין את פקודות CUDA שמשוות את ה-embedding החדש מול מאגר הייחוס."
+    },
+    "cosine_scores<<<referenceCount, 256>>>(d_embedding160, d_refs, d_scores);": {
+      en: "Launches one block per saved reference identity to compute cosine similarity against the new embedding.",
+      ru: "Запускает один block на каждый сохраненный эталон, чтобы посчитать cosine similarity с новым embedding.",
+      he: "מריץ בלוק אחד לכל זהות ייחוס שמורה כדי לחשב cosine similarity מול ה-embedding החדש."
+    },
+    "top2_reduce<<<1, 256>>>(d_scores, d_best, d_runner_up);": {
+      en: "Reduces all similarity scores to the best match and the runner-up match for margin checking.",
+      ru: "Сворачивает все similarity scores в лучший результат и второй результат для проверки margin.",
+      he: "מצמצם את כל ציוני similarity לתוצאה הטובה ביותר ולמקום השני לצורך בדיקת margin."
+    },
+    "cudaMemcpy(&best, d_best, sizeof(Result), cudaMemcpyDeviceToHost);": {
+      en: "Copies the best identity result from GPU memory back to host code.",
+      ru: "Копирует лучший результат идентичности из памяти GPU обратно в host-код.",
+      he: "מעתיק את תוצאת הזהות הטובה ביותר מזיכרון GPU חזרה לקוד host."
+    },
+    "__global__ void cosine_scores(...) {": {
+      en: "Begins the CUDA kernel that scores one reference vector per block.",
+      ru: "Начинает CUDA-kernel, который считает оценку одного эталонного вектора на block.",
+      he: "פותח קרנל CUDA שמחשב ציון של וקטור ייחוס אחד לכל בלוק."
+    },
+    "int ref = blockIdx.x;": {
+      en: "Maps the current CUDA block to one reference identity in the reference bank.",
+      ru: "Связывает текущий CUDA-block с одним эталоном из банка reference.",
+      he: "ממפה את בלוק CUDA הנוכחי לזהות ייחוס אחת במאגר."
+    },
+    "float partial = query[threadIdx.x] * refs[ref][threadIdx.x];": {
+      en: "Each thread multiplies one embedding component by the matching component of the selected reference.",
+      ru: "Каждый поток умножает одну компоненту embedding на соответствующую компоненту выбранного эталона.",
+      he: "כל תהליכון מכפיל רכיב embedding אחד ברכיב המתאים של הייחוס שנבחר."
+    },
+    "// reduce 160 products to one score": {
+      en: "The block reduction sums 160 partial products into one cosine similarity score.",
+      ru: "Block reduction суммирует 160 частичных произведений в один cosine similarity score.",
+      he: "צמצום הבלוק מסכם 160 מכפלות חלקיות לציון cosine similarity אחד."
+    },
+    "}": {
+      en: "Closes the reference-comparison CUDA kernel sketch.",
+      ru: "Закрывает набросок CUDA-kernel сравнения с эталонами.",
+      he: "סוגר את שלד קרנל CUDA להשוואה מול ייחוסים."
+    }
+  },
+  "05": {
+    "// CUDA command if the decision is kept on GPU": {
+      en: "Introduces the optional CUDA version of the final threshold decision.",
+      ru: "Обозначает опциональную CUDA-версию финального решения по порогам.",
+      he: "מציין את גרסת CUDA האופציונלית של החלטת הספים הסופית."
+    },
+    "decision_kernel<<<1, 1>>>(d_best, min_score, min_margin, d_accepted);": {
+      en: "Optionally runs the final accept/reject rule on GPU using the best score and margin thresholds.",
+      ru: "Опционально запускает финальное правило accept/reject на GPU по best score и margin thresholds.",
+      he: "אופציונלית מריץ את כלל הקבלה/דחייה הסופי על GPU לפי best score וספי margin."
+    },
+    "cudaMemcpy(&accepted, d_accepted, sizeof(bool), cudaMemcpyDeviceToHost);": {
+      en: "Copies the boolean decision flag from GPU memory back to the host response builder.",
+      ru: "Копирует булевый флаг решения из памяти GPU обратно в сборщик ответа на host.",
+      he: "מעתיק את דגל ההחלטה הבוליאני מזיכרון GPU אל בניית התשובה ב-host."
+    },
+    "// Same project rule when executed on host:": {
+      en: "Shows the exact same project rule when the threshold decision is performed on CPU/host.",
+      ru: "Показывает то же самое правило проекта, когда решение по порогам выполняется на CPU/host.",
+      he: "מציג את אותו כלל פרויקט כאשר החלטת הספים מתבצעת על CPU/host."
+    },
+    "accepted = best_score >= min_score &&": {
+      en: "The identity is accepted only if the best similarity score reaches the configured minimum.",
+      ru: "Имя принимается только если лучший similarity score достигает настроенного минимума.",
+      he: "הזהות מתקבלת רק אם ציון similarity הטוב ביותר מגיע למינימום שהוגדר."
+    },
+    "(best_score - runner_up_score) >= min_margin;": {
+      en: "The best match must also be separated from the second match by the required margin.",
+      ru: "Лучшее совпадение также должно быть отделено от второго результата нужным margin.",
+      he: "ההתאמה הטובה ביותר חייבת להיות מופרדת מהמקום השני לפי ה-margin הנדרש."
+    }
+  },
+  "06": {
+    "// CUDA/OpenCL numeric result is already back on host here": {
+      en: "Marks the point where GPU numeric work is finished and the host can package the result.",
+      ru: "Обозначает момент, где числовая работа GPU завершена и host может упаковать результат.",
+      he: "מסמן את הנקודה שבה העבודה המספרית של GPU הסתיימה וה-host יכול לארוז את התוצאה."
+    },
+    "cudaMemcpy(&host_result, d_result, sizeof(Result), cudaMemcpyDeviceToHost);": {
+      en: "Copies the final numeric detector result from GPU memory to host memory.",
+      ru: "Копирует финальный числовой результат детектора из памяти GPU в память host.",
+      he: "מעתיק את התוצאה המספרית הסופית של הגלאי מזיכרון GPU לזיכרון host."
+    },
+    "// Web/Colab response object used by the site": {
+      en: "Marks the object that the Colab service or local bridge returns to the web interface.",
+      ru: "Обозначает объект, который Colab-сервис или локальный bridge возвращает веб-интерфейсу.",
+      he: "מסמן את האובייקט ששירות Colab או הגשר המקומי מחזיר לממשק web."
+    },
+    "return {": {
+      en: "Starts the structured JSON-style response used by the simple demo and Hive interface.",
+      ru: "Начинает структурированный JSON-подобный ответ для простой демонстрации и Hive-интерфейса.",
+      he: "פותח תשובה מובנית בסגנון JSON עבור ההדגמה הפשוטה וממשק Hive."
+    },
+    "identity, best_score, runner_up, margin,": {
+      en: "Returns the recognized name and the scores needed to explain why it was accepted or rejected.",
+      ru: "Возвращает распознанное имя и scores, нужные для объяснения принятия или отклонения.",
+      he: "מחזיר את השם שזוהה ואת הציונים הדרושים כדי להסביר קבלה או דחייה."
+    },
+    "backend: mode, elapsed_ms, accepted": {
+      en: "Returns which backend ran, how long it took, and whether the result passed thresholds.",
+      ru: "Возвращает backend, время выполнения и флаг прохождения порогов.",
+      he: "מחזיר איזה backend רץ, כמה זמן זה לקח והאם התוצאה עברה את הספים."
+    },
+    "};": {
+      en: "Closes the response object that the browser displays as detector JSON.",
+      ru: "Закрывает объект ответа, который браузер показывает как Detector JSON.",
+      he: "סוגר את אובייקט התשובה שהדפדפן מציג כ-Detector JSON."
+    }
+  }
+};
+
+function codeAnnotation(stage, line) {
+  const lang = document.documentElement.lang || "en";
+  const trimmed = line.trim();
+  if (!trimmed) return codeBlankAnnotation[lang] || codeBlankAnnotation.en;
+  const match = codeLineAnnotations[stage.level]?.[trimmed];
+  return (match && (match[lang] || match.en)) || codeAnnotationFallback[lang] || codeAnnotationFallback.en;
+}
+
+function renderStageCode(stage) {
+  stageCode.innerHTML = "";
+  const lang = document.documentElement.lang || "en";
+  stageCode.setAttribute("dir", lang === "he" ? "rtl" : "ltr");
+  stage.code.split("\n").forEach((line, index) => {
+    const row = document.createElement("div");
+    row.className = `code-line-note${line.trim() ? "" : " blank"}`;
+    const code = document.createElement("code");
+    code.textContent = line || " ";
+    const note = document.createElement("span");
+    note.className = "code-note";
+    note.textContent = codeAnnotation(stage, line);
+    row.append(code, note);
+    stageCode.appendChild(row);
+  });
+}
+
 function buildStageDiagram(labels, notes) {
   stageDiagram.innerHTML = "";
   labels.forEach((label, index) => {
@@ -647,7 +954,7 @@ function renderStageDetail(index, shouldScroll = true) {
   stageTensor.textContent = data.tensor;
   stageCudaShort.textContent = localized(data.cudaShort);
   stageCudaText.textContent = localized(data.cuda);
-  stageCode.textContent = data.code;
+  renderStageCode(data);
   buildStageDiagram(localized(data.diagram), localized(stageDiagramNotes[currentStageIndex]));
   stageDetail.classList.remove("hidden");
   document.querySelectorAll(".pipeline-step").forEach((step) => {

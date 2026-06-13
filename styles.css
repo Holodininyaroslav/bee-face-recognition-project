@@ -463,6 +463,53 @@ button:disabled { opacity: .65; cursor: wait; }
   margin-top: 12px;
   border: 1px solid var(--line);
   background: #050912;
+  padding: 0;
+  white-space: normal;
+  overflow: auto;
+}
+
+.code-line-note {
+  display: grid;
+  grid-template-columns: minmax(360px, 1.05fr) minmax(280px, .95fr);
+  gap: 14px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(64, 80, 109, .55);
+}
+
+.code-line-note:last-child {
+  border-bottom: 0;
+}
+
+.code-line-note.blank {
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, .025);
+}
+
+.code-line-note code {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: #eef5ff;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.code-note {
+  display: block;
+  color: var(--muted);
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  border-left: 3px solid var(--cyan);
+  padding-left: 10px;
+}
+
+html[dir="rtl"] .code-note {
+  border-left: 0;
+  border-right: 3px solid var(--cyan);
+  padding-left: 0;
+  padding-right: 10px;
 }
 
 .stage-nav {
