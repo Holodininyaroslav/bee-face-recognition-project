@@ -31,7 +31,7 @@ Installers are published as GitHub Release assets because the Ursina package is 
 - BeeBoard interface installer:
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip
 - Physical simulation installer:
-  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip
+  https://holodininyaroslav.github.io/bee-face-recognition-project/physical_simulation_installer.zip
 
 ## Repository Layout
 

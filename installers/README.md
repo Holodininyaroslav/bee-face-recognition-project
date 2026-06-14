@@ -9,4 +9,4 @@ GitHub rejects ordinary git files above 100 MB, and the Ursina game installer is
 - `beeboard_interface_installer.zip`
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip
 - `physical_simulation_installer.zip`
-  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip
+  https://holodininyaroslav.github.io/bee-face-recognition-project/physical_simulation_installer.zip
