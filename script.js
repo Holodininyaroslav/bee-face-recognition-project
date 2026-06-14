@@ -6,6 +6,14 @@ const START_PARAMS = new URLSearchParams(window.location.search);
 const LOCAL_BRIDGE_TOKEN = START_PARAMS.get("local_token") || "";
 const LOCAL_BRIDGE_ALLOWED = START_PARAMS.get("local_bridge") === "1" && /^[A-Za-z0-9._~-]{24,}$/.test(LOCAL_BRIDGE_TOKEN);
 
+if (LOCAL_BRIDGE_ALLOWED && window.history && window.history.replaceState) {
+  const safeUrl = new URL(window.location.href);
+  safeUrl.searchParams.delete("local_token");
+  safeUrl.searchParams.set("local_bridge", "1");
+  safeUrl.searchParams.set("session", "local-approved");
+  window.history.replaceState(null, "", safeUrl.toString());
+}
+
 function withLocalToken(url) {
   if (!LOCAL_BRIDGE_ALLOWED) return url;
   const parsed = new URL(url, window.location.href);
