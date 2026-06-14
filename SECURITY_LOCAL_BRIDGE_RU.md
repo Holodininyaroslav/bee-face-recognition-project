@@ -1,20 +1,27 @@
 # Безопасный локальный bridge
 
-Публичный GitHub Pages сайт не должен сам управлять программами на компьютере. Поэтому локальные действия включаются только вручную и только на одну рабочую сессию.
+Публичный GitHub Pages сайт не должен сам управлять программами на компьютере. Поэтому локальные действия включаются только вручную, только на одну рабочую сессию и только через приватный токен.
 
 ## Что заблокировано по умолчанию
 
-- Запуск локального распознавания лиц с сайта.
-- Открытие или запуск BeeBoard.
-- Открытие локальной Ursina/3D симуляции.
-- Открытие физической симуляции крыльев.
-- Любой запуск локальной программы без приватного токена.
+Без приватного токена сайт не может:
+
+- запускать локальное распознавание лиц;
+- менять состояние Hive-интерфейса;
+- открывать или запускать BeeBoard;
+- открывать физическую симуляцию;
+- запускать локальную Ursina/3D симуляцию;
+- менять URL подключенного detector endpoint;
+- запускать локальные приложения через браузер.
+
+Если страница показывает `Local bridge disabled` или `Local bridge blocked`, это нормальная защита: сайт не получил явного разрешения.
 
 ## Как включить только нужное действие
 
-Открой PowerShell в папке проекта и задай длинный приватный токен:
+Открой PowerShell в папке локального проекта и задай длинный случайный токен:
 
 ```powershell
+$env:BEE_LOCAL_SECURITY="strict"
 $env:BEE_LOCAL_BRIDGE_TOKEN="replace-with-a-long-private-random-token"
 $env:BEE_LOCAL_ALLOWED_ACTIONS="detect_face"
 python -m ai_mips_sim.server --host 127.0.0.1 --port 8876
@@ -26,33 +33,45 @@ python -m ai_mips_sim.server --host 127.0.0.1 --port 8876
 https://holodininyaroslav.github.io/bee-face-recognition-project/?local_bridge=1&local_token=replace-with-a-long-private-random-token
 ```
 
-## Разрешения
+## Доступные разрешения
 
 Разрешай только то, что нужно прямо сейчас:
 
-- `detect_face` - отправка изображения в локальный detector.
+- `detect_face` - отправить изображение в локальный detector.
+- `configure_detector` - изменить URL подключенного detector endpoint.
+- `control_hive` - менять состояние локального Hive: reset, run, step, processors, links, positions, program, matrix plan.
 - `open_beeboard` - открыть или запустить локальный BeeBoard.
+- `open_physical` - открыть локальную физическую bee-shell/FWMAV симуляцию.
 - `start_ursina` - запустить локальную Ursina/3D симуляцию.
-- `open_physical` - открыть локальную физическую симуляцию крыльев.
-- `start_hive` - запуск локального Hive Web из Colab/bridge скрипта.
+- `start_hive` - запустить локальный Hive Web из Colab/bridge скрипта, если используется соответствующий bridge.
 
 Можно указать несколько действий через запятую:
 
 ```powershell
-$env:BEE_LOCAL_ALLOWED_ACTIONS="detect_face,open_beeboard"
+$env:BEE_LOCAL_ALLOWED_ACTIONS="detect_face,control_hive,open_beeboard,open_physical"
 ```
 
 ## Правила безопасности
 
-- Не публикуй `BEE_LOCAL_BRIDGE_TOKEN` в GitHub, Colab, скриншотах или сообщениях.
-- Держи локальные серверы на `127.0.0.1`, не на `0.0.0.0`.
+- Не публикуй `BEE_LOCAL_BRIDGE_TOKEN` в GitHub, Colab, скриншотах, сообщениях или README.
+- Держи локальные серверы на `127.0.0.1`, а не на `0.0.0.0`.
 - Не добавляй чужие сайты в trusted origins.
-- После работы закрывай локальные Python-серверы.
-- После работы очищай переменные:
+- Не включай лишние действия в `BEE_LOCAL_ALLOWED_ACTIONS`.
+- После работы закрывай локальные Python-серверы или запускай новый токен для следующей сессии.
+- После работы очищай переменные окружения:
 
 ```powershell
 Remove-Item Env:BEE_LOCAL_BRIDGE_TOKEN -ErrorAction SilentlyContinue
 Remove-Item Env:BEE_LOCAL_ALLOWED_ACTIONS -ErrorAction SilentlyContinue
 ```
 
-Если страница показывает `Local bridge disabled` или `Local bridge blocked`, это нормальная защита: сайт не получил явного разрешения на локальное действие.
+## Текущая модель защиты
+
+Локальный сервер проверяет:
+
+- что запрос пришел с доверенного Origin;
+- что `local_token` совпадает с приватным токеном текущей сессии;
+- что действие входит в `BEE_LOCAL_ALLOWED_ACTIONS`;
+- что сервис слушает локальный loopback адрес.
+
+Публичная страница дополнительно удаляет `local_token` из видимой адресной строки после загрузки и использует `referrer=no-referrer`, чтобы токен случайно не уходил при переходе по ссылкам.
