@@ -44,6 +44,19 @@ flowchart LR
     I --> J["JSON result: label, scores, margin, backend, elapsed time"]
 ```
 
+## Distributed Bee Datacenter Concept
+
+The larger project idea treats the bee swarm as a distributed micro-datacenter. In this model, each bee is not only a visual object in the interface, but a small AI MIPS compute node with local state, messaging, control flow, and a limited compute budget.
+
+The face-recognition task is used as a practical workload for this swarm concept:
+
+- each bee can represent one AI MIPS processor/node;
+- the Hive interface shows node roles, links, bus events, detections, and processor state;
+- detector results can be routed back into the same Hive UI that represents the swarm;
+- the swarm is intended to model how many small compute agents could cooperate on a larger recognition workload.
+
+For the full conceptual face-recognition workload, the target scale is a swarm of about **1200 bees / AI MIPS nodes**. In the current repository this is presented as a project architecture target and simulation concept, not as a claim that the published GitHub Pages demo already runs 1200 physical or browser nodes at production speed.
+
 ## Face Recognition Pipeline
 
 The detector flow is intentionally exposed in the UI so the project can be reviewed as an engineering system, not only as a black-box demo.
@@ -112,18 +125,18 @@ It contains the Flappy/FWMAV inspector-based simulator with visible bee-shell ou
 
 ```text
 /
-├── index.html                         # GitHub Pages portal
-├── script.js                          # UI logic, translations, simple demo, local bridge hooks
-├── styles.css                         # Bee/Hive visual design
-├── source/
-│   └── colab_ai_mips_bee_world.py      # Published detector/Hive source excerpt
-├── colab/
-│   └── colab_public_one_image_site.ipynb
-├── backup/                            # Reserved backup/static placeholder area
-├── installers/
-│   └── README.md                       # Installer download notes
-├── SECURITY_LOCAL_BRIDGE_RU.md         # Local bridge safety notes in Russian
-└── physical_simulation_installer.zip   # Current physical bee-shell simulator package
+|-- index.html                         # GitHub Pages portal
+|-- script.js                          # UI logic, translations, simple demo, local bridge hooks
+|-- styles.css                         # Bee/Hive visual design
+|-- source/
+|   `-- colab_ai_mips_bee_world.py      # Published detector/Hive source excerpt
+|-- colab/
+|   `-- colab_public_one_image_site.ipynb
+|-- backup/                            # Reserved backup/static placeholder area
+|-- installers/
+|   `-- README.md                       # Installer download notes
+|-- SECURITY_LOCAL_BRIDGE_RU.md         # Local bridge safety notes in Russian
+`-- physical_simulation_installer.zip   # Current physical bee-shell simulator package
 ```
 
 ## What This Project Demonstrates
