@@ -59,16 +59,11 @@ function bridgeHasSavedToken() {
 
 function renderLocalBridgePlaceholder(mode = "locked") {
   if (!complexFrame) return;
-  const isExpired = mode === "expired";
   complexFrame.removeAttribute("src");
   complexFrame.srcdoc = `
     <!doctype html>
     <meta charset="utf-8">
-    <body style="margin:0;font-family:Segoe UI,Arial,sans-serif;background:#07101e;color:#eef5ff;padding:28px">
-      <h1 style="color:#ffd052">${isExpired ? "Local bridge paused" : "Local bridge is not connected"}</h1>
-      <p>${isExpired ? "Access to local apps was paused after inactivity." : "Open an approved local session to connect the integrated project interface."}</p>
-      <p style="color:#a9bad6">The browser will ask for confirmation before reconnecting to 127.0.0.1.</p>
-    </body>
+    <body style="margin:0;background:#07101e"></body>
   `;
 }
 
@@ -86,7 +81,7 @@ function approveLocalBridgeFromSavedToken(reason = "reconnect local project tool
   if (!bridgeHasSavedToken()) {
     LOCAL_BRIDGE_ALLOWED = false;
     localBridgeUserConfirmed = false;
-    alert("Local bridge needs a new approved token. Start a local approved session first.");
+    alert("Local bridge is not connected. Start an approved local session first.");
     renderLocalBridgePlaceholder("locked");
     return false;
   }
@@ -1014,11 +1009,13 @@ function setLanguage(lang) {
 }
 
 function showView(id) {
+  if (id === "complex" && !requireLocalBridge("open the integrated local Hive interface")) {
+    id = "home";
+  }
   document.querySelectorAll(".view").forEach((view) => {
     view.classList.toggle("active", view.id === id);
   });
   if (id === "complex") {
-    requireLocalBridge("open the integrated local Hive interface");
     renderComplexFrame();
   }
   if (id !== "simple") hideStageDetail();
