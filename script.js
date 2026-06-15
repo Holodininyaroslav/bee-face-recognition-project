@@ -41,7 +41,12 @@ let LOCAL_BRIDGE_ALLOWED = START_PARAMS.get("local_bridge") === "1" && (
   validLocalToken(START_PARAMS.get("local_session") || readStoredLocalApprovalSession())
 );
 let localBridgeIdleTimer = null;
-let localBridgeUserConfirmed = false;
+let localBridgeUserConfirmed = LOCAL_BRIDGE_ALLOWED && (
+  IS_LOCAL_PORTAL ||
+  START_PARAMS.get("session") === "local-approved" ||
+  validLocalToken(START_PARAMS.get("local_token") || "") ||
+  validLocalToken(START_PARAMS.get("local_session") || "")
+);
 let complexFrame = null;
 
 if (LOCAL_BRIDGE_ALLOWED && window.history && window.history.replaceState) {
@@ -1811,7 +1816,10 @@ complexFrame = document.getElementById("complexFrame");
 
 function renderComplexFrame() {
   if (!complexFrame) return;
-  if (LOCAL_BRIDGE_ALLOWED && localBridgeUserConfirmed) {
+  if (LOCAL_BRIDGE_ALLOWED && (localBridgeUserConfirmed || bridgeHasSavedToken())) {
+    if (!localBridgeUserConfirmed) {
+      localBridgeUserConfirmed = true;
+    }
     complexFrame.src = withLocalToken(LOCAL_HIVE_URL);
   } else {
     renderLocalBridgePlaceholder(bridgeHasSavedToken() ? "expired" : "locked");
