@@ -1,5 +1,7 @@
 # Bee Face Recognition Project
 
+![Bee Face Recognition project](assets/project-social-preview.png)
+
 AI-assisted full-stack prototype that connects a face-recognition detector with a browser-based AI MIPS / bee-swarm interface, a Colab CUDA runtime, local CPU/OpenCL-style execution paths, and local 3D / physical simulation tools.
 
 The project is built as a portfolio and course-style engineering demo: it is not a polished commercial product, but it is more than a static toy page. It demonstrates how a recognition pipeline, GPU/CPU execution choices, a live web interface, local simulators, installable packages, and a safer browser-to-local-app bridge can be combined into one working system.
@@ -98,6 +100,7 @@ Browser-to-local-app access requires:
 - trusted browser Origin checks.
 
 The site also removes `local_token` from the visible address bar after an approved load and sets `referrer=no-referrer`.
+The browser-to-local bridge is intentionally session based: after a long idle period the page pauses local access and asks for explicit confirmation before reconnecting, instead of silently keeping local apps open forever.
 
 Detailed Russian checklist:  
 https://github.com/Holodininyaroslav/bee-face-recognition-project/blob/main/SECURITY_LOCAL_BRIDGE_RU.md

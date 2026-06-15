@@ -3,10 +3,41 @@ const LOCAL_BEEBOARD_BASE = "http://127.0.0.1:8877";
 const LOCAL_HIVE_URL = `${LOCAL_HIVE_BASE}/?fresh=github-pages-local`;
 const LOCAL_BEEBOARD_VIEWER_URL = `${LOCAL_BEEBOARD_BASE}/?hive=${encodeURIComponent(LOCAL_HIVE_URL)}&processor=0#viewer`;
 const START_PARAMS = new URLSearchParams(window.location.search);
-const LOCAL_BRIDGE_TOKEN = START_PARAMS.get("local_token") || "";
-const LOCAL_BRIDGE_ALLOWED = START_PARAMS.get("local_bridge") === "1" && /^[A-Za-z0-9._~-]{24,}$/.test(LOCAL_BRIDGE_TOKEN);
+const LOCAL_BRIDGE_SESSION_KEY = "beeFaceLocalBridgeToken";
+const LOCAL_BRIDGE_TEST_IDLE_MS = Number(START_PARAMS.get("bridge_idle_ms") || 0);
+const LOCAL_BRIDGE_IDLE_MS = window.location.hostname === "127.0.0.1" && LOCAL_BRIDGE_TEST_IDLE_MS >= 500
+  ? LOCAL_BRIDGE_TEST_IDLE_MS
+  : 15 * 60 * 1000;
+let memoryLocalBridgeToken = "";
+
+function validLocalToken(token) {
+  return /^[A-Za-z0-9._~-]{24,}$/.test(token || "");
+}
+
+function readStoredLocalBridgeToken() {
+  try {
+    return window.sessionStorage?.getItem(LOCAL_BRIDGE_SESSION_KEY) || memoryLocalBridgeToken || "";
+  } catch (_) {
+    return memoryLocalBridgeToken || "";
+  }
+}
+
+function writeStoredLocalBridgeToken(token) {
+  memoryLocalBridgeToken = token || "";
+  try {
+    if (token) window.sessionStorage?.setItem(LOCAL_BRIDGE_SESSION_KEY, token);
+  } catch (_) {
+    // Some locked-down browser contexts do not expose sessionStorage.
+  }
+}
+
+let LOCAL_BRIDGE_TOKEN = START_PARAMS.get("local_token") || readStoredLocalBridgeToken();
+let LOCAL_BRIDGE_ALLOWED = START_PARAMS.get("local_bridge") === "1" && validLocalToken(START_PARAMS.get("local_token") || "");
+let localBridgeIdleTimer = null;
+let localBridgePromptOpen = false;
 
 if (LOCAL_BRIDGE_ALLOWED && window.history && window.history.replaceState) {
+  writeStoredLocalBridgeToken(LOCAL_BRIDGE_TOKEN);
   const safeUrl = new URL(window.location.href);
   safeUrl.searchParams.delete("local_token");
   safeUrl.searchParams.set("local_bridge", "1");
@@ -19,6 +50,108 @@ function withLocalToken(url) {
   const parsed = new URL(url, window.location.href);
   parsed.searchParams.set("local_token", LOCAL_BRIDGE_TOKEN);
   return parsed.toString();
+}
+
+function bridgeHasSavedToken() {
+  return validLocalToken(LOCAL_BRIDGE_TOKEN);
+}
+
+function renderLocalBridgeNotice(mode = "locked") {
+  if (!complexFrame) return;
+  const isExpired = mode === "expired";
+  const canRestore = bridgeHasSavedToken();
+  complexFrame.removeAttribute("src");
+  complexFrame.srcdoc = `
+    <!doctype html>
+    <meta charset="utf-8">
+    <body style="margin:0;font-family:Segoe UI,Arial,sans-serif;background:#07101e;color:#eef5ff;padding:28px">
+      <h1 style="color:#ffd052">${isExpired ? "Local bridge paused" : "Local bridge needs approval"}</h1>
+      <p>${isExpired ? "This page paused access to local apps after inactivity." : "This public GitHub Pages view does not connect to 127.0.0.1 by default."}</p>
+      <p>${canRestore ? "Press the button below and confirm in the browser before reconnecting this tab to the already approved local session." : "Start an approved local session and open this page once with local_bridge=1 and a private local_token."}</p>
+      <button
+        style="margin-top:18px;background:#ffb000;color:#050a14;border:0;padding:16px 24px;font-weight:900;font-size:18px;cursor:pointer"
+        ${canRestore ? "" : "disabled"}
+        onclick="parent.postMessage({type:'bee-local-bridge-restore'}, '*')">
+        ${canRestore ? "Restore approved local session" : "Waiting for approved local token"}
+      </button>
+      <p style="margin-top:20px;color:#a9bad6">For safety, reconnecting never happens automatically after long inactivity.</p>
+    </body>
+  `;
+}
+
+function resetLocalBridgeIdleTimer() {
+  if (!LOCAL_BRIDGE_ALLOWED) return;
+  window.clearTimeout(localBridgeIdleTimer);
+  localBridgeIdleTimer = window.setTimeout(() => {
+    LOCAL_BRIDGE_ALLOWED = false;
+    renderLocalBridgeNotice("expired");
+  }, LOCAL_BRIDGE_IDLE_MS);
+}
+
+function askLocalBridgePermission(reason) {
+  if (localBridgePromptOpen) return Promise.resolve(false);
+  localBridgePromptOpen = true;
+  return new Promise((resolve) => {
+    const shell = document.createElement("div");
+    shell.className = "local-bridge-modal";
+    const card = document.createElement("div");
+    card.className = "local-bridge-card";
+    const title = document.createElement("h3");
+    title.textContent = "Approve local bridge connection?";
+    const body = document.createElement("p");
+    body.textContent = `This page wants to ${reason} on 127.0.0.1. Allow only if you intentionally started the local project tools.`;
+    const note = document.createElement("p");
+    note.className = "local-bridge-note";
+    note.textContent = "No automatic reconnect is allowed after inactivity.";
+    const actions = document.createElement("div");
+    actions.className = "local-bridge-actions";
+    const allow = document.createElement("button");
+    allow.className = "primary";
+    allow.type = "button";
+    allow.textContent = "Allow this session";
+    const cancel = document.createElement("button");
+    cancel.className = "secondary";
+    cancel.type = "button";
+    cancel.textContent = "Cancel";
+    const close = (accepted) => {
+      localBridgePromptOpen = false;
+      shell.remove();
+      resolve(accepted);
+    };
+    allow.addEventListener("click", () => close(true));
+    cancel.addEventListener("click", () => close(false));
+    shell.addEventListener("click", (event) => {
+      if (event.target === shell) close(false);
+    });
+    actions.append(allow, cancel);
+    card.append(title, body, note, actions);
+    shell.append(card);
+    document.body.appendChild(shell);
+    allow.focus();
+  });
+}
+
+async function approveLocalBridgeFromSavedToken(reason = "reconnect local project tools") {
+  if (!bridgeHasSavedToken()) {
+    alert("Local bridge needs a new approved token. Start a local approved session first.");
+    return false;
+  }
+  if (!(await askLocalBridgePermission(reason))) {
+    return false;
+  }
+  LOCAL_BRIDGE_ALLOWED = true;
+  writeStoredLocalBridgeToken(LOCAL_BRIDGE_TOKEN);
+  resetLocalBridgeIdleTimer();
+  renderComplexFrame();
+  return true;
+}
+
+async function requireLocalBridge(reason) {
+  if (LOCAL_BRIDGE_ALLOWED) {
+    resetLocalBridgeIdleTimer();
+    return true;
+  }
+  return approveLocalBridgeFromSavedToken(reason);
 }
 
 const translations = {
@@ -1508,8 +1641,8 @@ function parseSseData(text) {
 }
 
 async function runRecognition(file, mode, score, margin) {
-  if (!LOCAL_BRIDGE_ALLOWED) {
-    throw new Error("Local bridge is disabled. Start an approved local session and open this page with local_bridge=1 and a private local_token before sending images to localhost.");
+  if (!(await requireLocalBridge("send selected image(s) to the local face detector"))) {
+    throw new Error("Local bridge was not approved for this recognition request.");
   }
   const endpoint = withLocalToken(`${LOCAL_HIVE_BASE}/api/detect?mode=${encodeURIComponent(mode)}&processor_id=0&source=github-pages-simple`);
   const response = await fetch(endpoint, {
@@ -1653,29 +1786,37 @@ renderPreviews([]);
 applyDeepLink();
 
 const complexFrame = document.getElementById("complexFrame");
-if (complexFrame) {
+
+function renderComplexFrame() {
+  if (!complexFrame) return;
   if (LOCAL_BRIDGE_ALLOWED) {
     complexFrame.src = withLocalToken(LOCAL_HIVE_URL);
   } else {
-    complexFrame.removeAttribute("src");
-    complexFrame.srcdoc = `
-      <!doctype html>
-      <meta charset="utf-8">
-      <body style="margin:0;font-family:Segoe UI,Arial,sans-serif;background:#07101e;color:#eef5ff;padding:28px">
-        <h1 style="color:#ffd052">Local bridge disabled</h1>
-        <p>This public GitHub Pages view does not connect to 127.0.0.1 by default.</p>
-        <p>Start a separately approved local session and open this page with <code>local_bridge=1</code> and your private <code>local_token</code> only when you want browser-to-local-app access.</p>
-      </body>
-    `;
+    renderLocalBridgeNotice(bridgeHasSavedToken() ? "expired" : "locked");
   }
 }
 
+renderComplexFrame();
+resetLocalBridgeIdleTimer();
+
+["pointerdown", "keydown", "wheel", "touchstart"].forEach((eventName) => {
+  window.addEventListener(eventName, resetLocalBridgeIdleTimer, { passive: true });
+});
+
+window.addEventListener("message", async (event) => {
+  if (event.source !== complexFrame?.contentWindow) return;
+  if (event.data?.type === "bee-local-bridge-restore") {
+    await requireLocalBridge("restore the local Hive iframe");
+  }
+});
+
 document.querySelectorAll("[data-local-open]").forEach((node) => {
-  node.addEventListener("click", (event) => {
+  node.addEventListener("click", async (event) => {
     if (!LOCAL_BRIDGE_ALLOWED) {
       event.preventDefault();
-      alert("Local bridge is disabled. Open an approved session with local_bridge=1 and a private local_token before connecting this public page to local apps.");
-      return;
+      if (!(await requireLocalBridge(`open ${node.textContent.trim()} on 127.0.0.1`))) {
+        return;
+      }
     }
     const target = node.dataset.localOpen;
     if (target === "hive") {
@@ -1686,6 +1827,9 @@ document.querySelectorAll("[data-local-open]").forEach((node) => {
       node.href = withLocalToken(`${LOCAL_HIVE_BASE}/physical-simulator`);
     } else if (target === "ursina") {
       node.href = withLocalToken(`${LOCAL_HIVE_BASE}/local-ursina-simulator?api=${encodeURIComponent(LOCAL_HIVE_BASE)}&processor_id=0`);
+    }
+    if (event.defaultPrevented) {
+      window.open(node.href, "_blank", "noopener,noreferrer");
     }
   });
 });
