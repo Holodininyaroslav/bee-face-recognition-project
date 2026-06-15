@@ -4,6 +4,7 @@ const LOCAL_HIVE_URL = `${LOCAL_HIVE_BASE}/?fresh=github-pages-local`;
 const LOCAL_BEEBOARD_VIEWER_URL = `${LOCAL_BEEBOARD_BASE}/?hive=${encodeURIComponent(LOCAL_HIVE_URL)}&processor=0#viewer`;
 const START_PARAMS = new URLSearchParams(window.location.search);
 const LOCAL_BRIDGE_SESSION_KEY = "beeFaceLocalBridgeToken";
+const IS_LOCAL_PORTAL = ["127.0.0.1", "localhost"].includes(window.location.hostname);
 const LOCAL_BRIDGE_TEST_IDLE_MS = Number(START_PARAMS.get("bridge_idle_ms") || 0);
 const LOCAL_BRIDGE_IDLE_MS = window.location.hostname === "127.0.0.1" && LOCAL_BRIDGE_TEST_IDLE_MS >= 500
   ? LOCAL_BRIDGE_TEST_IDLE_MS
@@ -32,7 +33,7 @@ function writeStoredLocalBridgeToken(token) {
 }
 
 let LOCAL_BRIDGE_TOKEN = START_PARAMS.get("local_token") || readStoredLocalBridgeToken();
-let LOCAL_BRIDGE_ALLOWED = START_PARAMS.get("local_bridge") === "1" && validLocalToken(START_PARAMS.get("local_token") || "");
+let LOCAL_BRIDGE_ALLOWED = START_PARAMS.get("local_bridge") === "1" && (IS_LOCAL_PORTAL || validLocalToken(START_PARAMS.get("local_token") || ""));
 let localBridgeIdleTimer = null;
 let localBridgeUserConfirmed = false;
 let complexFrame = null;
@@ -49,12 +50,14 @@ if (LOCAL_BRIDGE_ALLOWED && window.history && window.history.replaceState) {
 function withLocalToken(url) {
   if (!LOCAL_BRIDGE_ALLOWED) return url;
   const parsed = new URL(url, window.location.href);
-  parsed.searchParams.set("local_token", LOCAL_BRIDGE_TOKEN);
+  if (validLocalToken(LOCAL_BRIDGE_TOKEN)) {
+    parsed.searchParams.set("local_token", LOCAL_BRIDGE_TOKEN);
+  }
   return parsed.toString();
 }
 
 function bridgeHasSavedToken() {
-  return validLocalToken(LOCAL_BRIDGE_TOKEN);
+  return IS_LOCAL_PORTAL || validLocalToken(LOCAL_BRIDGE_TOKEN);
 }
 
 function renderLocalBridgePlaceholder(mode = "locked") {
@@ -96,7 +99,9 @@ function approveLocalBridgeFromSavedToken(reason = "reconnect local project tool
   }
   LOCAL_BRIDGE_ALLOWED = true;
   localBridgeUserConfirmed = true;
-  writeStoredLocalBridgeToken(LOCAL_BRIDGE_TOKEN);
+  if (validLocalToken(LOCAL_BRIDGE_TOKEN)) {
+    writeStoredLocalBridgeToken(LOCAL_BRIDGE_TOKEN);
+  }
   resetLocalBridgeIdleTimer();
   renderComplexFrame();
   return true;
