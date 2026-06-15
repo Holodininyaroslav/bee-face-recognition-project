@@ -157,7 +157,7 @@ async function requireLocalBridge(reason) {
 const translations = {
   en: {
     kicker: "COLAB GPU / FACE DETECTION / PROJECT INTERFACE",
-    title: "Welcome to Bee Face recognition project",
+    title: "Welcome to Bee Face Recognition Project",
     lead: "Upload screenshots, recognize faces through the connected Colab detector, and inspect the same result stream inside the integrated AI MIPS project view.",
     simple: "Simple demonstration",
     complex: "Complex demonstration integrated into the project",
@@ -225,7 +225,7 @@ const translations = {
   },
   ru: {
     kicker: "COLAB GPU / РАСПОЗНАВАНИЕ ЛИЦ / ИНТЕРФЕЙС ПРОЕКТА",
-    title: "Добро пожаловать в Bee Face recognition project",
+    title: "Добро пожаловать в Bee Face Recognition Project",
     lead: "Загружайте скриншоты, распознавайте лица через подключенный Colab-детектор и смотрите тот же поток результатов в интегрированном интерфейсе AI MIPS.",
     simple: "Простая демонстрация",
     complex: "Сложная демонстрация, интегрированная в проект",
@@ -278,7 +278,7 @@ const translations = {
   },
   he: {
     kicker: "COLAB GPU / זיהוי פנים / ממשק פרויקט",
-    title: "ברוכים הבאים אל Bee Face recognition project",
+    title: "ברוכים הבאים אל Bee Face Recognition Project",
     lead: "העלו צילומי מסך, הפעילו זיהוי פנים דרך גלאי Colab המחובר, וצפו באותו זרם תוצאות בממשק AI MIPS המשולב.",
     simple: "הדגמה פשוטה",
     complex: "הדגמה מורכבת המשולבת בפרויקט",
