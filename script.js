@@ -1,5 +1,6 @@
 const LOCAL_HIVE_BASE = "http://127.0.0.1:8876";
 const LOCAL_BEEBOARD_BASE = "http://127.0.0.1:8877";
+const LOCAL_PORTAL_BASE = "http://127.0.0.1:8890";
 const LOCAL_HIVE_URL = `${LOCAL_HIVE_BASE}/?fresh=github-pages-local`;
 const LOCAL_BEEBOARD_VIEWER_URL = `${LOCAL_BEEBOARD_BASE}/?hive=${encodeURIComponent(LOCAL_HIVE_URL)}&processor=0#viewer`;
 const START_PARAMS = new URLSearchParams(window.location.search);
@@ -60,6 +61,25 @@ function bridgeHasSavedToken() {
   return IS_LOCAL_PORTAL || validLocalToken(LOCAL_BRIDGE_TOKEN);
 }
 
+function localPortalComplexUrl() {
+  const url = new URL(LOCAL_PORTAL_BASE);
+  url.searchParams.set("view", "complex");
+  url.searchParams.set("local_bridge", "1");
+  url.searchParams.set("v", `chrome-local-${Date.now()}`);
+  return url.toString();
+}
+
+function offerLocalPortal(reason) {
+  if (IS_LOCAL_PORTAL) return false;
+  const allowed = window.confirm(
+    `Open the approved local project portal on 127.0.0.1 for this computer?\n\nAction: ${reason}`
+  );
+  if (allowed) {
+    window.location.href = localPortalComplexUrl();
+  }
+  return allowed;
+}
+
 function renderLocalBridgePlaceholder(mode = "locked") {
   if (!complexFrame) return;
   complexFrame.removeAttribute("src");
@@ -82,6 +102,9 @@ function resetLocalBridgeIdleTimer() {
 
 function approveLocalBridgeFromSavedToken(reason = "reconnect local project tools") {
   if (!bridgeHasSavedToken()) {
+    if (offerLocalPortal(reason)) {
+      return false;
+    }
     LOCAL_BRIDGE_ALLOWED = false;
     localBridgeUserConfirmed = false;
     alert("Local bridge is not connected. Start an approved local session first.");
