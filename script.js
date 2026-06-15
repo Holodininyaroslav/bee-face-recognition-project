@@ -7,7 +7,7 @@ const LOCAL_BRIDGE_SESSION_KEY = "beeFaceLocalBridgeToken";
 const LOCAL_BRIDGE_TEST_IDLE_MS = Number(START_PARAMS.get("bridge_idle_ms") || 0);
 const LOCAL_BRIDGE_IDLE_MS = window.location.hostname === "127.0.0.1" && LOCAL_BRIDGE_TEST_IDLE_MS >= 500
   ? LOCAL_BRIDGE_TEST_IDLE_MS
-  : 15 * 60 * 1000;
+  : 60 * 60 * 1000;
 let memoryLocalBridgeToken = "";
 
 function validLocalToken(token) {
@@ -34,7 +34,6 @@ function writeStoredLocalBridgeToken(token) {
 let LOCAL_BRIDGE_TOKEN = START_PARAMS.get("local_token") || readStoredLocalBridgeToken();
 let LOCAL_BRIDGE_ALLOWED = START_PARAMS.get("local_bridge") === "1" && validLocalToken(START_PARAMS.get("local_token") || "");
 let localBridgeIdleTimer = null;
-let localBridgePromptOpen = false;
 
 if (LOCAL_BRIDGE_ALLOWED && window.history && window.history.replaceState) {
   writeStoredLocalBridgeToken(LOCAL_BRIDGE_TOKEN);
@@ -67,7 +66,7 @@ function renderLocalBridgeNotice(mode = "locked") {
     <body style="margin:0;font-family:Segoe UI,Arial,sans-serif;background:#07101e;color:#eef5ff;padding:28px">
       <h1 style="color:#ffd052">${isExpired ? "Local bridge paused" : "Local bridge needs approval"}</h1>
       <p>${isExpired ? "This page paused access to local apps after inactivity." : "This public GitHub Pages view does not connect to 127.0.0.1 by default."}</p>
-      <p>${canRestore ? "Press the button below and confirm in the browser before reconnecting this tab to the already approved local session." : "Start an approved local session and open this page once with local_bridge=1 and a private local_token."}</p>
+      <p>${canRestore ? "Click the button below to approve reconnecting this tab to the already approved local session." : "Start an approved local session and open this page once with local_bridge=1 and a private local_token."}</p>
       <button
         style="margin-top:18px;background:#ffb000;color:#050a14;border:0;padding:16px 24px;font-weight:900;font-size:18px;cursor:pointer"
         ${canRestore ? "" : "disabled"}
@@ -88,55 +87,9 @@ function resetLocalBridgeIdleTimer() {
   }, LOCAL_BRIDGE_IDLE_MS);
 }
 
-function askLocalBridgePermission(reason) {
-  if (localBridgePromptOpen) return Promise.resolve(false);
-  localBridgePromptOpen = true;
-  return new Promise((resolve) => {
-    const shell = document.createElement("div");
-    shell.className = "local-bridge-modal";
-    const card = document.createElement("div");
-    card.className = "local-bridge-card";
-    const title = document.createElement("h3");
-    title.textContent = "Approve local bridge connection?";
-    const body = document.createElement("p");
-    body.textContent = `This page wants to ${reason} on 127.0.0.1. Allow only if you intentionally started the local project tools.`;
-    const note = document.createElement("p");
-    note.className = "local-bridge-note";
-    note.textContent = "No automatic reconnect is allowed after inactivity.";
-    const actions = document.createElement("div");
-    actions.className = "local-bridge-actions";
-    const allow = document.createElement("button");
-    allow.className = "primary";
-    allow.type = "button";
-    allow.textContent = "Allow this session";
-    const cancel = document.createElement("button");
-    cancel.className = "secondary";
-    cancel.type = "button";
-    cancel.textContent = "Cancel";
-    const close = (accepted) => {
-      localBridgePromptOpen = false;
-      shell.remove();
-      resolve(accepted);
-    };
-    allow.addEventListener("click", () => close(true));
-    cancel.addEventListener("click", () => close(false));
-    shell.addEventListener("click", (event) => {
-      if (event.target === shell) close(false);
-    });
-    actions.append(allow, cancel);
-    card.append(title, body, note, actions);
-    shell.append(card);
-    document.body.appendChild(shell);
-    allow.focus();
-  });
-}
-
 async function approveLocalBridgeFromSavedToken(reason = "reconnect local project tools") {
   if (!bridgeHasSavedToken()) {
     alert("Local bridge needs a new approved token. Start a local approved session first.");
-    return false;
-  }
-  if (!(await askLocalBridgePermission(reason))) {
     return false;
   }
   LOCAL_BRIDGE_ALLOWED = true;
