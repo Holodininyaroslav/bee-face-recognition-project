@@ -34,6 +34,8 @@ function writeStoredLocalBridgeToken(token) {
 let LOCAL_BRIDGE_TOKEN = START_PARAMS.get("local_token") || readStoredLocalBridgeToken();
 let LOCAL_BRIDGE_ALLOWED = START_PARAMS.get("local_bridge") === "1" && validLocalToken(START_PARAMS.get("local_token") || "");
 let localBridgeIdleTimer = null;
+let localBridgeUserConfirmed = false;
+let complexFrame = null;
 
 if (LOCAL_BRIDGE_ALLOWED && window.history && window.history.replaceState) {
   writeStoredLocalBridgeToken(LOCAL_BRIDGE_TOKEN);
@@ -55,25 +57,17 @@ function bridgeHasSavedToken() {
   return validLocalToken(LOCAL_BRIDGE_TOKEN);
 }
 
-function renderLocalBridgeNotice(mode = "locked") {
+function renderLocalBridgePlaceholder(mode = "locked") {
   if (!complexFrame) return;
   const isExpired = mode === "expired";
-  const canRestore = bridgeHasSavedToken();
   complexFrame.removeAttribute("src");
   complexFrame.srcdoc = `
     <!doctype html>
     <meta charset="utf-8">
     <body style="margin:0;font-family:Segoe UI,Arial,sans-serif;background:#07101e;color:#eef5ff;padding:28px">
-      <h1 style="color:#ffd052">${isExpired ? "Local bridge paused" : "Local bridge needs approval"}</h1>
-      <p>${isExpired ? "This page paused access to local apps after inactivity." : "This public GitHub Pages view does not connect to 127.0.0.1 by default."}</p>
-      <p>${canRestore ? "Click the button below to approve reconnecting this tab to the already approved local session." : "Start an approved local session and open this page once with local_bridge=1 and a private local_token."}</p>
-      <button
-        style="margin-top:18px;background:#ffb000;color:#050a14;border:0;padding:16px 24px;font-weight:900;font-size:18px;cursor:pointer"
-        ${canRestore ? "" : "disabled"}
-        onclick="parent.postMessage({type:'bee-local-bridge-restore'}, '*')">
-        ${canRestore ? "Restore approved local session" : "Waiting for approved local token"}
-      </button>
-      <p style="margin-top:20px;color:#a9bad6">For safety, reconnecting never happens automatically after long inactivity.</p>
+      <h1 style="color:#ffd052">${isExpired ? "Local bridge paused" : "Local bridge is not connected"}</h1>
+      <p>${isExpired ? "Access to local apps was paused after inactivity." : "Open an approved local session to connect the integrated project interface."}</p>
+      <p style="color:#a9bad6">The browser will ask for confirmation before reconnecting to 127.0.0.1.</p>
     </body>
   `;
 }
@@ -83,24 +77,38 @@ function resetLocalBridgeIdleTimer() {
   window.clearTimeout(localBridgeIdleTimer);
   localBridgeIdleTimer = window.setTimeout(() => {
     LOCAL_BRIDGE_ALLOWED = false;
-    renderLocalBridgeNotice("expired");
+    localBridgeUserConfirmed = false;
+    renderLocalBridgePlaceholder("expired");
   }, LOCAL_BRIDGE_IDLE_MS);
 }
 
-async function approveLocalBridgeFromSavedToken(reason = "reconnect local project tools") {
+function approveLocalBridgeFromSavedToken(reason = "reconnect local project tools") {
   if (!bridgeHasSavedToken()) {
+    LOCAL_BRIDGE_ALLOWED = false;
+    localBridgeUserConfirmed = false;
     alert("Local bridge needs a new approved token. Start a local approved session first.");
+    renderLocalBridgePlaceholder("locked");
     return false;
   }
+  if (!localBridgeUserConfirmed) {
+    const allowed = window.confirm(`Allow this page to ${reason} on 127.0.0.1 for the current session?`);
+    if (!allowed) {
+      LOCAL_BRIDGE_ALLOWED = false;
+      localBridgeUserConfirmed = false;
+      renderLocalBridgePlaceholder("locked");
+      return false;
+    }
+  }
   LOCAL_BRIDGE_ALLOWED = true;
+  localBridgeUserConfirmed = true;
   writeStoredLocalBridgeToken(LOCAL_BRIDGE_TOKEN);
   resetLocalBridgeIdleTimer();
   renderComplexFrame();
   return true;
 }
 
-async function requireLocalBridge(reason) {
-  if (LOCAL_BRIDGE_ALLOWED) {
+function requireLocalBridge(reason) {
+  if (LOCAL_BRIDGE_ALLOWED && localBridgeUserConfirmed) {
     resetLocalBridgeIdleTimer();
     return true;
   }
@@ -1009,6 +1017,10 @@ function showView(id) {
   document.querySelectorAll(".view").forEach((view) => {
     view.classList.toggle("active", view.id === id);
   });
+  if (id === "complex") {
+    requireLocalBridge("open the integrated local Hive interface");
+    renderComplexFrame();
+  }
   if (id !== "simple") hideStageDetail();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1738,14 +1750,14 @@ setLanguage("en");
 renderPreviews([]);
 applyDeepLink();
 
-const complexFrame = document.getElementById("complexFrame");
+complexFrame = document.getElementById("complexFrame");
 
 function renderComplexFrame() {
   if (!complexFrame) return;
-  if (LOCAL_BRIDGE_ALLOWED) {
+  if (LOCAL_BRIDGE_ALLOWED && localBridgeUserConfirmed) {
     complexFrame.src = withLocalToken(LOCAL_HIVE_URL);
   } else {
-    renderLocalBridgeNotice(bridgeHasSavedToken() ? "expired" : "locked");
+    renderLocalBridgePlaceholder(bridgeHasSavedToken() ? "expired" : "locked");
   }
 }
 
@@ -1756,10 +1768,10 @@ resetLocalBridgeIdleTimer();
   window.addEventListener(eventName, resetLocalBridgeIdleTimer, { passive: true });
 });
 
-window.addEventListener("message", async (event) => {
+window.addEventListener("message", (event) => {
   if (event.source !== complexFrame?.contentWindow) return;
   if (event.data?.type === "bee-local-bridge-restore") {
-    await requireLocalBridge("restore the local Hive iframe");
+    requireLocalBridge("restore the local Hive iframe");
   }
 });
 
