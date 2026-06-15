@@ -1,10 +1,10 @@
 const LOCAL_HIVE_BASE = "http://127.0.0.1:8876";
 const LOCAL_BEEBOARD_BASE = "http://127.0.0.1:8877";
-const LOCAL_PORTAL_BASE = "http://127.0.0.1:8890";
 const LOCAL_HIVE_URL = `${LOCAL_HIVE_BASE}/?fresh=github-pages-local`;
 const LOCAL_BEEBOARD_VIEWER_URL = `${LOCAL_BEEBOARD_BASE}/?hive=${encodeURIComponent(LOCAL_HIVE_URL)}&processor=0#viewer`;
 const START_PARAMS = new URLSearchParams(window.location.search);
 const LOCAL_BRIDGE_SESSION_KEY = "beeFaceLocalBridgeToken";
+const LOCAL_APPROVAL_SESSION_KEY = "beeFaceLocalApprovalSession";
 const IS_LOCAL_PORTAL = ["127.0.0.1", "localhost"].includes(window.location.hostname);
 const LOCAL_BRIDGE_TEST_IDLE_MS = Number(START_PARAMS.get("bridge_idle_ms") || 0);
 const LOCAL_BRIDGE_IDLE_MS = window.location.hostname === "127.0.0.1" && LOCAL_BRIDGE_TEST_IDLE_MS >= 500
@@ -34,15 +34,22 @@ function writeStoredLocalBridgeToken(token) {
 }
 
 let LOCAL_BRIDGE_TOKEN = START_PARAMS.get("local_token") || readStoredLocalBridgeToken();
-let LOCAL_BRIDGE_ALLOWED = START_PARAMS.get("local_bridge") === "1" && (IS_LOCAL_PORTAL || validLocalToken(START_PARAMS.get("local_token") || ""));
+let LOCAL_BRIDGE_SESSION = START_PARAMS.get("local_session") || readStoredLocalApprovalSession();
+let LOCAL_BRIDGE_ALLOWED = START_PARAMS.get("local_bridge") === "1" && (
+  IS_LOCAL_PORTAL ||
+  validLocalToken(START_PARAMS.get("local_token") || "") ||
+  validLocalToken(START_PARAMS.get("local_session") || readStoredLocalApprovalSession())
+);
 let localBridgeIdleTimer = null;
 let localBridgeUserConfirmed = false;
 let complexFrame = null;
 
 if (LOCAL_BRIDGE_ALLOWED && window.history && window.history.replaceState) {
   writeStoredLocalBridgeToken(LOCAL_BRIDGE_TOKEN);
+  writeStoredLocalApprovalSession(LOCAL_BRIDGE_SESSION);
   const safeUrl = new URL(window.location.href);
   safeUrl.searchParams.delete("local_token");
+  safeUrl.searchParams.delete("local_session");
   safeUrl.searchParams.set("local_bridge", "1");
   safeUrl.searchParams.set("session", "local-approved");
   window.history.replaceState(null, "", safeUrl.toString());
@@ -53,29 +60,51 @@ function withLocalToken(url) {
   const parsed = new URL(url, window.location.href);
   if (validLocalToken(LOCAL_BRIDGE_TOKEN)) {
     parsed.searchParams.set("local_token", LOCAL_BRIDGE_TOKEN);
+  } else if (validLocalToken(LOCAL_BRIDGE_SESSION)) {
+    parsed.searchParams.set("local_session", LOCAL_BRIDGE_SESSION);
   }
   return parsed.toString();
 }
 
 function bridgeHasSavedToken() {
-  return IS_LOCAL_PORTAL || validLocalToken(LOCAL_BRIDGE_TOKEN);
+  return IS_LOCAL_PORTAL || validLocalToken(LOCAL_BRIDGE_TOKEN) || validLocalToken(LOCAL_BRIDGE_SESSION);
 }
 
-function localPortalComplexUrl() {
-  const url = new URL(LOCAL_PORTAL_BASE);
+function readStoredLocalApprovalSession() {
+  try {
+    return window.sessionStorage?.getItem(LOCAL_APPROVAL_SESSION_KEY) || "";
+  } catch (_) {
+    return "";
+  }
+}
+
+function writeStoredLocalApprovalSession(session) {
+  try {
+    if (validLocalToken(session)) window.sessionStorage?.setItem(LOCAL_APPROVAL_SESSION_KEY, session);
+  } catch (_) {
+    // Some locked-down browser contexts do not expose sessionStorage.
+  }
+}
+
+function publicReturnUrl() {
+  const url = new URL(window.location.href);
   url.searchParams.set("view", "complex");
   url.searchParams.set("local_bridge", "1");
-  url.searchParams.set("v", `chrome-local-${Date.now()}`);
+  url.searchParams.set("v", `bridge-approved-${Date.now()}`);
+  url.searchParams.delete("local_token");
+  url.searchParams.delete("local_session");
   return url.toString();
 }
 
-function offerLocalPortal(reason) {
+function requestLocalBridgeApproval(reason) {
   if (IS_LOCAL_PORTAL) return false;
   const allowed = window.confirm(
-    `Open the approved local project portal on 127.0.0.1 for this computer?\n\nAction: ${reason}`
+    `Approve connection from this public project page to local project tools on this computer?\n\nAction: ${reason}`
   );
   if (allowed) {
-    window.location.href = localPortalComplexUrl();
+    const approval = new URL(`${LOCAL_HIVE_BASE}/local-bridge-approve`);
+    approval.searchParams.set("return", publicReturnUrl());
+    window.location.href = approval.toString();
   }
   return allowed;
 }
@@ -102,7 +131,7 @@ function resetLocalBridgeIdleTimer() {
 
 function approveLocalBridgeFromSavedToken(reason = "reconnect local project tools") {
   if (!bridgeHasSavedToken()) {
-    if (offerLocalPortal(reason)) {
+    if (requestLocalBridgeApproval(reason)) {
       return false;
     }
     LOCAL_BRIDGE_ALLOWED = false;
@@ -124,6 +153,9 @@ function approveLocalBridgeFromSavedToken(reason = "reconnect local project tool
   localBridgeUserConfirmed = true;
   if (validLocalToken(LOCAL_BRIDGE_TOKEN)) {
     writeStoredLocalBridgeToken(LOCAL_BRIDGE_TOKEN);
+  }
+  if (validLocalToken(LOCAL_BRIDGE_SESSION)) {
+    writeStoredLocalApprovalSession(LOCAL_BRIDGE_SESSION);
   }
   resetLocalBridgeIdleTimer();
   renderComplexFrame();
