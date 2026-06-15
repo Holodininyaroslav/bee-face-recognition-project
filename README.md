@@ -102,8 +102,18 @@ Browser-to-local-app access requires:
 The site also removes `local_token` from the visible address bar after an approved load and sets `referrer=no-referrer`.
 The browser-to-local bridge is intentionally session based: after a long idle period the page pauses local access and asks for explicit confirmation before reconnecting, instead of silently keeping local apps open forever.
 
-Detailed Russian checklist:  
-https://github.com/Holodininyaroslav/bee-face-recognition-project/blob/main/SECURITY_LOCAL_BRIDGE_RU.md
+Detailed bridge security notes:  
+https://github.com/Holodininyaroslav/bee-face-recognition-project/blob/main/SECURITY_LOCAL_BRIDGE.md
+
+## Future Roadmap
+
+Future releases are planned to add additional abstraction layers around the current detector, Hive interface, and bee-swarm simulation:
+
+- **Flight mechanics map** - a near-term simulation map for bee flight mechanics, including a more detailed mechanical description of the body, wings, actuator loads, and motion model.
+- **Nano-capacitor energy layer** - an advanced simulation layer for nano-capacitors that accumulate electrical energy for the bee's operation.
+- **Distributed bee datacenter mode** - a swarm-level simulation where many bees operate as a distributed datacenter. In this mode, a distributed neural network runs across many **AI MIPS processors**, using the AI MIPS processors that already exist inside each bee.
+- **Li-Fi swarm networking** - communication modules that show how nearby bees connect into a unified compute network through Li-Fi links.
+- **Bioreactor energy stage** - a long-term simulation stage where a bioreactor processes plastic and generates electrical energy. This is the furthest planned stage of the project, but it is part of the intended release direction.
 
 ## Installers
 
@@ -138,7 +148,7 @@ It contains the Flappy/FWMAV inspector-based simulator with visible bee-shell ou
 |-- backup/                            # Reserved backup/static placeholder area
 |-- installers/
 |   `-- README.md                       # Installer download notes
-|-- SECURITY_LOCAL_BRIDGE_RU.md         # Local bridge safety notes in Russian
+|-- SECURITY_LOCAL_BRIDGE.md            # Local bridge safety notes
 `-- physical_simulation_installer.zip   # Current physical bee-shell simulator package
 ```
 
@@ -168,4 +178,4 @@ This project was built with AI-assisted development. The engineering work focuse
 
 ## Suggested Resume Description
 
-**Bee Face Recognition Project** — AI-assisted full-stack prototype integrating a face-recognition detector with a Colab CUDA backend, CPU/GPU mode selection, a browser-based AI MIPS Hive interface, local 3D/physical simulation tools, installable local packages, and a token-gated localhost bridge for safer browser-to-local-app communication.
+**Bee Face Recognition Project** - AI-assisted full-stack prototype integrating a face-recognition detector with a Colab CUDA backend, CPU/GPU mode selection, a browser-based AI MIPS Hive interface, local 3D/physical simulation tools, installable local packages, and a token-gated localhost bridge for safer browser-to-local-app communication.
