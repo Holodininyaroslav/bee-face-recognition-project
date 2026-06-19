@@ -199,6 +199,25 @@ function renderLocalBridgePlaceholder(mode = "locked") {
   `;
 }
 
+function resetLocalBridgeIdleTimer() {
+  if (localBridgeIdleTimer) {
+    window.clearTimeout(localBridgeIdleTimer);
+    localBridgeIdleTimer = null;
+  }
+  if (IS_LOCAL_PORTAL || !LOCAL_BRIDGE_ALLOWED || !localBridgeUserConfirmed) return;
+  const idleMs = LOCAL_BRIDGE_TEST_IDLE_MS > 0 ? LOCAL_BRIDGE_TEST_IDLE_MS : 2 * 60 * 60 * 1000;
+  localBridgeIdleTimer = window.setTimeout(() => {
+    localBridgeUserConfirmed = false;
+    if (document.getElementById("complex")?.classList.contains("active")) {
+      renderLocalInstallPrompt("The local bridge paused after inactivity. Use the browser approval prompt again to restore access to local apps.");
+      localBridgeApprovalRequested = false;
+      window.setTimeout(() => {
+        requestLocalBridgeApproval("restore the local AI MIPS Hive Web interface");
+      }, 100);
+    }
+  }, idleMs);
+}
+
 function approveLocalBridgeFromSavedToken(reason = "reconnect local project tools") {
   if (!bridgeHasSavedToken()) {
     if (requestLocalBridgeApproval(reason)) {
