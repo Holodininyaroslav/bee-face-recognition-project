@@ -108,6 +108,15 @@ function publicReturnUrl() {
   return url.toString();
 }
 
+function localPortalReturnUrl() {
+  const url = new URL("http://127.0.0.1:8890/");
+  url.searchParams.set("view", "complex");
+  url.searchParams.set("local_bridge", "1");
+  url.searchParams.set("v", `local-approved-${Date.now()}`);
+  url.searchParams.set("session", "local-approved");
+  return url.toString();
+}
+
 function htmlEscape(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -176,14 +185,14 @@ function renderLocalInstallPrompt(message = "Local project tools are not running
 </main>`;
 }
 
-function requestLocalBridgeApproval(reason) {
+function requestLocalBridgeApproval(reason, returnUrl = localPortalReturnUrl()) {
   if (IS_LOCAL_PORTAL) return false;
   const allowed = window.confirm(
     `Approve connection from this public project page to local project tools on this computer?\n\nAction: ${reason}`
   );
   if (allowed) {
     const approval = new URL(`${LOCAL_HIVE_BASE}/local-bridge-approve`);
-    approval.searchParams.set("return", publicReturnUrl());
+    approval.searchParams.set("return", returnUrl);
     window.location.href = approval.toString();
   }
   return allowed;
@@ -1901,6 +1910,10 @@ async function renderComplexFrame() {
     return;
   }
   if (LOCAL_BRIDGE_ALLOWED && localBridgeUserConfirmed) {
+    if (!IS_LOCAL_PORTAL) {
+      window.location.href = localPortalReturnUrl();
+      return;
+    }
     complexFrame.removeAttribute("srcdoc");
     complexFrame.src = withLocalToken(LOCAL_HIVE_URL);
     return;
