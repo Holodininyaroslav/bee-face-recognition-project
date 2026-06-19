@@ -1906,14 +1906,22 @@ async function renderComplexFrame() {
     return;
   }
   if (!IS_LOCAL_PORTAL) {
-    const localStatus = await probeLocalHive();
-    if (!localStatus?.ok) {
-      renderLocalInstallPrompt("The local Hive bridge on 127.0.0.1:8876 is not running or this computer does not have the local project tools installed yet.");
-      return;
+    renderLocalInstallPrompt("If the local project tools are already installed, approve the browser prompt to connect this public page to them. If they are not installed on this computer yet, download the needed package first.");
+    if (!localBridgeApprovalRequested) {
+      localBridgeApprovalRequested = true;
+      window.setTimeout(() => {
+        requestLocalBridgeApproval("open the original AI MIPS Hive Web interface");
+      }, 100);
     }
+    return;
   }
-  renderLocalInstallPrompt("The local project tools are installed, but this browser session still needs approval before the public site can connect to 127.0.0.1.");
-  if (!IS_LOCAL_PORTAL && !localBridgeApprovalRequested) {
+  const localStatus = await probeLocalHive();
+  if (!localStatus?.ok) {
+    renderLocalInstallPrompt("The local Hive bridge on 127.0.0.1:8876 is not running or this computer does not have the local project tools installed yet.");
+    return;
+  }
+  renderLocalInstallPrompt("The local project tools are installed, but this browser session still needs approval before the page can connect to 127.0.0.1.");
+  if (!localBridgeApprovalRequested) {
     localBridgeApprovalRequested = true;
     window.setTimeout(() => {
       requestLocalBridgeApproval("open the original AI MIPS Hive Web interface");
@@ -1938,20 +1946,22 @@ window.addEventListener("message", (event) => {
 document.querySelectorAll("[data-local-open]").forEach((node) => {
   node.addEventListener("click", async (event) => {
     event.preventDefault();
-    const localStatus = await probeLocalHive();
-    if (!localStatus?.ok) {
-      showView("complex");
-      renderLocalInstallPrompt("Local project tools are not running on this computer. Install the package first, then launch again from this page.");
-      return;
-    }
     const target = node.dataset.localOpen;
-    if (target === "beeboard" && localStatus.beeboard && !localStatus.beeboard.installed) {
-      renderLocalInstallPrompt("BeeBoard is not installed on this computer yet.");
-      return;
-    }
-    if (target === "ursina" && localStatus.ursina && !localStatus.ursina.installed) {
-      renderLocalInstallPrompt("Ursina 3D is not installed on this computer yet.");
-      return;
+    if (IS_LOCAL_PORTAL) {
+      const localStatus = await probeLocalHive();
+      if (!localStatus?.ok) {
+        showView("complex");
+        renderLocalInstallPrompt("Local project tools are not running on this computer. Install the package first, then launch again from this page.");
+        return;
+      }
+      if (target === "beeboard" && localStatus.beeboard && !localStatus.beeboard.installed) {
+        renderLocalInstallPrompt("BeeBoard is not installed on this computer yet.");
+        return;
+      }
+      if (target === "ursina" && localStatus.ursina && !localStatus.ursina.installed) {
+        renderLocalInstallPrompt("Ursina 3D is not installed on this computer yet.");
+        return;
+      }
     }
     if (!LOCAL_BRIDGE_ALLOWED) {
       if (!(await requireLocalBridge(`open ${node.textContent.trim()} on 127.0.0.1`))) {
