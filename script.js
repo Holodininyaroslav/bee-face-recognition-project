@@ -2,6 +2,12 @@
 const LOCAL_BEEBOARD_BASE = "http://127.0.0.1:8877";
 const LOCAL_HIVE_URL = `${LOCAL_HIVE_BASE}/?fresh=github-pages-local`;
 const LOCAL_BEEBOARD_VIEWER_URL = `${LOCAL_BEEBOARD_BASE}/?hive=${encodeURIComponent(LOCAL_HIVE_URL)}&processor=0#viewer`;
+const INSTALLER_URLS = {
+  ursina: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_ursina_game_installer_20260617_final.zip",
+  beeboard: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip",
+  physical: "https://holodininyaroslav.github.io/bee-face-recognition-project/physical_simulation_installer.zip",
+  repository: "https://github.com/Holodininyaroslav/bee-face-recognition-project"
+};
 const START_PARAMS = new URLSearchParams(window.location.search);
 const LOCAL_BRIDGE_SESSION_KEY = "beeFaceLocalBridgeToken";
 const LOCAL_APPROVAL_SESSION_KEY = "beeFaceLocalApprovalSession";
@@ -100,6 +106,74 @@ function publicReturnUrl() {
   url.searchParams.delete("local_token");
   url.searchParams.delete("local_session");
   return url.toString();
+}
+
+function htmlEscape(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+async function probeLocalHive() {
+  try {
+    const response = await fetch(`${LOCAL_HIVE_BASE}/api/local-status?ts=${Date.now()}`, {
+      method: "GET",
+      cache: "no-store",
+      mode: "cors"
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (_) {
+    return null;
+  }
+}
+
+function renderLocalInstallPrompt(message = "Local project tools are not running on this computer.") {
+  if (!complexFrame) return;
+  const retryUrl = publicReturnUrl();
+  complexFrame.removeAttribute("src");
+  complexFrame.srcdoc = `<!doctype html>
+<meta charset="utf-8">
+<base target="_blank">
+<style>
+  :root{color-scheme:dark}
+  body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#07101f;color:#eef5ff}
+  main{min-height:100vh;padding:38px;border:1px solid #31415f;background:linear-gradient(135deg,#0b1324,#101827)}
+  h1{margin:0 0 14px;color:#ffd057;font-size:40px;line-height:1.05}
+  p{max-width:980px;color:#c7d7f4;font-size:18px;line-height:1.55}
+  .notice{border-left:5px solid #38d7ff;background:#0b1b31;padding:16px 18px;margin:22px 0}
+  .grid{display:grid;grid-template-columns:repeat(3,minmax(210px,1fr));gap:14px;margin-top:22px}
+  a,.button{display:flex;align-items:center;justify-content:center;min-height:58px;padding:14px 18px;border:1px solid #31415f;background:#17243a;color:#eef5ff;text-decoration:none;font-weight:900;text-align:center}
+  a.primary{background:#ffb000;color:#09111f;border-color:#ffb000}
+  a:hover{border-color:#ffb000}
+  .steps{display:grid;gap:10px;margin:22px 0 6px;padding:0;list-style:none;counter-reset:step}
+  .steps li{counter-increment:step;border:1px solid #31415f;background:#0b1324;padding:14px;color:#d7e6ff}
+  .steps li:before{content:counter(step,decimal-leading-zero);display:inline-block;margin-right:10px;color:#38d7ff;font-weight:900}
+  code{background:#050912;border:1px solid #31415f;padding:2px 6px;color:#ffd057}
+</style>
+<main>
+  <h1>Install local project tools</h1>
+  <p>${htmlEscape(message)}</p>
+  <div class="notice">
+    The online GitHub Pages site is public, but local apps can run only after you install them on this computer and approve the browser connection. The site cannot silently install or run programs.
+  </div>
+  <ul class="steps">
+    <li>Download the needed local package.</li>
+    <li>Extract the archive and run <code>install_and_run.bat</code> or the included launcher.</li>
+    <li>Return to this page and press “Launch after install”.</li>
+  </ul>
+  <div class="grid">
+    <a class="primary" href="${INSTALLER_URLS.ursina}">Download Ursina 3D package</a>
+    <a href="${INSTALLER_URLS.beeboard}">Download BeeBoard package</a>
+    <a href="${INSTALLER_URLS.physical}">Download physical simulation package</a>
+  </div>
+  <div class="grid">
+    <a class="primary" target="_top" href="${htmlEscape(retryUrl)}">Launch after install</a>
+    <a href="${INSTALLER_URLS.repository}">Open project repository</a>
+  </div>
+</main>`;
 }
 
 function requestLocalBridgeApproval(reason) {
@@ -1798,18 +1872,28 @@ function applyDeepLink() {
 
 setLanguage("en");
 renderPreviews([]);
+complexFrame = document.getElementById("complexFrame");
 applyDeepLink();
 
-complexFrame = document.getElementById("complexFrame");
-
-function renderComplexFrame() {
+async function renderComplexFrame() {
   if (!complexFrame) return;
+  if (!document.getElementById("complex")?.classList.contains("active")) {
+    renderLocalBridgePlaceholder("idle");
+    return;
+  }
   if (LOCAL_BRIDGE_ALLOWED && localBridgeUserConfirmed) {
     complexFrame.removeAttribute("srcdoc");
     complexFrame.src = withLocalToken(LOCAL_HIVE_URL);
     return;
   }
-  renderLocalBridgePlaceholder("locked");
+  if (!IS_LOCAL_PORTAL) {
+    const localStatus = await probeLocalHive();
+    if (!localStatus?.ok) {
+      renderLocalInstallPrompt("The local Hive bridge on 127.0.0.1:8876 is not running or this computer does not have the local project tools installed yet.");
+      return;
+    }
+  }
+  renderLocalInstallPrompt("The local project tools are installed, but this browser session still needs approval before the public site can connect to 127.0.0.1.");
   if (!IS_LOCAL_PORTAL && !localBridgeApprovalRequested) {
     localBridgeApprovalRequested = true;
     window.setTimeout(() => {
@@ -1834,13 +1918,27 @@ window.addEventListener("message", (event) => {
 
 document.querySelectorAll("[data-local-open]").forEach((node) => {
   node.addEventListener("click", async (event) => {
+    event.preventDefault();
+    const localStatus = await probeLocalHive();
+    if (!localStatus?.ok) {
+      showView("complex");
+      renderLocalInstallPrompt("Local project tools are not running on this computer. Install the package first, then launch again from this page.");
+      return;
+    }
+    const target = node.dataset.localOpen;
+    if (target === "beeboard" && localStatus.beeboard && !localStatus.beeboard.installed) {
+      renderLocalInstallPrompt("BeeBoard is not installed on this computer yet.");
+      return;
+    }
+    if (target === "ursina" && localStatus.ursina && !localStatus.ursina.installed) {
+      renderLocalInstallPrompt("Ursina 3D is not installed on this computer yet.");
+      return;
+    }
     if (!LOCAL_BRIDGE_ALLOWED) {
-      event.preventDefault();
       if (!(await requireLocalBridge(`open ${node.textContent.trim()} on 127.0.0.1`))) {
         return;
       }
     }
-    const target = node.dataset.localOpen;
     if (target === "hive") {
       node.href = withLocalToken(LOCAL_HIVE_URL);
     } else if (target === "beeboard") {
@@ -1850,7 +1948,7 @@ document.querySelectorAll("[data-local-open]").forEach((node) => {
     } else if (target === "ursina") {
       node.href = withLocalToken(`${LOCAL_HIVE_BASE}/local-ursina-simulator?api=${encodeURIComponent(LOCAL_HIVE_BASE)}&processor_id=0`);
     }
-    if (event.defaultPrevented) {
+    if (node.href && node.href !== "#") {
       window.open(node.href, "_blank", "noopener,noreferrer");
     }
   });
