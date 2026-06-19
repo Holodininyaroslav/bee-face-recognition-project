@@ -41,6 +41,7 @@ let LOCAL_BRIDGE_ALLOWED = START_PARAMS.get("local_bridge") === "1" && (
   validLocalToken(START_PARAMS.get("local_session") || readStoredLocalApprovalSession())
 );
 let localBridgeIdleTimer = null;
+let localBridgeApprovalRequested = false;
 let localBridgeUserConfirmed = LOCAL_BRIDGE_ALLOWED && (
   IS_LOCAL_PORTAL ||
   START_PARAMS.get("session") === "local-approved" ||
@@ -122,15 +123,6 @@ function renderLocalBridgePlaceholder(mode = "locked") {
     <meta charset="utf-8">
     <body style="margin:0;background:#07101e"></body>
   `;
-}
-
-function renderOnlineComplexFrame() {
-  if (!complexFrame) return;
-  complexFrame.removeAttribute("srcdoc");
-  const frameUrl = new URL("complex.html", window.location.href);
-  const cacheVersion = START_PARAMS.get("v") || "site-complex";
-  frameUrl.searchParams.set("v", cacheVersion);
-  complexFrame.src = frameUrl.toString();
 }
 
 function approveLocalBridgeFromSavedToken(reason = "reconnect local project tools") {
@@ -1812,7 +1804,18 @@ complexFrame = document.getElementById("complexFrame");
 
 function renderComplexFrame() {
   if (!complexFrame) return;
-  renderOnlineComplexFrame();
+  if (LOCAL_BRIDGE_ALLOWED && localBridgeUserConfirmed) {
+    complexFrame.removeAttribute("srcdoc");
+    complexFrame.src = withLocalToken(LOCAL_HIVE_URL);
+    return;
+  }
+  renderLocalBridgePlaceholder("locked");
+  if (!IS_LOCAL_PORTAL && !localBridgeApprovalRequested) {
+    localBridgeApprovalRequested = true;
+    window.setTimeout(() => {
+      requestLocalBridgeApproval("open the original AI MIPS Hive Web interface");
+    }, 100);
+  }
 }
 
 renderComplexFrame();
