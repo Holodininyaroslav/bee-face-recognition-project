@@ -174,7 +174,7 @@ function renderLocalInstallPrompt(message = "Local project tools are not running
     <li>Return to this page and press “Launch after install”.</li>
   </ul>
   <div class="grid">
-    <a class="primary" href="${INSTALLER_URLS.ursina}">Download game demonstration package</a>
+    <a class="primary" href="${INSTALLER_URLS.ursina}">Download Bgame package</a>
     <a href="${INSTALLER_URLS.beeboard}">Download BeeBoard package</a>
     <a href="${INSTALLER_URLS.physical}">Download physical simulation package</a>
   </div>
@@ -277,8 +277,8 @@ const translations = {
     complex: "Complex demonstration integrated into the project",
     toolColab: "Colab project notebook",
     toolColabText: "Open the CUDA/Colab detector notebook from this repository.",
-    toolUrsina: "Game demonstration installer",
-    toolUrsinaText: "Download the local Ursina-based bee game package.",
+    toolUrsina: "Bgame installer",
+    toolUrsinaText: "Download the local bee gameplay package.",
     toolBeeBoard: "BeeBoard installer",
     toolBeeBoardText: "Download the local BeeBoard interface package.",
     toolPhysical: "Physical simulation installer",
@@ -331,8 +331,8 @@ const translations = {
     openHive: "Open local Hive",
     openBeeBoard: "Open BeeBoard 3D",
     openPhysical: "Open physical wings",
-    openUrsina: "Open game demonstration",
-    downloadUrsina: "Ursina installer",
+    openUrsina: "Open Bgame",
+    downloadUrsina: "Bgame installer",
     downloadBeeBoard: "BeeBoard installer",
     downloadPhysical: "Physical installer",
     back: "Back"
@@ -1972,7 +1972,7 @@ document.querySelectorAll("[data-local-open]").forEach((node) => {
         return;
       }
       if (target === "ursina" && localStatus.ursina && !localStatus.ursina.installed) {
-        renderLocalInstallPrompt("The game demonstration is not installed on this computer yet.");
+        renderLocalInstallPrompt("Bgame is not installed on this computer yet.");
         return;
       }
     }
