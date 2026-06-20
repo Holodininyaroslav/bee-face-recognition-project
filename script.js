@@ -1988,7 +1988,7 @@ document.querySelectorAll("[data-local-open]").forEach((node) => {
     } else if (target === "physical") {
       node.href = withLocalToken(`${LOCAL_HIVE_BASE}/physical-simulator`);
     } else if (target === "ursina") {
-      node.href = withLocalToken(`${LOCAL_HIVE_BASE}/local-ursina-simulator?api=${encodeURIComponent(LOCAL_HIVE_BASE)}&processor_id=0`);
+      node.href = withLocalToken(`${LOCAL_HIVE_BASE}/local-bgame?api=${encodeURIComponent(LOCAL_HIVE_BASE)}&processor_id=0`);
     }
     if (node.href && node.href !== "#") {
       window.open(node.href, "_blank", "noopener,noreferrer");
