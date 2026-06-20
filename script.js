@@ -3,7 +3,7 @@ const LOCAL_BEEBOARD_BASE = "http://127.0.0.1:8877";
 const LOCAL_HIVE_URL = `${LOCAL_HIVE_BASE}/?fresh=github-pages-local`;
 const LOCAL_BEEBOARD_VIEWER_URL = `${LOCAL_BEEBOARD_BASE}/?hive=${encodeURIComponent(LOCAL_HIVE_URL)}&processor=0#viewer`;
 const INSTALLER_URLS = {
-  ursina: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_ursina_game_installer_20260617_final.zip",
+  ursina: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bgame-installer.zip",
   beeboard: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip",
   physical: "https://holodininyaroslav.github.io/bee-face-recognition-project/physical_simulation_installer.zip",
   repository: "https://github.com/Holodininyaroslav/bee-face-recognition-project"
