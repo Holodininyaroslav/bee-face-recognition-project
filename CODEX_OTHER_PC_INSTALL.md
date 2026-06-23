@@ -1,14 +1,21 @@
 # Codex Install Guide for Another Computer
 
-This guide describes how to bring up the Bee Face Recognition Project on a fresh Windows computer.
+This guide is written for a fresh Windows computer. It tells another Codex session exactly what can be installed from the public repository and what still requires a live Colab session or the full local backend source.
 
 ## Public Links
 
 - Project site: https://holodininyaroslav.github.io/bee-face-recognition-project/
 - Repository: https://github.com/Holodininyaroslav/bee-face-recognition-project
+- Colab notebook: https://colab.research.google.com/github/Holodininyaroslav/bee-face-recognition-project/blob/main/colab/colab_public_one_image_site.ipynb
 - Bgame / Ursina game package: https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_ursina_game_installer.zip
 - Physical wings / FWMAV package: https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip
 - BeeBoard package: https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip
+
+## What Is Included Publicly
+
+The public repository contains the static GitHub Pages interface, the Colab notebook, the published detector source excerpt, documentation, security notes, and installer links.
+
+The public repository does not contain the full expanded local Hive backend directory. If the full local bridge backend is needed, it must come from the full project source package or from the original local development folder. Do not assume that `python_ai_mips_sim` exists after cloning only this Pages repository.
 
 ## Recommended Local Layout
 
@@ -20,7 +27,7 @@ git clone https://github.com/Holodininyaroslav/bee-face-recognition-project.git 
 
 ## Run the Static Site Locally
 
-The public GitHub Pages site works online without local installation. For local development:
+The public GitHub Pages site works online without local installation. For local testing of the static files:
 
 ```powershell
 cd C:\BeeFaceProject\site
@@ -35,58 +42,114 @@ http://127.0.0.1:8890/
 
 ## Install and Run Bgame
 
-1. Download `bee_ursina_game_installer.zip`.
-2. Extract it into `C:\BeeFaceProject\Bgame`.
-3. Install Python dependencies if needed:
+Download and extract the current game package:
 
 ```powershell
-cd C:\BeeFaceProject\Bgame
-py -m pip install -r .\Bee_3D_Standalone\requirements.txt
+cd C:\BeeFaceProject
+Invoke-WebRequest -Uri "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_ursina_game_installer.zip" -OutFile ".\bee_ursina_game_installer.zip"
+Expand-Archive ".\bee_ursina_game_installer.zip" -DestinationPath ".\Bgame" -Force
+cd .\Bgame
 ```
 
-4. Start the game:
+Verify the required files:
+
+```powershell
+Test-Path ".\bee_face_patrol.py"
+Test-Path ".\Start Bee Linked Game.bat"
+Test-Path ".\Start Linked Bee Experience.py"
+Test-Path ".\Bee_3D_Standalone\main.py"
+Test-Path ".\Bee_3D_Standalone\drone_model.py"
+Test-Path ".\Bee_3D_Standalone\drone model\model.glb"
+Test-Path ".\Bee_3D_Standalone\drone model\model_pbr.glb"
+Test-Path ".\Bee_3D_Standalone\drone model\model_diffuse.generated.png"
+Test-Path ".\Bee_3D_Standalone\drone model\faces\Adi.glb"
+Test-Path ".\Bee_3D_Standalone\drone model\faces\Faraj.glb"
+Test-Path ".\Bee_3D_Standalone\drone model\faces\Slava.glb"
+```
+
+Install Python dependencies if needed:
+
+```powershell
+py -m pip install -r ".\Bee_3D_Standalone\requirements.txt"
+```
+
+Start the linked 2D plus 3D game:
 
 ```powershell
 .\Start Bee Linked Game.bat
 ```
 
-The package must contain:
+Expected behavior:
 
-- `bee_face_patrol.py`
-- `Start Bee Linked Game.bat`
-- `Start Linked Bee Experience.py`
-- `Bee_3D_Standalone\main.py`
-- `Bee_3D_Standalone\drone_model.py`
-- `Bee_3D_Standalone\drone model\model.glb`
-- `Bee_3D_Standalone\drone model\model_pbr.glb`
-- `Bee_3D_Standalone\drone model\model_diffuse.generated.png`
-- `Bee_3D_Standalone\drone model\faces\Adi.glb`
-- `Bee_3D_Standalone\drone model\faces\Faraj.glb`
-- `Bee_3D_Standalone\drone model\faces\Slava.glb`
+- a linked game window opens;
+- the left side shows the 3D Ursina view;
+- the right side shows the 2D control map;
+- the 2D game controls the 3D bee/statue scene;
+- background music should not play in the published package.
+
+## Install and Run BeeBoard
+
+Download and extract BeeBoard:
+
+```powershell
+cd C:\BeeFaceProject
+Invoke-WebRequest -Uri "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip" -OutFile ".\beeboard_interface_installer.zip"
+Expand-Archive ".\beeboard_interface_installer.zip" -DestinationPath ".\BeeBoard" -Force
+cd ".\BeeBoard\BeeBoard_Interface"
+```
+
+Verify the required files:
+
+```powershell
+Test-Path ".\install_and_run.bat"
+Test-Path ".\run_beeboard.bat"
+Test-Path ".\app.py"
+Test-Path ".\desktop_app.py"
+Test-Path ".\circuit_sim.py"
+Test-Path ".\requirements.txt"
+Test-Path ".\BeeBoard_lab_3d_review.png"
+```
+
+Run:
+
+```powershell
+.\install_and_run.bat
+```
+
+Expected behavior:
+
+- the BeeBoard local interface starts;
+- the 3D board review page is available from the BeeBoard UI;
+- the installer does not need the GitHub Pages page to run by itself.
 
 ## Install and Run Physical Wings
 
 The physical wings simulator uses WSL Ubuntu because the current simulator runtime is Linux-based.
 
-1. Install WSL Ubuntu on Windows.
-2. Download `physical_simulation_installer.zip`.
-3. Extract it.
-4. Run:
+Install WSL Ubuntu first, then download and extract the physical package:
 
-```text
-Install and Start Physical Wings.bat
+```powershell
+cd C:\BeeFaceProject
+Invoke-WebRequest -Uri "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip" -OutFile ".\physical_simulation_installer.zip"
+Expand-Archive ".\physical_simulation_installer.zip" -DestinationPath ".\PhysicalWings" -Force
+cd ".\PhysicalWings"
 ```
 
-The script copies the simulator into WSL at:
+Verify the required files:
 
-```text
-~/codex_flappy/flappy
+```powershell
+Test-Path ".\Install and Start Physical Wings.bat"
+Test-Path ".\flappy\flappy_inspector.py"
+Test-Path ".\flappy\fwmav_sim_env.py"
+Test-Path ".\flappy\simulation.py"
+Test-Path ".\flappy\start_flappy_inspector.sh"
+Test-Path ".\flappy\_Wing.cpython-38-x86_64-linux-gnu.so"
 ```
 
-Then it starts:
+Run:
 
-```text
-start_flappy_inspector.sh
+```powershell
+.\Install and Start Physical Wings.bat
 ```
 
 Expected local URL:
@@ -95,9 +158,41 @@ Expected local URL:
 http://127.0.0.1:8099/?fresh=bee-shell-rotated
 ```
 
-## Local Hive Bridge
+Expected behavior:
 
-Use the local bridge only when you intentionally want the public/static page to control local apps.
+- WSL receives a copy of the `flappy` simulator folder;
+- the FWMAV / physical wings inspector starts;
+- the physical simulation is the bee-shell / wing mechanics simulator, not the Bgame package.
+
+## Colab Detector Setup
+
+The Colab detector URL is not permanent. Google Colab and Gradio generate a new public URL for each live session.
+
+Setup steps:
+
+1. Open the Colab notebook link from this repository.
+2. Select a GPU runtime in Colab.
+3. Run the notebook cells that start the detector service.
+4. Copy the live Gradio URL printed by the notebook.
+5. Use the detector endpoint from that live session in the project interface.
+
+Expected behavior:
+
+- the simple demo can upload one image or a batch;
+- GPU and CPU modes return the same response format;
+- the JSON response includes label, score, margin, backend, elapsed time, and accepted/rejected status.
+
+## Full Local Hive Bridge
+
+The full local Hive bridge is the local backend that can control local apps and route detector calls. It is not fully expanded in the static GitHub Pages repository.
+
+Use this section only if the full backend source is available on the computer.
+
+Expected backend folder:
+
+```text
+python_ai_mips_sim
+```
 
 Start the bridge bound to localhost only:
 
@@ -109,11 +204,7 @@ py -m ai_mips_sim.server --host 127.0.0.1 --port 8876
 
 Never run the bridge on `0.0.0.0` for public access.
 
-## Colab Detector URL
-
-The face detector URL is generated by the running Colab/Gradio notebook. Start the notebook cells, copy the public Gradio URL, and use the detector endpoint from that live session.
-
-The site and Hive interface should send images to the active Colab detector, then display the returned label, score, backend, timing, and JSON summary.
+When the bridge is running, the GitHub Pages interface can be opened with an approved local session. A local token must stay private and must never be committed, pasted into public documentation, or shared in screenshots.
 
 ## Security Rules
 
@@ -124,3 +215,17 @@ The site and Hive interface should send images to the active Colab detector, the
 - Do not expose WSL, Hive, BeeBoard, Bgame, or physical simulator ports to the public internet.
 - If anything opens a local application unexpectedly, stop the local server and inspect `BEE_LOCAL_ALLOWED_ACTIONS`.
 
+## Fresh Computer Checklist
+
+After installation, another Codex session should verify:
+
+```powershell
+Test-Path "C:\BeeFaceProject\site\index.html"
+Test-Path "C:\BeeFaceProject\Bgame\Start Bee Linked Game.bat"
+Test-Path "C:\BeeFaceProject\Bgame\Bee_3D_Standalone\drone model\model_diffuse.generated.png"
+Test-Path "C:\BeeFaceProject\BeeBoard\BeeBoard_Interface\install_and_run.bat"
+Test-Path "C:\BeeFaceProject\PhysicalWings\Install and Start Physical Wings.bat"
+Test-Path "C:\BeeFaceProject\PhysicalWings\flappy\flappy_inspector.py"
+```
+
+All checks should return `True`. If a check returns `False`, the relevant ZIP was not downloaded, was extracted into the wrong folder, or the package is incomplete.
