@@ -120,11 +120,11 @@ Future releases are planned to add additional abstraction layers around the curr
 The project provides downloadable local packages:
 
 - Ursina game installer:  
-  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_ursina_game_installer_20260617_final.zip
+  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_ursina_game_installer.zip
 - BeeBoard interface installer:  
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip
 - Physical bee-shell / FWMAV simulator installer:  
-  https://holodininyaroslav.github.io/bee-face-recognition-project/physical_simulation_installer.zip
+  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip
 
 The physical simulator package is the current local version tied to:
 
