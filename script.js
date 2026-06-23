@@ -6,6 +6,7 @@ const INSTALLER_URLS = {
   ursina: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_ursina_game_installer.zip",
   beeboard: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip",
   physical: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip",
+  hive: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/ai_mips_hive_service_installer.zip",
   repository: "https://github.com/Holodininyaroslav/bee-face-recognition-project"
 };
 const START_PARAMS = new URLSearchParams(window.location.search);
@@ -277,6 +278,8 @@ const translations = {
     complex: "Complex demonstration integrated into the project",
     toolColab: "Colab project notebook",
     toolColabText: "Open the CUDA/Colab detector notebook from this repository.",
+    toolHiveInstaller: "AI MIPS Hive Service installer",
+    toolHiveInstallerText: "Download the local Hive menu and backend service package.",
     toolUrsina: "Bgame installer",
     toolUrsinaText: "Download the local bee gameplay package.",
     toolBeeBoard: "BeeBoard installer",

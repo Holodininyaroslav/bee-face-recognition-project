@@ -24,6 +24,7 @@ The project is built as a portfolio and course-style engineering demo: it is not
 - Shows CUDA-oriented notes and code annotations for the computation stages.
 - Hosts an integrated AI MIPS Hive-style interface with processors, detections, bus/matrix/control events, and bee-node UI.
 - Provides local installers for related simulations:
+  - AI MIPS Hive Service local menu and backend package.
   - Ursina 3D game/simulation package.
   - BeeBoard interface package.
   - Physical bee-shell / FWMAV simulation package.
@@ -119,6 +120,8 @@ Future releases are planned to add additional abstraction layers around the curr
 
 The project provides downloadable local packages:
 
+- AI MIPS Hive Service installer:
+  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/ai_mips_hive_service_installer.zip
 - Ursina game installer:  
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_ursina_game_installer.zip
 - BeeBoard interface installer:  
@@ -154,6 +157,7 @@ CODEX_OTHER_PC_INSTALL.md
 |-- backup/                            # Reserved backup/static placeholder area
 |-- installers/
 |   `-- README.md                       # Installer download notes
+|-- CODEX_OTHER_PC_INSTALL.md           # Fresh-computer installation guide
 |-- SECURITY_LOCAL_BRIDGE.md            # Local bridge safety notes
 `-- physical_simulation_installer.zip   # Current physical bee-shell simulator package
 ```

@@ -7,6 +7,7 @@ This guide is written for a fresh Windows computer. It tells another Codex sessi
 - Project site: https://holodininyaroslav.github.io/bee-face-recognition-project/
 - Repository: https://github.com/Holodininyaroslav/bee-face-recognition-project
 - Colab notebook: https://colab.research.google.com/github/Holodininyaroslav/bee-face-recognition-project/blob/main/colab/colab_public_one_image_site.ipynb
+- AI MIPS Hive Service package: https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/ai_mips_hive_service_installer.zip
 - Bgame / Ursina game package: https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_ursina_game_installer.zip
 - Physical wings / FWMAV package: https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip
 - BeeBoard package: https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip
@@ -15,7 +16,7 @@ This guide is written for a fresh Windows computer. It tells another Codex sessi
 
 The public repository contains the static GitHub Pages interface, the Colab notebook, the published detector source excerpt, documentation, security notes, and installer links.
 
-The public repository does not contain the full expanded local Hive backend directory. If the full local bridge backend is needed, it must come from the full project source package or from the original local development folder. Do not assume that `python_ai_mips_sim` exists after cloning only this Pages repository.
+The public repository does not keep the full expanded local Hive backend directory directly in the static Pages checkout. Install it from the AI MIPS Hive Service package listed above.
 
 ## Recommended Local Layout
 
@@ -39,6 +40,49 @@ Open:
 ```text
 http://127.0.0.1:8890/
 ```
+
+## Install and Run AI MIPS Hive Service
+
+Download and extract the local Hive menu/backend package:
+
+```powershell
+cd C:\BeeFaceProject
+Invoke-WebRequest -Uri "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/ai_mips_hive_service_installer.zip" -OutFile ".\ai_mips_hive_service_installer.zip"
+Expand-Archive ".\ai_mips_hive_service_installer.zip" -DestinationPath ".\HiveService" -Force
+cd ".\HiveService\AI_MIPS_Hive_Service"
+```
+
+Verify the required files:
+
+```powershell
+Test-Path ".\Start AI MIPS Hive Web.bat"
+Test-Path ".\Start AI MIPS Hive Web.ps1"
+Test-Path ".\README_HIVE_SERVICE.md"
+Test-Path ".\python_ai_mips_sim\web\index.html"
+Test-Path ".\python_ai_mips_sim\web\app.js"
+Test-Path ".\python_ai_mips_sim\web\app.css"
+Test-Path ".\python_ai_mips_sim\ai_mips_sim\server.py"
+Test-Path ".\python_ai_mips_sim\web\StreamingAssets\Models\BeeOriginal_model_pbr.glb"
+```
+
+Run:
+
+```powershell
+.\Start AI MIPS Hive Web.bat
+```
+
+Expected local URL:
+
+```text
+http://127.0.0.1:8876/?fresh=hive-main
+```
+
+Expected behavior:
+
+- the AI MIPS Hive Service menu opens;
+- the page shows processors, detector controls, hex map, detections, and recent events;
+- `/api/hive` returns JSON state;
+- the service listens on `127.0.0.1` only.
 
 ## Install and Run Bgame
 
@@ -184,20 +228,18 @@ Expected behavior:
 
 ## Full Local Hive Bridge
 
-The full local Hive bridge is the local backend that can control local apps and route detector calls. It is not fully expanded in the static GitHub Pages repository.
+The full local Hive bridge is included in the AI MIPS Hive Service package. Use this section after extracting that package.
 
-Use this section only if the full backend source is available on the computer.
-
-Expected backend folder:
+Expected backend folder after extracting the package:
 
 ```text
-python_ai_mips_sim
+C:\BeeFaceProject\HiveService\AI_MIPS_Hive_Service\python_ai_mips_sim
 ```
 
 Start the bridge bound to localhost only:
 
 ```powershell
-cd C:\BeeFaceProject\python_ai_mips_sim
+cd C:\BeeFaceProject\HiveService\AI_MIPS_Hive_Service\python_ai_mips_sim
 $env:BEE_LOCAL_ALLOWED_ACTIONS="local_bridge_approval,detect_face,control_hive,configure_detector,open_beeboard,open_physical,start_ursina,start_bgame"
 py -m ai_mips_sim.server --host 127.0.0.1 --port 8876
 ```
@@ -221,6 +263,9 @@ After installation, another Codex session should verify:
 
 ```powershell
 Test-Path "C:\BeeFaceProject\site\index.html"
+Test-Path "C:\BeeFaceProject\HiveService\AI_MIPS_Hive_Service\Start AI MIPS Hive Web.bat"
+Test-Path "C:\BeeFaceProject\HiveService\AI_MIPS_Hive_Service\python_ai_mips_sim\web\index.html"
+Test-Path "C:\BeeFaceProject\HiveService\AI_MIPS_Hive_Service\python_ai_mips_sim\ai_mips_sim\server.py"
 Test-Path "C:\BeeFaceProject\Bgame\Start Bee Linked Game.bat"
 Test-Path "C:\BeeFaceProject\Bgame\Bee_3D_Standalone\drone model\model_diffuse.generated.png"
 Test-Path "C:\BeeFaceProject\BeeBoard\BeeBoard_Interface\install_and_run.bat"
