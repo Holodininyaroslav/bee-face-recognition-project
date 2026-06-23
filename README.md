@@ -134,6 +134,12 @@ http://127.0.0.1:8099/?fresh=bee-shell-rotated
 
 It contains the Flappy/FWMAV inspector-based simulator with visible bee-shell outline and live mechanics state, not the older simple canvas placeholder.
 
+For a clean setup on another Windows computer, see:
+
+```text
+CODEX_OTHER_PC_INSTALL.md
+```
+
 ## Repository Layout
 
 ```text
