@@ -28,6 +28,7 @@ The project is built as a portfolio and course-style engineering demo: it is not
   - Ursina 3D game/simulation package.
   - BeeBoard interface package.
   - Physical bee-shell / FWMAV simulation package.
+  - Browser CAD/mechanic simulation inside the AI MIPS Hive Service package.
 - Uses a token-gated local bridge so the public site does not automatically control applications on the local computer.
 
 ## High-Level Architecture
@@ -42,6 +43,7 @@ flowchart LR
     D --> F["Local CPU / detector fallback"]
     D --> G["BeeBoard on 127.0.0.1:8877"]
     D --> H["Physical bee-shell simulator on 127.0.0.1:8099"]
+    D --> K["Browser CAD mechanic simulator on 127.0.0.1:8876/mechanic-simulator"]
     E --> I["DeepID-style embedding and reference comparison"]
     F --> I
     I --> J["JSON result: label, scores, margin, backend, elapsed time"]
@@ -128,6 +130,15 @@ The project provides downloadable local packages:
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip
 - Physical bee-shell / FWMAV simulator installer:  
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip
+
+The AI MIPS Hive Service installer now includes the integrated Hive menu plus the browser CAD/mechanic animation page:
+
+```text
+AI_MIPS_Hive_Service/python_ai_mips_sim/web/mechanic-simulator.html
+http://127.0.0.1:8876/mechanic-simulator
+```
+
+In the Hive map, expand the `Physical simulator` hex to open the additional `Mechanic Simulation` hex. That page renders the CAD-style wing/body mechanism in the browser and reads live simulator state when the physical simulator is running, with a procedural fallback when it is not.
 
 The BeeBoard package includes the local BeeBoard interface and the 3D Board Review assets, including:
 

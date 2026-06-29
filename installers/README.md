@@ -6,6 +6,9 @@ GitHub rejects ordinary git files above 100 MB, and the Ursina game installer is
 
 - `bee_ursina_game_installer.zip`
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_ursina_game_installer.zip
+- `ai_mips_hive_service_installer.zip`
+  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/ai_mips_hive_service_installer.zip
+  Includes the local AI MIPS Hive Service menu, backend routes, and the browser CAD/mechanic simulation page at `/mechanic-simulator`.
 - `beeboard_interface_installer.zip`
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip
 - `physical_simulation_installer.zip`
