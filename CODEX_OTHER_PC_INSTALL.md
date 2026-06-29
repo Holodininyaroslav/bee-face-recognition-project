@@ -152,6 +152,9 @@ Test-Path ".\desktop_app.py"
 Test-Path ".\circuit_sim.py"
 Test-Path ".\requirements.txt"
 Test-Path ".\BeeBoard_lab_3d_review.png"
+Test-Path "..\BeeBoard_v0_1_Micro_KiCad\BeeBoard_v0_1_Micro.glb"
+Test-Path "..\BeeBoard_v0_1_Micro_KiCad\BeeBoard_v0_1_Micro_board_layers.step"
+Test-Path "..\BeeBoard_v0_1_Micro_KiCad\BeeBoard_v0_1_Micro_KiCad.kicad_pcb"
 ```
 
 Run:
@@ -164,7 +167,17 @@ Expected behavior:
 
 - the BeeBoard local interface starts;
 - the 3D board review page is available from the BeeBoard UI;
+- the 3D Board Review model loads from `..\BeeBoard_v0_1_Micro_KiCad\BeeBoard_v0_1_Micro.glb`;
 - the installer does not need the GitHub Pages page to run by itself.
+
+Optional local API check after the app starts:
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:8877/api/health" | Select-Object model_exists, model_path
+Invoke-WebRequest "http://127.0.0.1:8877/board/BeeBoard_v0_1_Micro.glb" | Select-Object StatusCode, RawContentLength
+```
+
+Expected: `model_exists` is `True`, and the GLB request returns HTTP `200`.
 
 ## Install and Run Physical Wings
 

@@ -129,6 +129,17 @@ The project provides downloadable local packages:
 - Physical bee-shell / FWMAV simulator installer:  
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip
 
+The BeeBoard package includes the local BeeBoard interface and the 3D Board Review assets, including:
+
+```text
+BeeBoard_Interface/
+BeeBoard_v0_1_Micro_KiCad/BeeBoard_v0_1_Micro.glb
+BeeBoard_v0_1_Micro_KiCad/BeeBoard_v0_1_Micro_board_layers.step
+BeeBoard_v0_1_Micro_KiCad/BeeBoard_v0_1_Micro_KiCad.kicad_pcb
+```
+
+After installation, BeeBoard should report `model_exists: true` from `http://127.0.0.1:8877/api/health`.
+
 The physical simulator package is the current local version tied to:
 
 ```text
