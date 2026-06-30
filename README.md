@@ -143,6 +143,16 @@ http://127.0.0.1:8876/blockchain-simulation
 ```
 
 In the Hive map, expand the `Physical simulator` hex to open the additional `Mechanic Simulation` hex. That page renders the CAD-style wing/body mechanism in the browser and reads live simulator state when the physical simulator is running, with a procedural fallback when it is not.
+The mechanic simulation is packaged with its own browser CAD assets:
+
+```text
+AI_MIPS_Hive_Service/python_ai_mips_sim/web/cad-mechanics/app.js
+AI_MIPS_Hive_Service/python_ai_mips_sim/web/cad-mechanics/bee-shell.obj
+AI_MIPS_Hive_Service/python_ai_mips_sim/web/vendor/three-addons/controls/OrbitControls.js
+AI_MIPS_Hive_Service/python_ai_mips_sim/web/vendor/three-addons/loaders/OBJLoader.js
+```
+
+These files let a fresh local Hive installation open the Browser CAD Mechanics simulator without depending on the original development server at `127.0.0.1:8877/cad-mechanics`.
 
 In the Hive map, expand the blue `Network simulator` hex to open the blue `Blockchain Simulation` hex. That page is a local EOS-style sandbox: it shows a simulated 2000.0000 EOS treasury, node registry, job/result ledger, installer hash registry, contract source, and line-by-line contract annotations. It does not send transactions to a real EOS/Vaulta blockchain.
 
