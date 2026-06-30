@@ -125,32 +125,19 @@ Future releases are planned to add additional abstraction layers around the curr
 - **Li-Fi swarm networking** - communication modules that show how nearby bees connect into a unified compute network through Li-Fi links.
 - **Bioreactor energy stage** - a long-term simulation stage where a bioreactor processes plastic and generates electrical energy. This is the furthest planned stage of the project, but it is part of the intended release direction.
 
-## Installers
+## Installer
 
-The project provides downloadable local packages:
+The recommended installation path is one full local suite package:
 
-- AI MIPS Hive Service installer:
-  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/ai_mips_hive_service_installer.zip
-- Ursina game installer:  
-  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_ursina_game_installer.zip
-- BeeBoard interface installer:  
-  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip
-- Physical bee-shell / FWMAV simulator installer:  
-  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip
-- Bgame installer:  
-  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bgame_installer.zip
-- Colab detector payload:  
-  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/colab_ai_mips_bee_identity_payload_compact.zip
-- Blockchain simulation installer:  
-  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/blockchain_simulation_installer.zip
-- LI-FI communication concept installer:  
-  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/lifi_communication_concept_installer.zip
-- Neutrino communication concept installer:  
-  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/neutrino_communication_concept_installer.zip
-- Satellite communication simulator installer:  
-  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/satellite_communication_installer.zip
-- Mechanic simulation launcher installer:  
-  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/mechanic_simulation_installer.zip
+https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_face_full_local_suite_installer.zip
+
+This package installs the local Hive service, the integrated Hive menu, BeeBoard 3D review with model assets, Bgame, physical wing calibration, browser CAD/mechanic simulation, satellite/orbital mechanics, blockchain/communication concept pages, and the launch scripts used by the browser menu.
+
+The release still keeps several individual component archives as legacy/internal recovery assets, but the normal user flow should use the full local suite installer so the tools and models stay in sync.
+
+The Colab detector payload remains available separately for notebook/runtime setup:
+
+https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/colab_ai_mips_bee_identity_payload_compact.zip
 
 The AI MIPS Hive Service installer now includes the integrated Hive menu, the browser CAD/mechanic animation page, and the EOS blockchain simulation page:
 

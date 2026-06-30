@@ -7,16 +7,14 @@ This guide is written for a fresh Windows computer. It tells another Codex sessi
 - Project site: https://holodininyaroslav.github.io/bee-face-recognition-project/
 - Repository: https://github.com/Holodininyaroslav/bee-face-recognition-project
 - Colab notebook: https://colab.research.google.com/github/Holodininyaroslav/bee-face-recognition-project/blob/main/colab/colab_public_one_image_site.ipynb
-- AI MIPS Hive Service package: https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/ai_mips_hive_service_installer.zip
-- Bgame / Ursina game package: https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_ursina_game_installer.zip
-- Physical wings / FWMAV package: https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip
-- BeeBoard package: https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip
+- Full local suite installer: https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_face_full_local_suite_installer.zip
+- Colab detector payload: https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/colab_ai_mips_bee_identity_payload_compact.zip
 
 ## What Is Included Publicly
 
 The public repository contains the static GitHub Pages interface, the Colab notebook, the published detector source excerpt, documentation, security notes, and installer links.
 
-The public repository does not keep the full expanded local Hive backend directory directly in the static Pages checkout. Install it from the AI MIPS Hive Service package listed above.
+The public repository does not keep the full expanded local Hive backend directory directly in the static Pages checkout. Install it from the full local suite package listed above. The suite contains the Hive backend, BeeBoard, Bgame, physical/mechanic/satellite tools, model assets, and component ZIP files in the exact locations expected by the local server.
 
 ## Recommended Local Layout
 
@@ -41,15 +39,17 @@ Open:
 http://127.0.0.1:8890/
 ```
 
-## Install and Run AI MIPS Hive Service
+## Install and Run the Full Local Suite
 
-Download and extract the local Hive menu/backend package:
+Download and extract the full suite package:
 
 ```powershell
 cd C:\BeeFaceProject
-Invoke-WebRequest -Uri "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/ai_mips_hive_service_installer.zip" -OutFile ".\ai_mips_hive_service_installer.zip"
-Expand-Archive ".\ai_mips_hive_service_installer.zip" -DestinationPath ".\HiveService" -Force
-cd ".\HiveService\AI_MIPS_Hive_Service"
+Invoke-WebRequest -Uri "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_face_full_local_suite_installer.zip" -OutFile ".\bee_face_full_local_suite_installer.zip"
+Expand-Archive ".\bee_face_full_local_suite_installer.zip" -DestinationPath ".\FullSuite" -Force
+cd ".\FullSuite\Bee_Face_Local_Suite"
+.\Install_All_Local_Tools.cmd
+cd "$env:USERPROFILE\BeeFaceLocalSuite\AI_MIPS_Hive_Service"
 ```
 
 Verify the required files:
@@ -69,6 +69,10 @@ Test-Path ".\python_ai_mips_sim\web\vendor\three-addons\loaders\OBJLoader.js"
 Test-Path ".\python_ai_mips_sim\web\blockchain-simulation.html"
 Test-Path ".\python_ai_mips_sim\ai_mips_sim\server.py"
 Test-Path ".\python_ai_mips_sim\web\StreamingAssets\Models\BeeOriginal_model_pbr.glb"
+Test-Path ".\bgame_installer.zip"
+Test-Path ".\beeboard_interface_installer.zip"
+Test-Path ".\physical_simulation_installer.zip"
+Test-Path ".\satellite_communication_installer.zip"
 ```
 
 Run:
@@ -95,9 +99,9 @@ Expected behavior:
 - `http://127.0.0.1:8876/blockchain-simulation` opens the EOS smart-contract sandbox;
 - the service listens on `127.0.0.1` only.
 
-## Install and Run Bgame
+## Optional Legacy Component: Bgame
 
-Download and extract the current game package:
+The full local suite already installs this package. Use these manual steps only for recovery or component testing:
 
 ```powershell
 cd C:\BeeFaceProject
@@ -142,9 +146,9 @@ Expected behavior:
 - the 2D game controls the 3D bee/statue scene;
 - background music should not play in the published package.
 
-## Install and Run BeeBoard
+## Optional Legacy Component: BeeBoard
 
-Download and extract BeeBoard:
+The full local suite already installs this package. Use these manual steps only for recovery or component testing:
 
 ```powershell
 cd C:\BeeFaceProject
@@ -190,7 +194,7 @@ Invoke-WebRequest "http://127.0.0.1:8877/board/BeeBoard_v0_1_Micro.glb" | Select
 
 Expected: `model_exists` is `True`, and the GLB request returns HTTP `200`.
 
-## Install and Run Physical Wings
+## Optional Legacy Component: Physical Wings
 
 The physical wings simulator uses WSL Ubuntu because the current simulator runtime is Linux-based.
 

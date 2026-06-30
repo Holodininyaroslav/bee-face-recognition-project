@@ -3,6 +3,7 @@ const LOCAL_BEEBOARD_BASE = "http://127.0.0.1:8877";
 const LOCAL_HIVE_URL = `${LOCAL_HIVE_BASE}/?fresh=github-pages-local`;
 const LOCAL_BEEBOARD_VIEWER_URL = `${LOCAL_BEEBOARD_BASE}/?hive=${encodeURIComponent(LOCAL_HIVE_URL)}&processor=0#viewer`;
 const INSTALLER_URLS = {
+  suite: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_face_full_local_suite_installer.zip",
   ursina: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_ursina_game_installer.zip",
   beeboard: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip",
   physical: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip",
@@ -170,14 +171,12 @@ function renderLocalInstallPrompt(message = "Local project tools are not running
     The online GitHub Pages site is public, but local apps can run only after you install them on this computer and approve the browser connection. The site cannot silently install or run programs.
   </div>
   <ul class="steps">
-    <li>Download the needed local package.</li>
-    <li>Extract the archive and run <code>install_and_run.bat</code> or the included launcher.</li>
+    <li>Download the full local suite package.</li>
+    <li>Extract the archive and run <code>Install_All_Local_Tools.cmd</code>.</li>
     <li>Return to this page and press “Launch after install”.</li>
   </ul>
   <div class="grid">
-    <a class="primary" href="${INSTALLER_URLS.ursina}">Download Bgame package</a>
-    <a href="${INSTALLER_URLS.beeboard}">Download BeeBoard package</a>
-    <a href="${INSTALLER_URLS.physical}">Download physical simulation package</a>
+    <a class="primary" href="${INSTALLER_URLS.suite}">Download full local suite</a>
   </div>
   <div class="grid">
     <a class="primary" target="_top" href="${htmlEscape(retryUrl)}">Launch after install</a>
@@ -278,6 +277,8 @@ const translations = {
     complex: "Complex demonstration integrated into the project",
     toolColab: "Colab project notebook",
     toolColabText: "Open the CUDA/Colab detector notebook from this repository.",
+    toolFullSuite: "Full local suite installer",
+    toolFullSuiteText: "Install the Hive service, local simulations, BeeBoard 3D review, Bgame, orbital mechanics, models, and launchers together.",
     toolHiveInstaller: "AI MIPS Hive Service installer",
     toolHiveInstallerText: "Download the local Hive menu and backend service package.",
     toolUrsina: "Bgame installer",
