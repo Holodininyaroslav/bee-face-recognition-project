@@ -147,6 +147,8 @@ The project provides downloadable local packages:
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/lifi_communication_concept_installer.zip
 - Neutrino communication concept installer:  
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/neutrino_communication_concept_installer.zip
+- Satellite communication simulator installer:  
+  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/satellite_communication_installer.zip
 - Mechanic simulation launcher installer:  
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/mechanic_simulation_installer.zip
 
@@ -179,6 +181,8 @@ The same Network branch also contains communication research nodes:
 - `neutrino comunication` - a purple concept node for long-range communication ideas.
 - `Basic concept` - a purple concept explanation node under `neutrino comunication`.
 - `Satellite comunication` - a purple node that opens the local satellite communication application at `http://127.0.0.1:8765/`.
+
+The satellite simulator is packaged separately as `satellite_communication_installer.zip`. It contains the local Earth-orbit WebGL app, satellite GLB models, Three.js loader files, and a launcher that starts `http://127.0.0.1:8765/`.
 
 The LI-FI, neutrino, and blockchain communication systems are concept/sandbox modules in the current release. They are included so the project architecture can be reviewed and expanded, but they are not production communication networks and they do not connect to real satellite, neutrino, or live EOS infrastructure.
 
