@@ -62,6 +62,7 @@ Test-Path ".\python_ai_mips_sim\web\index.html"
 Test-Path ".\python_ai_mips_sim\web\app.js"
 Test-Path ".\python_ai_mips_sim\web\app.css"
 Test-Path ".\python_ai_mips_sim\web\mechanic-simulator.html"
+Test-Path ".\python_ai_mips_sim\web\blockchain-simulation.html"
 Test-Path ".\python_ai_mips_sim\ai_mips_sim\server.py"
 Test-Path ".\python_ai_mips_sim\web\StreamingAssets\Models\BeeOriginal_model_pbr.glb"
 ```
@@ -85,6 +86,8 @@ Expected behavior:
 - `/api/hive` returns JSON state;
 - expanding the `Physical simulator` hex shows `Mechanic Simulation`;
 - `http://127.0.0.1:8876/mechanic-simulator` opens the browser CAD/mechanic animation;
+- expanding the blue `Network simulator` hex shows `Blockchain Simulation`;
+- `http://127.0.0.1:8876/blockchain-simulation` opens the EOS smart-contract sandbox;
 - the service listens on `127.0.0.1` only.
 
 ## Install and Run Bgame
@@ -282,6 +285,7 @@ Test-Path "C:\BeeFaceProject\site\index.html"
 Test-Path "C:\BeeFaceProject\HiveService\AI_MIPS_Hive_Service\Start AI MIPS Hive Web.bat"
 Test-Path "C:\BeeFaceProject\HiveService\AI_MIPS_Hive_Service\python_ai_mips_sim\web\index.html"
 Test-Path "C:\BeeFaceProject\HiveService\AI_MIPS_Hive_Service\python_ai_mips_sim\web\mechanic-simulator.html"
+Test-Path "C:\BeeFaceProject\HiveService\AI_MIPS_Hive_Service\python_ai_mips_sim\web\blockchain-simulation.html"
 Test-Path "C:\BeeFaceProject\HiveService\AI_MIPS_Hive_Service\python_ai_mips_sim\ai_mips_sim\server.py"
 Test-Path "C:\BeeFaceProject\Bgame\Start Bee Linked Game.bat"
 Test-Path "C:\BeeFaceProject\Bgame\Bee_3D_Standalone\drone model\model_diffuse.generated.png"

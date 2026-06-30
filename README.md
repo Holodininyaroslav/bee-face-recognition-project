@@ -29,6 +29,7 @@ The project is built as a portfolio and course-style engineering demo: it is not
   - BeeBoard interface package.
   - Physical bee-shell / FWMAV simulation package.
   - Browser CAD/mechanic simulation inside the AI MIPS Hive Service package.
+  - EOS blockchain contract sandbox inside the AI MIPS Hive Service package.
 - Uses a token-gated local bridge so the public site does not automatically control applications on the local computer.
 
 ## High-Level Architecture
@@ -44,6 +45,7 @@ flowchart LR
     D --> G["BeeBoard on 127.0.0.1:8877"]
     D --> H["Physical bee-shell simulator on 127.0.0.1:8099"]
     D --> K["Browser CAD mechanic simulator on 127.0.0.1:8876/mechanic-simulator"]
+    D --> L["EOS blockchain contract sandbox on 127.0.0.1:8876/blockchain-simulation"]
     E --> I["DeepID-style embedding and reference comparison"]
     F --> I
     I --> J["JSON result: label, scores, margin, backend, elapsed time"]
@@ -131,14 +133,18 @@ The project provides downloadable local packages:
 - Physical bee-shell / FWMAV simulator installer:  
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip
 
-The AI MIPS Hive Service installer now includes the integrated Hive menu plus the browser CAD/mechanic animation page:
+The AI MIPS Hive Service installer now includes the integrated Hive menu, the browser CAD/mechanic animation page, and the EOS blockchain simulation page:
 
 ```text
 AI_MIPS_Hive_Service/python_ai_mips_sim/web/mechanic-simulator.html
 http://127.0.0.1:8876/mechanic-simulator
+AI_MIPS_Hive_Service/python_ai_mips_sim/web/blockchain-simulation.html
+http://127.0.0.1:8876/blockchain-simulation
 ```
 
 In the Hive map, expand the `Physical simulator` hex to open the additional `Mechanic Simulation` hex. That page renders the CAD-style wing/body mechanism in the browser and reads live simulator state when the physical simulator is running, with a procedural fallback when it is not.
+
+In the Hive map, expand the blue `Network simulator` hex to open the blue `Blockchain Simulation` hex. That page is a local EOS-style sandbox: it shows a simulated 2000.0000 EOS treasury, node registry, job/result ledger, installer hash registry, contract source, and line-by-line contract annotations. It does not send transactions to a real EOS/Vaulta blockchain.
 
 The BeeBoard package includes the local BeeBoard interface and the 3D Board Review assets, including:
 
