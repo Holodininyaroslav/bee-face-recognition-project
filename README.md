@@ -30,6 +30,8 @@ The project is built as a portfolio and course-style engineering demo: it is not
   - Physical bee-shell / FWMAV simulation package.
   - Browser CAD/mechanic simulation inside the AI MIPS Hive Service package.
   - EOS blockchain contract sandbox inside the AI MIPS Hive Service package.
+  - LI-FI communication concept branch inside the Network simulator menu.
+  - Neutrino communication concept branch with Basic concept and Satellite comunication nodes.
 - Uses a token-gated local bridge so the public site does not automatically control applications on the local computer.
 
 ## High-Level Architecture
@@ -46,6 +48,9 @@ flowchart LR
     D --> H["Physical bee-shell simulator on 127.0.0.1:8099"]
     D --> K["Browser CAD mechanic simulator on 127.0.0.1:8876/mechanic-simulator"]
     D --> L["EOS blockchain contract sandbox on 127.0.0.1:8876/blockchain-simulation"]
+    D --> M["LI-FI communication concept"]
+    D --> N["Neutrino communication concept"]
+    N --> O["Satellite local app on 127.0.0.1:8765"]
     E --> I["DeepID-style embedding and reference comparison"]
     F --> I
     I --> J["JSON result: label, scores, margin, backend, elapsed time"]
@@ -132,6 +137,18 @@ The project provides downloadable local packages:
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip
 - Physical bee-shell / FWMAV simulator installer:  
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip
+- Bgame installer:  
+  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bgame_installer.zip
+- Colab detector payload:  
+  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/colab_ai_mips_bee_identity_payload_compact.zip
+- Blockchain simulation installer:  
+  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/blockchain_simulation_installer.zip
+- LI-FI communication concept installer:  
+  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/lifi_communication_concept_installer.zip
+- Neutrino communication concept installer:  
+  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/neutrino_communication_concept_installer.zip
+- Mechanic simulation launcher installer:  
+  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/mechanic_simulation_installer.zip
 
 The AI MIPS Hive Service installer now includes the integrated Hive menu, the browser CAD/mechanic animation page, and the EOS blockchain simulation page:
 
@@ -155,6 +172,15 @@ AI_MIPS_Hive_Service/python_ai_mips_sim/web/vendor/three-addons/loaders/OBJLoade
 These files let a fresh local Hive installation open the Browser CAD Mechanics simulator without depending on the original development server at `127.0.0.1:8877/cad-mechanics`.
 
 In the Hive map, expand the blue `Network simulator` hex to open the blue `Blockchain Simulation` hex. That page is a local EOS-style sandbox: it shows a simulated 2000.0000 EOS treasury, node registry, job/result ledger, installer hash registry, contract source, and line-by-line contract annotations. It does not send transactions to a real EOS/Vaulta blockchain.
+
+The same Network branch also contains communication research nodes:
+
+- `LI-FI comunication` - a blue concept node reserved for local optical swarm-network simulations.
+- `neutrino comunication` - a purple concept node for long-range communication ideas.
+- `Basic concept` - a purple concept explanation node under `neutrino comunication`.
+- `Satellite comunication` - a purple node that opens the local satellite communication application at `http://127.0.0.1:8765/`.
+
+The LI-FI, neutrino, and blockchain communication systems are concept/sandbox modules in the current release. They are included so the project architecture can be reviewed and expanded, but they are not production communication networks and they do not connect to real satellite, neutrino, or live EOS infrastructure.
 
 The BeeBoard package includes the local BeeBoard interface and the 3D Board Review assets, including:
 
