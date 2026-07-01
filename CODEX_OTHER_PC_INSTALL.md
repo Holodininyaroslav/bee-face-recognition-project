@@ -9,10 +9,13 @@ This guide is written for a fresh Windows computer. It tells another Codex sessi
 - Colab notebook: https://colab.research.google.com/github/Holodininyaroslav/bee-face-recognition-project/blob/main/colab/colab_public_one_image_site.ipynb
 - Full local suite installer: https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_face_full_local_suite_installer.zip
 - Colab detector payload: https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/colab_ai_mips_bee_identity_payload_compact.zip
+- Module database: https://github.com/Holodininyaroslav/bee-face-recognition-project/blob/main/database/project_modules.json
 
 ## What Is Included Publicly
 
 The public repository contains the static GitHub Pages interface, the Colab notebook, the published detector source excerpt, documentation, security notes, and installer links.
+
+The repository also contains `database/project_modules.json`, a machine-readable inventory of the expected modules, local URLs, concept status, and release assets. Use it as the checklist if a fresh machine appears to be missing a simulator or model package.
 
 The public repository does not keep the full expanded local Hive backend directory directly in the static Pages checkout. Install it from the full local suite package listed above. The suite contains the Hive backend, BeeBoard, Bgame, physical/mechanic/satellite tools, model assets, and component ZIP files in the exact locations expected by the local server.
 
@@ -67,11 +70,19 @@ Test-Path ".\python_ai_mips_sim\web\cad-mechanics\bee-shell.obj"
 Test-Path ".\python_ai_mips_sim\web\vendor\three-addons\controls\OrbitControls.js"
 Test-Path ".\python_ai_mips_sim\web\vendor\three-addons\loaders\OBJLoader.js"
 Test-Path ".\python_ai_mips_sim\web\blockchain-simulation.html"
+Test-Path ".\python_ai_mips_sim\web\lifi-communication.html"
+Test-Path ".\python_ai_mips_sim\web\neutrino-communication.html"
+Test-Path ".\python_ai_mips_sim\web\neutrino-basic-concept.html"
+Test-Path ".\python_ai_mips_sim\web\neutrino-satellite-communication.html"
 Test-Path ".\python_ai_mips_sim\ai_mips_sim\server.py"
 Test-Path ".\python_ai_mips_sim\web\StreamingAssets\Models\BeeOriginal_model_pbr.glb"
 Test-Path ".\bgame_installer.zip"
 Test-Path ".\beeboard_interface_installer.zip"
 Test-Path ".\physical_simulation_installer.zip"
+Test-Path ".\mechanic_simulation_installer.zip"
+Test-Path ".\blockchain_simulation_installer.zip"
+Test-Path ".\lifi_communication_concept_installer.zip"
+Test-Path ".\neutrino_communication_concept_installer.zip"
 Test-Path ".\satellite_communication_installer.zip"
 ```
 

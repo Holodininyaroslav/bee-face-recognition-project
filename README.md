@@ -165,13 +165,15 @@ In the Hive map, expand the blue `Network simulator` hex to open the blue `Block
 The same Network branch also contains communication research nodes:
 
 - `LI-FI comunication` - a blue concept node reserved for local optical swarm-network simulations.
-- `neutrino comunication` - a purple concept node for long-range communication ideas.
-- `Basic concept` - a purple concept explanation node under `neutrino comunication`.
+- `neutrino comunication` - a purple concept node for long-range communication ideas, especially data transfer from deep underground locations where photon/electromagnetic communication is unavailable or impractical.
+- `Basic concept` - a purple concept explanation node under `neutrino comunication`; it opens the local neutrino concept page at `http://127.0.0.1:8891/`.
 - `Satellite comunication` - a purple node that opens the local satellite communication application at `http://127.0.0.1:8765/`.
 
 The satellite simulator is packaged separately as `satellite_communication_installer.zip`. It contains the local Earth-orbit WebGL app, satellite GLB models, Three.js loader files, and a launcher that starts `http://127.0.0.1:8765/`.
 
 The LI-FI, neutrino, and blockchain communication systems are concept/sandbox modules in the current release. They are included so the project architecture can be reviewed and expanded, but they are not production communication networks and they do not connect to real satellite, neutrino, or live EOS infrastructure.
+
+The current concept map also includes the local orbital/satellite simulator and a browser CAD mechanics simulator. These are not the main face-recognition detector, but they document the wider robotics/simulation direction of the project: bee mechanics, local board review, possible swarm networking, and future communication layers.
 
 The BeeBoard package includes the local BeeBoard interface and the 3D Board Review assets, including:
 
@@ -198,6 +200,16 @@ For a clean setup on another Windows computer, see:
 CODEX_OTHER_PC_INSTALL.md
 ```
 
+## Project Database
+
+The repository includes a lightweight module database for installers, local entrypoints, and concept status:
+
+```text
+database/project_modules.json
+```
+
+This file is meant for a second machine or another Codex agent. It lists the online portal, Colab detector payload, AI MIPS Hive service, BeeBoard 3D assets, Bgame, physical wing simulator, browser CAD/mechanic simulator, EOS blockchain sandbox, LI-FI concept, neutrino concept, satellite/orbital communication simulator, and the planned Life demonstration placeholder.
+
 ## Repository Layout
 
 ```text
@@ -210,6 +222,8 @@ CODEX_OTHER_PC_INSTALL.md
 |-- colab/
 |   `-- colab_public_one_image_site.ipynb
 |-- backup/                            # Reserved backup/static placeholder area
+|-- database/
+|   `-- project_modules.json            # Machine-readable module and installer inventory
 |-- installers/
 |   `-- README.md                       # Installer download notes
 |-- CODEX_OTHER_PC_INSTALL.md           # Fresh-computer installation guide

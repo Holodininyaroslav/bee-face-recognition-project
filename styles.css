@@ -131,6 +131,7 @@ button:disabled { opacity: .65; cursor: wait; }
   position: relative;
   z-index: 2;
   max-width: 980px;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, .72);
 }
 
 .lead, .panel-note {
@@ -193,7 +194,7 @@ button:disabled { opacity: .65; cursor: wait; }
   top: 16vh;
   width: min(46vw, 560px);
   height: min(46vw, 560px);
-  opacity: .82;
+  opacity: .74;
 }
 
 .honey-art span {
@@ -201,19 +202,39 @@ button:disabled { opacity: .65; cursor: wait; }
   width: 128px;
   aspect-ratio: 1;
   clip-path: polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0 50%);
-  background: linear-gradient(#ffd766, #ffae00);
+  background: linear-gradient(#ffda4d, #ff9f00);
   border: 2px solid rgba(255,255,255,.4);
 }
 
 .honey-art span:nth-child(1) { left: 190px; top: 20px; }
 .honey-art span:nth-child(2) { left: 80px; top: 92px; }
 .honey-art span:nth-child(3) { left: 300px; top: 92px; }
-.honey-art span:nth-child(4) { left: 190px; top: 164px; background: #22c55e; }
+.honey-art span:nth-child(4) { left: 190px; top: 164px; background: #16d46a; }
 .honey-art span:nth-child(5) { left: 80px; top: 236px; }
 .honey-art span:nth-child(6) { left: 300px; top: 236px; }
-.honey-art span:nth-child(7) { left: 190px; top: 308px; background: #233554; }
-.honey-art span:nth-child(8) { left: 410px; top: 164px; background: #233554; }
-.honey-art span:nth-child(9) { left: -30px; top: 164px; background: #233554; }
+.honey-art span:nth-child(7) { left: 190px; top: 308px; background: #2b4168; }
+.honey-art span:nth-child(8) { left: 410px; top: 164px; background: #2b4168; }
+.honey-art span:nth-child(9) { left: -30px; top: 164px; background: #2b4168; }
+
+html[dir="rtl"] .hero-copy {
+  max-width: min(980px, 68vw);
+}
+
+html[dir="rtl"] .hero-copy::before {
+  content: "";
+  position: absolute;
+  inset: -22px -28px;
+  z-index: -1;
+  background: linear-gradient(90deg, rgba(7, 16, 31, .18), rgba(7, 16, 31, .90) 32%, rgba(7, 16, 31, .96));
+  pointer-events: none;
+}
+
+html[dir="rtl"] .honey-art {
+  left: clamp(18px, 4vw, 72px);
+  right: auto;
+  top: 14vh;
+  opacity: .36;
+}
 
 .panel {
   margin: clamp(18px, 4vw, 48px);
