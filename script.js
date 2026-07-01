@@ -1873,12 +1873,24 @@ function patternCodeAnnotation(line) {
   return (found && (found[1][lang] || found[1].en)) || codeAnnotationFallback[lang] || codeAnnotationFallback.en;
 }
 
+function looksLikeMojibake(text) {
+  return typeof text === "string" && /(?:Рџ|Рћ|РЎ|Р’|Р­|РЅ|Р°|СЃ|С‚|СЂ|СЊ|СЏ|Чђ|Чћ|Ч©|Ч”|Ч™|Ч•|Чџ|Ч)/.test(text);
+}
+
+function cleanLocalizedCodeAnnotation(match, lang) {
+  const candidate = match && (match[lang] || match.en);
+  if (lang !== "en" && looksLikeMojibake(candidate)) {
+    return codeAnnotationFallback[lang] || codeAnnotationFallback.en;
+  }
+  return candidate;
+}
+
 function codeAnnotation(stage, line) {
   const lang = document.documentElement.lang || "en";
   const trimmed = line.trim();
   if (!trimmed) return codeBlankAnnotation[lang] || codeBlankAnnotation.en;
   const match = codeLineAnnotations[stage.level]?.[trimmed];
-  return (match && (match[lang] || match.en)) || patternCodeAnnotation(line);
+  return cleanLocalizedCodeAnnotation(match, lang) || patternCodeAnnotation(line);
 }
 
 function uiText(key) {
