@@ -1148,6 +1148,320 @@ let detectorSourceLoaded = false;
 let detectorSourceVisible = false;
 let detectorSourceText = "";
 
+const cleanRuTranslations = {
+  kicker: "COLAB GPU / РАСПОЗНАВАНИЕ ЛИЦ / ИНТЕРФЕЙС ПРОЕКТА",
+  title: "Добро пожаловать в Bee Face Recognition Project",
+  lead: "Загружайте скриншоты, распознавайте лица через подключенный Colab-детектор и смотрите тот же поток результатов в интегрированном интерфейсе AI MIPS.",
+  simple: "Простая демонстрация",
+  complex: "Сложная демонстрация, интегрированная в проект",
+  toolColab: "Блокнот проекта в Colab",
+  toolColabText: "Открыть CUDA/Colab-версию детектора из этого репозитория.",
+  toolFullSuite: "Полный локальный установщик",
+  toolFullSuiteText: "Устанавливает Hive-сервис, локальные симуляции, BeeBoard 3D, Bgame, орбитальную механику, модели и ярлыки одним пакетом.",
+  toolHiveInstaller: "Установщик AI MIPS Hive Service",
+  toolHiveInstallerText: "Скачать локальное меню Hive и backend-сервис.",
+  toolUrsina: "Установщик Bgame",
+  toolUrsinaText: "Скачать локальный игровой пакет с пчелой.",
+  toolBeeBoard: "Установщик BeeBoard",
+  toolBeeBoardText: "Скачать локальный пакет интерфейса BeeBoard.",
+  toolPhysical: "Установщик физической симуляции",
+  toolPhysicalText: "Скачать локальный пакет физической симуляции.",
+  simpleKicker: "ПРОСТОЙ РЕЖИМ",
+  simpleTitle: "Простая демонстрация распознавания лиц",
+  simpleNote: "Загрузите одно изображение или пачку, выберите GPU или CPU и нажмите «Распознать».",
+  imageTitle: "Изображение / скриншот",
+  dropHint: "Выберите одно или несколько изображений для анализа на GPU/CPU.",
+  mode: "Режим вычислений",
+  gpu: "GPU",
+  cpu: "CPU",
+  score: "Минимальный score",
+  margin: "Минимальный margin",
+  recognize: "Распознать",
+  builtIn: "Встроенные проверки на статуях",
+  tableImage: "Изображение / скриншот",
+  tableMode: "Режим вычислений",
+  tableScore: "Минимальный score",
+  tableMargin: "Минимальный margin",
+  tableRun: "Запуск",
+  resultTitle: "Результат детектора",
+  summary: "Загрузите изображение и нажмите «Распознать».",
+  json: "JSON детектора",
+  howKicker: "КАК РАБОТАЕТ ДЕТЕКТОР",
+  howTitle: "Что происходит с изображением внутри нейросети",
+  howIntro: "Простая демонстрация отправляет выбранное изображение в подключенный Colab-детектор. Эта же цепочка распознавания используется и здесь, и в интегрированном Hive-интерфейсе проекта.",
+  step1Title: "Входное изображение",
+  step1Text: "Загруженный скриншот читается как набор пикселей. Если выбрана пачка файлов, эти же шаги выполняются для каждой картинки по очереди.",
+  step2Title: "Обрезка лица и нормализация",
+  step2Text: "Детектор ищет область лица, вырезает полезный фрагмент, приводит его к входному размеру сети и нормализует значения цвета и яркости.",
+  step3Title: "Извлечение признаков",
+  step3Text: "Нейросеть превращает изображение лица в числовой вектор признаков, или embedding. Такой вектор описывает лицо компактнее и устойчивее, чем сырые пиксели.",
+  step4Title: "Сравнение с эталонами",
+  step4Text: "Новый embedding сравнивается с сохраненными эталонами известных людей. Ближайший эталон становится best label, второй ближайший сохраняется как runner up.",
+  step5Title: "Решение по score и margin",
+  step5Text: "Ответ принимается только если лучший score достаточно высокий и отрыв от второго результата достаточно большой. Иначе система возвращает Unknown, чтобы не подставлять неправильное имя.",
+  step6Title: "JSON-ответ",
+  step6Text: "Интерфейс получает короткое резюме и JSON с именем, best score, runner up, margin, backend-режимом, временем выполнения и флагом accepted.",
+  modeExplainTitle: "Режим GPU и CPU",
+  modeExplainText: "GPU-режим выполняет тяжелые операции над изображениями и векторами через ускоритель. CPU-режим выполняет ту же логику на процессоре. Ожидаемый ответ по личности должен быть тем же; меняется в основном место вычислений и время выполнения.",
+  openStage: "Открыть схему",
+  complexKicker: "ИНТЕГРИРОВАННЫЙ РЕЖИМ",
+  complexTitle: "Интегрированный интерфейс проекта",
+  openHive: "Открыть локальный Hive",
+  openBeeBoard: "Открыть BeeBoard 3D",
+  openPhysical: "Открыть физику крыльев",
+  openUrsina: "Открыть Bgame",
+  downloadUrsina: "Установщик Bgame",
+  downloadBeeBoard: "Установщик BeeBoard",
+  downloadPhysical: "Установщик физической симуляции",
+  back: "Назад",
+  sourceKicker: "ПОЛНЫЙ ИСХОДНЫЙ КОД ДЕТЕКТОРА",
+  sourceTitle: "Полная реализация нейросетевого распознавателя",
+  sourceIntro: "Откройте полный модуль Colab-детектора, если нужно увидеть части вокруг шести этапов вычислений: импорты, загрузку весов, выбор CUDA, модель DeepID, препроцессинг, эталонные embeddings, batch-распознавание, правила решения и JSON/API-связку.",
+  openDetectorSource: "Открыть полный исходный код детектора",
+  hideDetectorSource: "Скрыть полный исходный код детектора",
+  openRawDetectorSource: "Открыть raw-файл исходника",
+  sourceClosed: "Закрыто. Используйте это, когда фрагментов этапов недостаточно.",
+  sourceLoading: "Загружаю исходный код детектора из репозитория...",
+  sourceLoaded: "Показан точный исходный код нейросетевого детектора, скопированный из Colab-модуля. Raw-ссылка открывает полный модуль.",
+  sourceError: "Не удалось загрузить исходный файл детектора с этого сайта."
+};
+
+const cleanHeTranslations = {
+  kicker: "COLAB GPU / זיהוי פנים / ממשק הפרויקט",
+  title: "ברוכים הבאים ל-Bee Face Recognition Project",
+  lead: "העלו צילומי מסך, זהו פנים דרך גלאי Colab המחובר, וצפו באותו זרם תוצאות בתוך ממשק AI MIPS המשולב.",
+  simple: "הדגמה פשוטה",
+  complex: "הדגמה מורכבת המשולבת בפרויקט",
+  toolColab: "מחברת Colab של הפרויקט",
+  toolColabText: "פתיחת גרסת CUDA/Colab של הגלאי מתוך המאגר.",
+  toolFullSuite: "מתקין מקומי מלא",
+  toolFullSuiteText: "מתקין יחד את שירות Hive, הסימולציות המקומיות, BeeBoard 3D, Bgame, מכניקה מסלולית, מודלים וקיצורי הפעלה.",
+  toolHiveInstaller: "מתקין AI MIPS Hive Service",
+  toolHiveInstallerText: "הורדת תפריט Hive המקומי וחבילת ה-backend.",
+  toolUrsina: "מתקין Bgame",
+  toolUrsinaText: "הורדת חבילת המשחק המקומית עם הדבורה.",
+  toolBeeBoard: "מתקין BeeBoard",
+  toolBeeBoardText: "הורדת חבילת הממשק המקומית של BeeBoard.",
+  toolPhysical: "מתקין הסימולציה הפיזיקלית",
+  toolPhysicalText: "הורדת חבילת הסימולציה הפיזיקלית המקומית.",
+  simpleKicker: "מצב פשוט",
+  simpleTitle: "הדגמה פשוטה לזיהוי פנים",
+  simpleNote: "העלו תמונה אחת או אצווה, בחרו GPU או CPU ולחצו על זיהוי.",
+  imageTitle: "תמונה / צילום מסך",
+  dropHint: "בחרו תמונה אחת או יותר לניתוח GPU/CPU.",
+  mode: "מצב חישוב",
+  gpu: "GPU",
+  cpu: "CPU",
+  score: "ציון מינימלי",
+  margin: "מרווח מינימלי",
+  recognize: "זהה",
+  builtIn: "בדיקות מובנות על פסלים",
+  tableImage: "תמונה / צילום מסך",
+  tableMode: "מצב חישוב",
+  tableScore: "ציון מינימלי",
+  tableMargin: "מרווח מינימלי",
+  tableRun: "הרצה",
+  resultTitle: "תוצאת הגלאי",
+  summary: "העלו תמונה ולחצו על זיהוי.",
+  json: "JSON של הגלאי",
+  howKicker: "איך הגלאי עובד",
+  howTitle: "מה קורה לתמונה בתוך הרשת העצבית",
+  howIntro: "ההדגמה הפשוטה שולחת את התמונה שנבחרה אל גלאי Colab המחובר. אותה שרשרת זיהוי משמשת גם כאן וגם בממשק Hive המשולב של הפרויקט.",
+  step1Title: "תמונת קלט",
+  step1Text: "התמונה שהועלתה נקראת כאוסף פיקסלים. אם נבחרה אצווה, אותם שלבים מתבצעים עבור כל תמונה בנפרד.",
+  step2Title: "חיתוך פנים ונרמול",
+  step2Text: "הגלאי מחפש את אזור הפנים, חותך את החלק הרלוונטי, מתאים אותו לגודל הקלט של הרשת ומנרמל צבע ובהירות.",
+  step3Title: "חילוץ מאפיינים",
+  step3Text: "הרשת העצבית ממירה את תמונת הפנים לווקטור מספרי של מאפיינים, הנקרא embedding. הווקטור מתאר את הפנים בצורה יציבה וקומפקטית יותר מפיקסלים גולמיים.",
+  step4Title: "השוואה מול דוגמאות ייחוס",
+  step4Text: "ה-embedding החדש מושווה ל-embeddings שמורים של אנשים מוכרים. ההתאמה הקרובה ביותר הופכת לתווית הראשית, והשנייה נשמרת כ-runner up.",
+  step5Title: "החלטה לפי score ו-margin",
+  step5Text: "התוצאה מתקבלת רק אם הציון הטוב ביותר גבוה מספיק והמרווח מהתוצאה השנייה גדול מספיק. אחרת המערכת מחזירה Unknown כדי לא להציג שם שגוי.",
+  step6Title: "תשובת JSON",
+  step6Text: "הממשק מקבל תקציר קריא ו-JSON עם השם, הציון הטוב ביותר, runner up, margin, מצב backend, זמן ריצה ודגל accepted.",
+  modeExplainTitle: "מצבי GPU ו-CPU",
+  modeExplainText: "מצב GPU מריץ את הפעולות הכבדות על המאיץ. מצב CPU מריץ את אותה לוגיקת זיהוי על המעבד. התוצאה צפויה להישאר זהה; ההבדל הוא בעיקר מקום החישוב וזמן הריצה.",
+  openStage: "פתח תרשים",
+  complexKicker: "מצב משולב",
+  complexTitle: "הממשק המשולב של הפרויקט",
+  openHive: "פתח Hive מקומי",
+  openBeeBoard: "פתח BeeBoard 3D",
+  openPhysical: "פתח פיזיקת כנפיים",
+  openUrsina: "פתח Bgame",
+  downloadUrsina: "מתקין Bgame",
+  downloadBeeBoard: "מתקין BeeBoard",
+  downloadPhysical: "מתקין סימולציה פיזיקלית",
+  back: "חזרה",
+  sourceKicker: "קוד המקור המלא של הגלאי",
+  sourceTitle: "המימוש המלא של מזהה הפנים הנוירוני",
+  sourceIntro: "פתחו את מודול Colab המלא אם צריך לראות את כל החלקים סביב ששת שלבי החישוב: imports, טעינת משקלים, בחירת CUDA, מודל DeepID, preprocessing, embeddings ייחוס, batch recognition, כללי החלטה וחיבור JSON/API.",
+  openDetectorSource: "פתח קוד מקור מלא",
+  hideDetectorSource: "הסתר קוד מקור מלא",
+  openRawDetectorSource: "פתח קובץ raw של המקור",
+  sourceClosed: "סגור. השתמשו בזה כאשר קטעי השלבים אינם מספיקים.",
+  sourceLoading: "טוען את קוד המקור של הגלאי מהמאגר...",
+  sourceLoaded: "מוצג קוד המקור המדויק של הגלאי הנוירוני, שהועתק ממודול Colab. קישור raw פותח את המודול המלא.",
+  sourceError: "לא ניתן לטעון את קובץ המקור של הגלאי מהאתר הזה."
+};
+
+const cleanDetailUi = {
+  ru: {
+    schemeTitle: "Схема",
+    stageStatsTitle: "Слои и нейронные связи",
+    layersLabel: "Слои / операции",
+    connectionsLabel: "Связи нейронов / MAC",
+    tensorLabel: "Размер тензора / вектора",
+    cudaLabel: "Раскладка CUDA",
+    cudaTitle: "Как это реализуется в CUDA в проекте",
+    nextLevel: "Следующий уровень",
+    prevLevel: "Предыдущий уровень",
+    backToSimple: "Вернуться в простую демонстрацию",
+    openFullCode: "Открыть полный Colab/CUDA-код этого этапа",
+    showShortCode: "Показать короткую схему этапа",
+    codeSourceShort: "Короткая CUDA-схема этапа",
+    codeSourceFull: "Полный код Colab-детектора для этого этапа"
+  },
+  he: {
+    schemeTitle: "תרשים",
+    stageStatsTitle: "שכבות וקשרים עצביים",
+    layersLabel: "שכבות / פעולות",
+    connectionsLabel: "קשרים עצביים / MAC",
+    tensorLabel: "גודל טנזור / וקטור",
+    cudaLabel: "מיפוי CUDA",
+    cudaTitle: "איך זה ממומש ב-CUDA בפרויקט",
+    nextLevel: "השלב הבא",
+    prevLevel: "השלב הקודם",
+    backToSimple: "חזרה להדגמה הפשוטה",
+    openFullCode: "פתח קוד Colab/CUDA מלא לשלב הזה",
+    showShortCode: "הצג קטע קצר של השלב",
+    codeSourceShort: "סקיצה קצרה של שלב CUDA",
+    codeSourceFull: "הקוד המלא מגלאי Colab לשלב הזה"
+  }
+};
+
+const cleanStageLocalization = [
+  {
+    title: { ru: "Входное изображение", he: "תמונת קלט" },
+    summary: {
+      ru: "Изображение загружается как RGB-массив и подготавливается к передаче в детектор.",
+      he: "התמונה נטענת כמערך RGB ומוכנה להעברה אל הגלאי."
+    },
+    diagram: {
+      ru: ["Файл", "RGB-пиксели", "Face crop", "55 x 47 x 3"],
+      he: ["קובץ", "פיקסלי RGB", "חיתוך פנים", "55 x 47 x 3"]
+    },
+    layers: { ru: "0 нейронных слоев, это этап подготовки входа", he: "0 שכבות עצביות; זה שלב הכנת הקלט" },
+    connections: { ru: "55 x 47 x 3 = 7 755 входных значений", he: "55 x 47 x 3 = 7,755 ערכי קלט" },
+    cudaShort: { ru: "cudaMalloc + cudaMemcpy для входного тензора", he: "cudaMalloc ו-cudaMemcpy עבור טנזור הקלט" },
+    cuda: {
+      ru: "На этом этапе CUDA используется для выделения буфера под нормализованное лицо и копирования данных с host на device. Сама нейросеть запускается только после готовности этого буфера.",
+      he: "בשלב הזה CUDA מקצה באפר לתמונת הפנים המנורמלת ומעתיקה נתונים מה-host אל ה-device. הרשת עצמה מתחילה לרוץ רק לאחר שהבאפר מוכן."
+    }
+  },
+  {
+    title: { ru: "Обрезка лица и нормализация", he: "חיתוך פנים ונרמול" },
+    summary: {
+      ru: "Детектор выбирает область лица, приводит ее к фиксированному размеру и нормализует каналы.",
+      he: "הגלאי בוחר את אזור הפנים, מתאים אותו לגודל קבוע ומנרמל את הערוצים."
+    },
+    diagram: {
+      ru: ["Скриншот", "Область лица", "Resize", "Нормализованный тензор"],
+      he: ["צילום מסך", "אזור פנים", "שינוי גודל", "טנזור מנורמל"]
+    },
+    layers: { ru: "Препроцессинг перед сверточными слоями", he: "עיבוד מקדים לפני שכבות הקונבולוציה" },
+    connections: { ru: "Те же 7 755 значений после resize и нормализации", he: "אותם 7,755 ערכים לאחר שינוי גודל ונרמול" },
+    cudaShort: { ru: "Нормализованный тензор копируется в GPU-память", he: "הטנזור המנורמל מועתק לזיכרון GPU" },
+    cuda: {
+      ru: "В проекте crop/resize выполняются перед запуском CUDA kernels, затем результат отправляется в device buffer. Это сохраняет одинаковый вход для CPU и GPU режима.",
+      he: "בפרויקט crop/resize מתבצעים לפני הרצת kernels של CUDA, ואז התוצאה נשלחת לבאפר ב-device. כך נשמר קלט זהה למצבי CPU ו-GPU."
+    }
+  },
+  {
+    title: { ru: "Извлечение признаков", he: "חילוץ מאפיינים" },
+    summary: {
+      ru: "DeepID-подобная сеть превращает лицо в компактный 160D embedding.",
+      he: "רשת בסגנון DeepID ממירה את הפנים ל-embedding קומפקטי בגודל 160D."
+    },
+    diagram: {
+      ru: ["55 x 47 x 3", "Conv + ReLU", "Pool", "Dense", "160D embedding"],
+      he: ["55 x 47 x 3", "Conv + ReLU", "Pool", "Dense", "160D embedding"]
+    },
+    layers: { ru: "4 сверточных блока, pooling, dense-слои и нормализация", he: "4 בלוקים של convolution, pooling, שכבות dense ונרמול" },
+    connections: { ru: "Основная часть MAC выполняется в conv и dense слоях", he: "רוב פעולות ה-MAC מתבצעות בשכבות conv ו-dense" },
+    cudaShort: { ru: "conv_relu, max_pool_2x2, dense, add_relu_12", he: "conv_relu, max_pool_2x2, dense, add_relu_12" },
+    cuda: {
+      ru: "CUDA раскладывает convolution, pooling, dense, add/ReLU и normalization на отдельные kernels. Каждый output activation независим, поэтому блоки потоков параллельно считают пиксели, каналы и нейроны.",
+      he: "CUDA מפרקת convolution, pooling, dense, add/ReLU ו-normalization ל-kernels נפרדים. כל output activation עצמאי, ולכן בלוקי threads מחשבים במקביל פיקסלים, ערוצים ונוירונים."
+    }
+  },
+  {
+    title: { ru: "Сравнение с эталонами", he: "השוואה מול דוגמאות ייחוס" },
+    summary: {
+      ru: "Новый 160D embedding сравнивается с сохраненными эталонами известных людей.",
+      he: "ה-embedding החדש בגודל 160D מושווה לדוגמאות ייחוס שמורות של אנשים מוכרים."
+    },
+    diagram: {
+      ru: ["160D embedding", "Матрица эталонов", "Dot products", "Лучший + второй"],
+      he: ["160D embedding", "מטריצת ייחוס", "Dot products", "הטוב ביותר + השני"]
+    },
+    layers: { ru: "1 слой сравнения по банку эталонов", he: "שכבת השוואה אחת מול בנק הייחוס" },
+    connections: { ru: "N x 160 умножений сходства для текущего набора эталонов", he: "N x 160 הכפלות דמיון עבור סט הייחוס הנוכחי" },
+    cudaShort: { ru: "Один блок/группа на эталон", he: "בלוק/קבוצה אחת לכל דוגמת ייחוס" },
+    cuda: {
+      ru: "CUDA-версия может назначить один блок на каждого кандидата и свести 160 произведений в один similarity score. CPU-режим выполняет ту же математику последовательно или обычными векторными циклами.",
+      he: "גרסת CUDA יכולה להקצות בלוק אחד לכל מועמד ולצמצם 160 מכפלות לציון similarity אחד. מצב CPU מבצע את אותה מתמטיקה באופן סדרתי או בלולאות וקטור רגילות."
+    }
+  },
+  {
+    title: { ru: "Решение по score и margin", he: "החלטה לפי score ו-margin" },
+    summary: {
+      ru: "Лучший результат проходит пороги confidence и margin; иначе возвращается Unknown.",
+      he: "התוצאה הטובה ביותר עוברת ספי confidence ו-margin; אחרת מוחזר Unknown."
+    },
+    diagram: {
+      ru: ["Лучший score", "Второй score", "Margin", "Accepted / Unknown"],
+      he: ["הציון הטוב ביותר", "הציון השני", "Margin", "Accepted / Unknown"]
+    },
+    layers: { ru: "Логический слой принятия решения", he: "שכבה לוגית לקבלת החלטה" },
+    connections: { ru: "Сравнение двух score и двух порогов", he: "השוואה של שני ציונים ושני ספים" },
+    cudaShort: { ru: "Пороговая проверка после GPU/CPU вычислений", he: "בדיקת ספים לאחר חישובי GPU/CPU" },
+    cuda: {
+      ru: "После вычисления similarity проект проверяет minimum score и minimum margin. Это не меняет нейросеть, а защищает интерфейс от уверенного, но неверного имени.",
+      he: "לאחר חישוב similarity הפרויקט בודק minimum score ו-minimum margin. זה לא משנה את הרשת, אלא מגן על הממשק מפני הצגת שם שגוי בביטחון גבוה."
+    }
+  },
+  {
+    title: { ru: "JSON-ответ", he: "תשובת JSON" },
+    summary: {
+      ru: "Результат упаковывается в JSON, который читают простая демонстрация и Hive-интерфейс.",
+      he: "התוצאה נארזת כ-JSON שנקרא על ידי ההדגמה הפשוטה וממשק Hive."
+    },
+    diagram: {
+      ru: ["Label", "Scores", "Backend", "Elapsed time", "UI update"],
+      he: ["Label", "Scores", "Backend", "Elapsed time", "עדכון UI"]
+    },
+    layers: { ru: "API-слой ответа", he: "שכבת API לתגובה" },
+    connections: { ru: "Поля JSON связывают детектор, Colab и интерфейс", he: "שדות JSON מחברים בין הגלאי, Colab והממשק" },
+    cudaShort: { ru: "CUDA результат сериализуется после синхронизации", he: "תוצאת CUDA עוברת serialization לאחר סנכרון" },
+    cuda: {
+      ru: "После cudaDeviceSynchronize backend собирает label, scores, backend mode и elapsed time в JSON. Интерфейс показывает один и тот же ответ в простой и интегрированной демонстрации.",
+      he: "לאחר cudaDeviceSynchronize ה-backend אוסף label, scores, backend mode ו-elapsed time לתוך JSON. הממשק מציג אותה תשובה בהדגמה הפשוטה והמשולבת."
+    }
+  }
+];
+
+Object.assign(translations.ru, cleanRuTranslations);
+Object.assign(translations.he, cleanHeTranslations);
+Object.assign(detailUi.ru, cleanDetailUi.ru);
+Object.assign(detailUi.he, cleanDetailUi.he);
+cleanStageLocalization.forEach((localizedStage, index) => {
+  const stage = stageDetails[index];
+  if (!stage) return;
+  ["title", "summary", "diagram", "layers", "connections", "cudaShort", "cuda"].forEach((key) => {
+    if (stage[key] && localizedStage[key]) Object.assign(stage[key], localizedStage[key]);
+  });
+});
+
 
 function setLanguage(lang) {
   const dict = translations[lang] || translations.en;
@@ -1189,14 +1503,14 @@ function localized(value) {
 
 const codeAnnotationFallback = {
   en: "This line belongs to the CUDA/OpenCL detector pipeline for the selected stage.",
-  ru: "Р­С‚Р° СЃС‚СЂРѕРєР° РѕС‚РЅРѕСЃРёС‚СЃСЏ Рє CUDA/OpenCL-С†РµРїРѕС‡РєРµ РґРµС‚РµРєС‚РѕСЂР° РЅР° РІС‹Р±СЂР°РЅРЅРѕРј СЌС‚Р°РїРµ.",
-  he: "Ч©Ч•ЧЁЧ” Ч–Ч• Ч©Ч™Ч™Ч›ЧЄ ЧњЧ©ЧЁЧ©ЧЁЧЄ CUDA/OpenCL Ч©Чњ Ч”Ч’ЧњЧђЧ™ Ч‘Ч©ЧњЧ‘ Ч”Ч Ч‘Ч—ЧЁ."
+  ru: "Эта строка относится к CUDA/OpenCL-цепочке детектора на выбранном этапе.",
+  he: "השורה הזו שייכת לשרשרת CUDA/OpenCL של הגלאי בשלב הנבחר."
 };
 
 const codeBlankAnnotation = {
   en: "Visual separator between logical parts of the stage.",
-  ru: "Р’РёР·СѓР°Р»СЊРЅС‹Р№ СЂР°Р·РґРµР»РёС‚РµР»СЊ РјРµР¶РґСѓ Р»РѕРіРёС‡РµСЃРєРёРјРё С‡Р°СЃС‚СЏРјРё СЌС‚Р°РїР°.",
-  he: "ЧћЧ¤ЧЁЧ™Ч“ Ч—Ч–Ч•ЧЄЧ™ Ч‘Ч™Чџ Ч—ЧњЧ§Ч™Чќ ЧњЧ•Ч’Ч™Ч™Чќ Ч©Чњ Ч”Ч©ЧњЧ‘."
+  ru: "Визуальный разделитель между логическими частями этапа.",
+  he: "מפריד חזותי בין חלקים לוגיים של השלב."
 };
 
 const codeLineAnnotations = {
