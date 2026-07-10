@@ -61,6 +61,15 @@ Verify the required files:
 Test-Path ".\Start AI MIPS Hive Web.bat"
 Test-Path ".\Start AI MIPS Hive Web.ps1"
 Test-Path ".\README_HIVE_SERVICE.md"
+Test-Path ".\identity_matcher.py"
+Test-Path ".\local_face_ai\reference_embeddings.npz"
+Test-Path ".\local_face_ai\references\Adi"
+Test-Path ".\local_face_ai\references\Faraj"
+Test-Path ".\local_face_ai\references\Slava"
+Test-Path ".\Face_detector\build_opencl\Release\face_detector.exe"
+Test-Path ".\Face_detector\build_cpu\Release\face_detector.exe"
+Test-Path ".\Face_detector\models\deepid_weights.bin"
+Test-Path ".\Face_detector\models\deepid_keras_weights.h5"
 Test-Path ".\python_ai_mips_sim\web\index.html"
 Test-Path ".\python_ai_mips_sim\web\app.js"
 Test-Path ".\python_ai_mips_sim\web\app.css"
@@ -103,12 +112,32 @@ Expected behavior:
 - the AI MIPS Hive Service menu opens;
 - the page shows processors, detector controls, hex map, detections, and recent events;
 - `/api/hive` returns JSON state;
+- `/api/detector-status` reports `local_default_available: true`;
+- face recognition works locally through Hive, using OpenCL on AMD/Radeon systems or CPU fallback when GPU is not available;
+- Colab/CUDA is optional and is not required for the default local path;
 - expanding the `Physical simulator` hex shows `Mechanic Simulation`;
 - `http://127.0.0.1:8876/mechanic-simulator` opens the browser CAD/mechanic animation;
 - `http://127.0.0.1:8876/cad-mechanics/bee-shell.obj` returns the packaged CAD shell OBJ;
 - expanding the blue `Network simulator` hex shows `Blockchain Simulation`;
 - `http://127.0.0.1:8876/blockchain-simulation` opens the EOS smart-contract sandbox;
 - the service listens on `127.0.0.1` only.
+
+## Verify AI MIPS RTL Hardware Sources
+
+The repository should also contain the partial SystemVerilog hardware layer:
+
+```powershell
+cd C:\BeeFaceProject\site
+Test-Path ".\hardware\ai-mips-rtl\MIPS.sv"
+Test-Path ".\hardware\ai-mips-rtl\MatrixAccel.sv"
+Test-Path ".\hardware\ai-mips-rtl\ReLU4.sv"
+Test-Path ".\hardware\ai-mips-rtl\ControlUnit.sv"
+Test-Path ".\hardware\ai-mips-rtl\Top.sv"
+Test-Path ".\hardware\ai-mips-rtl\MIPS_TB.sv"
+Test-Path ".\hardware\ai-mips-rtl\README.md"
+```
+
+These files are not required to run the browser UI, but they are an important hardware part of the project.
 
 ## Optional Legacy Component: Bgame
 

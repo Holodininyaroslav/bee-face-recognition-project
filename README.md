@@ -1,260 +1,222 @@
 # Bee Face Recognition Project
 
-![Bee Face Recognition project](assets/project-social-preview.png)
+![Bee Face Recognition Project](assets/project-social-preview.png)
 
-AI-assisted full-stack prototype that connects a face-recognition detector with a browser-based AI MIPS / bee-swarm interface, a Colab CUDA runtime, local CPU/OpenCL-style execution paths, and local 3D / physical simulation tools.
+Bee Face Recognition Project is an AI-assisted engineering prototype by **Yaroslav Kholodinin**, a student at **Shenkar College, Israel**.
 
-The project is built as a portfolio and course-style engineering demo: it is not a polished commercial product, but it is more than a static toy page. It demonstrates how a recognition pipeline, GPU/CPU execution choices, a live web interface, local simulators, installable packages, and a safer browser-to-local-app bridge can be combined into one working system.
+The project combines a local face-recognition pipeline, an AI MIPS Hive interface, bee / board / mechanics simulations, partial SystemVerilog AI MIPS hardware sources, and several research-concept modules for future swarm communication.
 
-## Live Project
+It is not a commercial production service. It is a portfolio and course-style system integration project: the value is in connecting neural inference, GPU/CPU execution, local simulation tools, hardware-oriented MIPS work, browser UI, installers, and a safer browser-to-local-app bridge into one demonstrable environment.
 
-- Public GitHub Pages portal:  
+## Live Links
+
+- GitHub Pages portal:  
   https://holodininyaroslav.github.io/bee-face-recognition-project/
-- Colab notebook for the CUDA-backed detector/service:  
+- Repository:  
+  https://github.com/Holodininyaroslav/bee-face-recognition-project
+- Full local suite installer:  
+  https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_face_full_local_suite_installer.zip
+- Optional Colab notebook:  
   https://colab.research.google.com/github/Holodininyaroslav/bee-face-recognition-project/blob/main/colab/colab_public_one_image_site.ipynb
-- Full detector source excerpt shown on the site:  
-  https://holodininyaroslav.github.io/bee-face-recognition-project/source/colab_ai_mips_bee_world.py
 
-## What It Does
+## What Works Now
 
-- Uploads one image or a batch of images for face recognition.
-- Lets the user choose GPU or CPU mode from the simple demo interface.
-- Uses the same detector output format in the simple demo and in the integrated Hive interface.
-- Shows a step-by-step explanation of the neural recognition pipeline.
-- Shows CUDA-oriented notes and code annotations for the computation stages.
-- Hosts an integrated AI MIPS Hive-style interface with processors, detections, bus/matrix/control events, and bee-node UI.
-- Provides local installers for related simulations:
-  - AI MIPS Hive Service local menu and backend package.
-  - Ursina 3D game/simulation package.
-  - BeeBoard interface package.
-  - Physical bee-shell / FWMAV simulation package.
-  - Browser CAD/mechanic simulation inside the AI MIPS Hive Service package.
-  - EOS blockchain contract sandbox inside the AI MIPS Hive Service package.
-  - LI-FI communication concept branch inside the Network simulator menu.
-  - Neutrino communication concept branch with Basic concept and Satellite comunication nodes.
-- Uses a token-gated local bridge so the public site does not automatically control applications on the local computer.
+The current project package is built around the local Hive service.
 
-## High-Level Architecture
-
-```mermaid
-flowchart LR
-    A["GitHub Pages portal"] --> B["Simple recognition demo"]
-    A --> C["Integrated Hive interface"]
-    B --> D["Local bridge on 127.0.0.1:8876"]
-    C --> D
-    D --> E["Colab / Gradio detector endpoint"]
-    D --> F["Local CPU / detector fallback"]
-    D --> G["BeeBoard on 127.0.0.1:8877"]
-    D --> H["Physical bee-shell simulator on 127.0.0.1:8099"]
-    D --> K["Browser CAD mechanic simulator on 127.0.0.1:8876/mechanic-simulator"]
-    D --> L["EOS blockchain contract sandbox on 127.0.0.1:8876/blockchain-simulation"]
-    D --> M["LI-FI communication concept"]
-    D --> N["Neutrino communication concept"]
-    N --> O["Satellite local app on 127.0.0.1:8765"]
-    E --> I["DeepID-style embedding and reference comparison"]
-    F --> I
-    I --> J["JSON result: label, scores, margin, backend, elapsed time"]
-```
-
-## Distributed Bee Datacenter Concept
-
-The larger project idea treats the bee swarm as a distributed micro-datacenter. In this model, each bee is not only a visual object in the interface, but a small AI MIPS compute node with local state, messaging, control flow, and a limited compute budget.
-
-The face-recognition task is used as a practical workload for this swarm concept:
-
-- each bee can represent one AI MIPS processor/node;
-- the Hive interface shows node roles, links, bus events, detections, and processor state;
-- detector results can be routed back into the same Hive UI that represents the swarm;
-- the swarm is intended to model how many small compute agents could cooperate on a larger recognition workload.
-
-For the full conceptual face-recognition workload, the target scale is a swarm of about **1200 bees / AI MIPS nodes**. In the current repository this is presented as a project architecture target and simulation concept, not as a claim that the published GitHub Pages demo already runs 1200 physical or browser nodes at production speed.
+- Local face recognition through the Hive service.
+- Local CPU recognition path.
+- Local OpenCL recognition path for AMD/Radeon-style systems.
+- Optional Colab/CUDA detector path for an external notebook session.
+- Integrated AI MIPS Hive interface with processor hexes, detections, events, and local tool launch buttons.
+- Bee/statue 3D swarm simulation where bee processors can capture a face view and send it to the detector.
+- Automatic detection logging in the Hive detection stream.
+- Neutrino simulation message handoff: when a face is recognized and the neutrino page is open, the recognized name can be queued as a simulated neutrino message.
+- BeeBoard 3D review with GLB / STEP / KiCad assets.
+- Physical wing calibration / bee-shell simulation.
+- Browser CAD mechanics simulation.
+- Bgame linked 2D/3D game demonstration.
+- Local installer package for the complete tool suite.
 
 ## Face Recognition Pipeline
 
-The detector flow is intentionally exposed in the UI so the project can be reviewed as an engineering system, not only as a black-box demo.
+The face detector is intentionally exposed as an engineering pipeline instead of a hidden black box.
 
-1. **Image input**  
-   The browser reads the selected image or batch and sends the bytes to the connected detector endpoint.
+1. **Image capture** - the Hive UI, simple demo, or bee simulation provides an image / screenshot.
+2. **Face detection and crop** - the detector finds the face region and prepares a normalized crop.
+3. **Embedding extraction** - a DeepID-style neural model converts the face into a compact vector representation.
+4. **Reference comparison** - the vector is compared against stored identity references.
+5. **Score and margin decision** - the best identity is accepted only if confidence and margin are high enough.
+6. **JSON response** - Hive receives the label, score, runner-up, margin, backend, elapsed time, and accepted/rejected state.
+7. **Hive event logging** - the result is written into the Hive detection stream.
+8. **Optional neutrino handoff** - if the neutrino concept simulator is open, the recognized name is inserted into its message flow.
 
-2. **Face crop and normalization**  
-   The detector prepares the useful face region, resizes it to the network input size, and normalizes the numeric image values.
+## Local Detector Modes
 
-3. **Feature extraction**  
-   A DeepID-style neural model converts the face crop into a compact embedding vector.
+The installer includes the local detector pieces required for a fresh machine:
 
-4. **Reference comparison**  
-   The embedding is compared with stored identity reference embeddings.
+- `identity_matcher.py`
+- local reference embeddings and face reference images
+- OpenCL detector executable
+- CPU detector executable
+- neural model weights
+- Hive server routes for `/api/detect`, `/api/detector-status`, and `/api/neutrino-outbox`
 
-5. **Score and margin decision**  
-   The best label is accepted only when the score is high enough and the margin from the runner-up is large enough. Otherwise the result can be rejected instead of forcing a wrong identity.
+Recommended behavior:
 
-6. **JSON response**  
-   The service returns a readable summary and structured JSON containing the selected label, scores, margin, backend mode, elapsed time, and acceptance status.
+- **AMD/Radeon machine:** use the OpenCL path.
+- **No supported GPU:** use the CPU path.
+- **NVIDIA/CUDA machine:** use the optional Colab/CUDA notebook, or add a CUDA local build later if a CUDA environment is available.
 
-## GPU / CPU Execution
+Colab is no longer the only path. It is an optional external GPU service and must be connected deliberately.
 
-The Colab path is designed to use CUDA acceleration through PyTorch when a CUDA runtime is available. CPU mode runs the same recognition logic without CUDA. The demo exposes both modes so the behavior and timing can be compared.
+## AI MIPS Hardware Layer
 
-The project also includes local GPU/CPU integration work around the AI MIPS interface and local detector flow. The public README describes the current published demo and Colab-facing source; some local runtime pieces are distributed through installers or kept as local application code.
-
-## Local Bridge Security
-
-The public GitHub Pages site does **not** connect to local applications by default.
-
-Browser-to-local-app access requires:
-
-- the local service to listen only on `127.0.0.1`;
-- a long private `local_token`;
-- `local_bridge=1` in the page URL;
-- a per-action allowlist such as `detect_face`, `control_hive`, `open_beeboard`, `open_physical`, or `start_ursina`;
-- trusted browser Origin checks.
-
-The site also removes `local_token` from the visible address bar after an approved load and sets `referrer=no-referrer`.
-The browser-to-local bridge is intentionally session based: after a long idle period the page pauses local access and asks for explicit confirmation before reconnecting, instead of silently keeping local apps open forever.
-
-Detailed bridge security notes:  
-https://github.com/Holodininyaroslav/bee-face-recognition-project/blob/main/SECURITY_LOCAL_BRIDGE.md
-
-## Future Roadmap
-
-Future releases are planned to add additional abstraction layers around the current detector, Hive interface, and bee-swarm simulation:
-
-- **Flight mechanics map** - a near-term simulation map for bee flight mechanics, including a more detailed mechanical description of the body, wings, actuator loads, and motion model.
-- **Nano-capacitor energy layer** - an advanced simulation layer for nano-capacitors that accumulate electrical energy for the bee's operation.
-- **Distributed bee datacenter mode** - a swarm-level simulation where many bees operate as a distributed datacenter. In this mode, a distributed neural network runs across many **AI MIPS processors**, using the AI MIPS processors that already exist inside each bee.
-- **Li-Fi swarm networking** - communication modules that show how nearby bees connect into a unified compute network through Li-Fi links.
-- **Bioreactor energy stage** - a long-term simulation stage where a bioreactor processes plastic and generates electrical energy. This is the furthest planned stage of the project, but it is part of the intended release direction.
-
-## Installer
-
-The recommended installation path is one full local suite package:
-
-https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_face_full_local_suite_installer.zip
-
-This package installs the local Hive service, the integrated Hive menu, BeeBoard 3D review with model assets, Bgame, physical wing calibration, browser CAD/mechanic simulation, satellite/orbital mechanics, blockchain/communication concept pages, and the launch scripts used by the browser menu.
-
-The release still keeps several individual component archives as legacy/internal recovery assets, but the normal user flow should use the full local suite installer so the tools and models stay in sync.
-
-The Colab detector payload remains available separately for notebook/runtime setup:
-
-https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/colab_ai_mips_bee_identity_payload_compact.zip
-
-The AI MIPS Hive Service installer now includes the integrated Hive menu, the browser CAD/mechanic animation page, and the EOS blockchain simulation page:
+The repository includes partial SystemVerilog hardware sources for the AI MIPS processor / accelerator concept:
 
 ```text
-AI_MIPS_Hive_Service/python_ai_mips_sim/web/mechanic-simulator.html
-http://127.0.0.1:8876/mechanic-simulator
-AI_MIPS_Hive_Service/python_ai_mips_sim/web/blockchain-simulation.html
-http://127.0.0.1:8876/blockchain-simulation
+hardware/ai-mips-rtl/
 ```
 
-In the Hive map, expand the `Physical simulator` hex to open the additional `Mechanic Simulation` hex. That page renders the CAD-style wing/body mechanism in the browser and reads live simulator state when the physical simulator is running, with a procedural fallback when it is not.
-The mechanic simulation is packaged with its own browser CAD assets:
+This folder includes processor modules, datapath/control files, memory blocks, ALU logic, matrix / ReLU accelerator helpers, Quartus project files, and simulation testbenches.
+
+This matters because the project is not only a web UI. It also keeps hardware-oriented work that represents the planned compute layer for bee nodes.
+
+## System Architecture
+
+```mermaid
+flowchart LR
+    Site["GitHub Pages portal"] --> Simple["Simple recognition demo"]
+    Site --> HiveView["Integrated Hive interface"]
+    Simple --> DetectorChoice["Detector mode selection"]
+    HiveView --> LocalSuite["Approved local suite"]
+    DetectorChoice --> LocalDetector["Local CPU / OpenCL detector"]
+    DetectorChoice --> Colab["Optional Colab / CUDA detector"]
+    LocalSuite --> LocalDetector
+    LocalSuite --> Bee3D["Bee/statue swarm simulation"]
+    LocalSuite --> Board["BeeBoard 3D review"]
+    LocalSuite --> Physical["Physical wing simulation"]
+    LocalSuite --> CAD["Browser CAD mechanics"]
+    LocalSuite --> Game["Bgame 2D/3D demo"]
+    LocalSuite --> Network["Network concepts"]
+    Network --> Lifi["Li-Fi concept"]
+    Network --> Neutrino["Neutrino concept"]
+    Network --> EOS["EOS smart-contract sandbox"]
+    Neutrino --> Satellite["Satellite/orbital concept"]
+    LocalDetector --> Log["Hive detections and timing log"]
+    Log --> Neutrino
+```
+
+## Working vs Concept Modules
+
+| Module | Current status |
+|---|---|
+| Local face recognition | Working local software path through Hive |
+| CPU detector | Working local fallback |
+| OpenCL detector | Working local GPU path for AMD/Radeon-style systems |
+| Colab/CUDA detector | Optional external runtime; URL changes per Colab session |
+| AI MIPS Hive interface | Working local/web UI prototype |
+| Bee/statue swarm simulation | Working local simulation |
+| BeeBoard 3D review | Working local package with model assets |
+| Physical wing simulation | Working local simulation package |
+| Browser CAD mechanics | Working local browser simulation |
+| Bgame | Working local linked 2D/3D game package |
+| AI MIPS RTL | Partial hardware source / educational prototype |
+| Li-Fi | Physical hardware prototype exists; software module is a project concept layer |
+| Quadcopter bee proxy | Physical prototype exists as a bee-like hardware platform |
+| Neutrino communication | Concept / simulation only; not a real neutrino communication system |
+| Satellite communication | Concept / local orbital simulation only |
+| EOS blockchain | Local sandbox / concept smart contract; not live mainnet infrastructure |
+| Bioreactor / plastic-to-energy | Future concept stage |
+
+## Install on Another Computer
+
+Use the full suite package first:
 
 ```text
-AI_MIPS_Hive_Service/python_ai_mips_sim/web/cad-mechanics/app.js
-AI_MIPS_Hive_Service/python_ai_mips_sim/web/cad-mechanics/bee-shell.obj
-AI_MIPS_Hive_Service/python_ai_mips_sim/web/vendor/three-addons/controls/OrbitControls.js
-AI_MIPS_Hive_Service/python_ai_mips_sim/web/vendor/three-addons/loaders/OBJLoader.js
+bee_face_full_local_suite_installer.zip
 ```
 
-These files let a fresh local Hive installation open the Browser CAD Mechanics simulator without depending on the original development server at `127.0.0.1:8877/cad-mechanics`.
+It is intended to install the local Hive service, local detector, CPU/OpenCL executables, model weights, reference images, BeeBoard assets, Bgame, physical/mechanics tools, concept pages, and launch scripts as one synchronized package.
 
-In the Hive map, expand the blue `Network simulator` hex to open the blue `Blockchain Simulation` hex. That page is a local EOS-style sandbox: it shows a simulated 2000.0000 EOS treasury, node registry, job/result ledger, installer hash registry, contract source, and line-by-line contract annotations. It does not send transactions to a real EOS/Vaulta blockchain.
-
-The same Network branch also contains communication research nodes:
-
-- `LI-FI comunication` - a blue concept node reserved for local optical swarm-network simulations.
-- `neutrino comunication` - a purple concept node for long-range communication ideas, especially data transfer from deep underground locations where photon/electromagnetic communication is unavailable or impractical.
-- `Basic concept` - a purple concept explanation node under `neutrino comunication`; it opens the local neutrino concept page at `http://127.0.0.1:8891/`.
-- `Satellite comunication` - a purple node that opens the local satellite communication application at `http://127.0.0.1:8765/`.
-
-The satellite simulator is packaged separately as `satellite_communication_installer.zip`. It contains the local Earth-orbit WebGL app, satellite GLB models, Three.js loader files, and a launcher that starts `http://127.0.0.1:8765/`.
-
-The LI-FI, neutrino, and blockchain communication systems are concept/sandbox modules in the current release. They are included so the project architecture can be reviewed and expanded, but they are not production communication networks and they do not connect to real satellite, neutrino, or live EOS infrastructure.
-
-The current concept map also includes the local orbital/satellite simulator and a browser CAD mechanics simulator. These are not the main face-recognition detector, but they document the wider robotics/simulation direction of the project: bee mechanics, local board review, possible swarm networking, and future communication layers.
-
-The BeeBoard package includes the local BeeBoard interface and the 3D Board Review assets, including:
-
-```text
-BeeBoard_Interface/
-BeeBoard_v0_1_Micro_KiCad/BeeBoard_v0_1_Micro.glb
-BeeBoard_v0_1_Micro_KiCad/BeeBoard_v0_1_Micro_board_layers.step
-BeeBoard_v0_1_Micro_KiCad/BeeBoard_v0_1_Micro_KiCad.kicad_pcb
-```
-
-After installation, BeeBoard should report `model_exists: true` from `http://127.0.0.1:8877/api/health`.
-
-The physical simulator package is the current local version tied to:
-
-```text
-http://127.0.0.1:8099/?fresh=bee-shell-rotated
-```
-
-It contains the Flappy/FWMAV inspector-based simulator with visible bee-shell outline and live mechanics state, not the older simple canvas placeholder.
-
-For a clean setup on another Windows computer, see:
+Detailed steps:
 
 ```text
 CODEX_OTHER_PC_INSTALL.md
 ```
 
-## Project Database
+The individual component ZIP files are kept as recovery assets, but the normal workflow should use the full suite installer.
 
-The repository includes a lightweight module database for installers, local entrypoints, and concept status:
+## Local Bridge Security
+
+The public GitHub Pages site does not automatically control local applications.
+
+The local bridge is designed around:
+
+- localhost-only services;
+- explicit user approval;
+- per-action allowlists;
+- a private local token;
+- no silent reconnection after long idle periods.
+
+The goal is to let the public site open approved local tools without making the computer remotely controllable by random visitors.
+
+Security notes:
 
 ```text
-database/project_modules.json
+SECURITY_LOCAL_BRIDGE.md
 ```
 
-This file is meant for a second machine or another Codex agent. It lists the online portal, Colab detector payload, AI MIPS Hive service, BeeBoard 3D assets, Bgame, physical wing simulator, browser CAD/mechanic simulator, EOS blockchain sandbox, LI-FI concept, neutrino concept, satellite/orbital communication simulator, and the planned Life demonstration placeholder.
+## Communication and Blockchain Concepts
+
+These are included as research extensions, not as finished production systems.
+
+- **Li-Fi communication** is the nearest hardware-related communication direction. The project has physical Li-Fi work/prototype context, and the software branch is used to document and expand the swarm-network idea.
+- **Neutrino communication** is a speculative simulation concept for data transfer from deep underground or shielded locations where electromagnetic communication is impractical.
+- **Satellite communication** is a local orbital/satellite concept simulator connected to the neutrino branch.
+- **EOS smart contract sandbox** simulates a treasury, node registry, job ledger, result ledger, and installer hash registry. It is a local educational smart-contract concept, not a live blockchain deployment.
+
+## Roadmap
+
+Near-term:
+
+- tighten the local detector installer and tests;
+- add a clearer mechanical flight map;
+- improve local GPU packaging for additional hardware;
+- expand the AI MIPS RTL documentation;
+- connect Hive events more cleanly to simulation modules.
+
+Long-term:
+
+- distributed bee datacenter simulation using many AI MIPS nodes;
+- Li-Fi swarm networking between nearby bee nodes;
+- nano-capacitor energy storage simulation;
+- deeper bee mechanical model;
+- bioreactor / plastic-to-energy concept simulation;
+- future blockchain-backed registry for nodes, jobs, and package integrity.
 
 ## Repository Layout
 
 ```text
 /
-|-- index.html                         # GitHub Pages portal
-|-- script.js                          # UI logic, translations, simple demo, local bridge hooks
-|-- styles.css                         # Bee/Hive visual design
-|-- source/
-|   `-- colab_ai_mips_bee_world.py      # Published detector/Hive source excerpt
+|-- index.html
+|-- script.js
+|-- styles.css
+|-- assets/
 |-- colab/
-|   `-- colab_public_one_image_site.ipynb
-|-- backup/                            # Reserved backup/static placeholder area
 |-- database/
-|   `-- project_modules.json            # Machine-readable module and installer inventory
+|-- hardware/
+|   `-- ai-mips-rtl/
 |-- installers/
-|   `-- README.md                       # Installer download notes
-|-- CODEX_OTHER_PC_INSTALL.md           # Fresh-computer installation guide
-|-- SECURITY_LOCAL_BRIDGE.md            # Local bridge safety notes
-`-- physical_simulation_installer.zip   # Current physical bee-shell simulator package
+|-- source/
+|-- CODEX_OTHER_PC_INSTALL.md
+|-- SECURITY_LOCAL_BRIDGE.md
+`-- README.md
 ```
-
-## What This Project Demonstrates
-
-- AI-assisted development of a multi-part prototype.
-- Web UI design and multilingual interface text.
-- Image upload, batch handling, and detector JSON integration.
-- GPU/CPU mode selection and timing comparison.
-- CUDA-runtime use through Colab/PyTorch.
-- Local simulation integration through browser-accessible tools.
-- Token-gated localhost bridge design.
-- Packaging of local tools as downloadable installers.
-- Clear explanation of neural-network stages for review and presentation.
-
-## Current Limitations
-
-- This is a prototype/research demo, not a hardened production service.
-- The public GitHub Pages site is static; live recognition requires an approved local bridge or a running Colab/Gradio detector service.
-- Local simulation tools depend on the user's environment, installed runtime, and local ports.
-- Recognition quality depends on the reference images, thresholds, face crop quality, and runtime configuration.
-- Some local application code is distributed as installers rather than fully expanded in this Pages repository.
 
 ## AI-Assisted Development Note
 
-This project was built with AI-assisted development. The engineering work focused on system design, integration, iteration, testing, UI structure, detector workflow, deployment packaging, and safety controls. The use of AI assistance is treated as part of the development process, not as a claim that every line was handwritten manually.
+This project was built with AI-assisted development. The engineering work includes project direction, system integration, testing, UI iteration, detector workflow, packaging decisions, hardware/software organization, and safety constraints. AI assistance is part of the workflow, not a claim that the project appeared without engineering decisions.
 
-## Suggested Resume Description
+## Resume Summary
 
-**Bee Face Recognition Project** - AI-assisted full-stack prototype integrating a face-recognition detector with a Colab CUDA backend, CPU/GPU mode selection, a browser-based AI MIPS Hive interface, local 3D/physical simulation tools, installable local packages, and a token-gated localhost bridge for safer browser-to-local-app communication.
+**Bee Face Recognition Project** - AI-assisted engineering prototype by Yaroslav Kholodinin integrating local CPU/OpenCL face recognition, optional Colab/CUDA inference, an AI MIPS Hive interface, bee/statue 3D simulation, BeeBoard 3D review, physical and CAD mechanics simulations, partial SystemVerilog AI MIPS hardware sources, local installers, and research-concept modules for Li-Fi, neutrino, satellite, and EOS-based swarm infrastructure.
