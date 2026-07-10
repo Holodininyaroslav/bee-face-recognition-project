@@ -171,7 +171,7 @@ SECURITY_LOCAL_BRIDGE.md
 These are included as research extensions, not as finished production systems.
 
 - **Li-Fi communication** is the nearest hardware-related communication direction. The project has physical Li-Fi work/prototype context, and the software branch is used to document and expand the swarm-network idea.
-- **Neutrino communication** is a speculative simulation concept for data transfer from deep underground or shielded locations where electromagnetic communication is impractical.
+- **Neutrino communication** is a speculative simulation concept for data transfer from deep underground or shielded locations where electromagnetic communication is impractical. Its Basic Concept branch opens the local **Neutrino Rock Penetration Lab** (`127.0.0.1:8891`) and can receive recognized names from Hive as simulated neutrino messages.
 - **Satellite communication** is a local orbital/satellite concept simulator connected to the neutrino branch.
 - **EOS smart contract sandbox** simulates a treasury, node registry, job ledger, result ledger, and installer hash registry. It is a local educational smart-contract concept, not a live blockchain deployment.
 

@@ -120,12 +120,14 @@
     },
     {
       "id": "neutrino_basic_concept",
-      "name": "Neutrino Basic Concept",
-      "status": "concept local simulation",
+      "name": "Neutrino Basic Concept / Rock Penetration Lab",
+      "status": "working local concept simulation",
       "entrypoints": [
-        "Hive hex menu: Network simulator -> neutrino communication -> Basic concept"
+        "Hive hex menu: Network simulator -> neutrino communication -> Basic concept",
+        "local compatibility route: http://127.0.0.1:8891/",
+        "Hive route: http://127.0.0.1:8876/neutrino-basic-simulator/"
       ],
-      "description": "Concept page for neutrino message transfer from shielded or underground locations. Can receive detected names from Hive when open."
+      "description": "Browser Neutrino Rock Penetration Lab for simulated message transfer through shielded rock where ordinary electromagnetic communication is impractical. It can receive detected names from Hive through the local neutrino message API when the simulation is open."
     },
     {
       "id": "satellite_communication",
