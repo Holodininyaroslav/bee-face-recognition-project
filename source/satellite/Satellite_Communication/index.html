@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en" class="notranslate" translate="no">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="google" content="notranslate" />
+    <title>Earth Satellite Orbit - WebGL Simulator</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./vendor/three/three.module.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <div id="loading" class="overlay">
+      <div class="loader-card">
+        <div class="hebrew">EARTH ORBIT</div>
+        <h1>Earth Satellite Orbit</h1>
+        <p>Loading WebGL satellite simulator</p>
+        <div class="bar"><span id="loadBar"></span></div>
+        <small id="loadText">Preparing space</small>
+      </div>
+    </div>
+
+    <div id="menu" class="overlay hidden">
+      <section class="menu-shell">
+        <div>
+          <div class="hebrew">LOW EARTH ORBIT</div>
+          <h1>Earth Satellite Orbit</h1>
+          <p class="lead">
+            A local third-person orbital view of Earth satellites moving in formation.
+          </p>
+        </div>
+        <div class="menu-grid">
+          <button id="startBtn" class="gold-button">Start Orbit</button>
+          <button id="nextShipBtn" class="ghost-button">Next Satellite</button>
+          <button id="mapBtn" class="ghost-button">Earth Map</button>
+        </div>
+        <div id="menuShip" class="menu-readout"></div>
+      </section>
+    </div>
+
+    <div id="hud">
+      <section class="panel top-left">
+        <div class="panel-title">EARTH ORBIT</div>
+        <div class="sub">SATELLITE TRACKING // LOCAL SIM</div>
+        <div class="mission">
+          <b>PRIMARY MISSION</b>
+          <span>Observe real-scale Earth orbit</span>
+          <span>Track evenly spaced satellites</span>
+          <span>Maintain shared circular formation</span>
+        </div>
+        <div class="controls">
+          <b>CONTROLS</b>
+          <span>N next satellite / B previous</span>
+          <span>Mouse drag view after click</span>
+          <span>R reset orbital phase</span>
+          <span>Camera is always third-person</span>
+          <span>Earth gravity and radius are real constants</span>
+        </div>
+      </section>
+
+      <section class="panel top-center">
+        <div class="panel-title">ORBIT COMMAND</div>
+        <div id="zoneLabel" class="sub">MAP: EARTH ORBIT</div>
+      </section>
+
+      <section class="panel top-right">
+        <div class="panel-title alert">ORBIT MAP</div>
+        <div id="targetReadout"></div>
+        <canvas id="radar" width="230" height="150"></canvas>
+      </section>
+
+      <section class="bottom-command">
+        <button id="hudStartBtn">Mouse View</button>
+        <button id="hudShipBtn">Next Sat</button>
+        <button id="hudPrevBtn">Prev Sat</button>
+        <button id="hudMapBtn">Earth</button>
+        <button id="hudCamBtn">Third</button>
+        <button id="hudResetBtn">Reset</button>
+      </section>
+
+      <section class="flight-readout">
+        <div>VELOCITY <b id="speedValue">0</b></div>
+        <div>MODE <b id="throttleValue">AUTO</b></div>
+        <div>ALTITUDE <b id="verticalValue">0</b></div>
+        <div>TIME <b id="dampValue">x30</b></div>
+      </section>
+
+      <div class="crosshair"></div>
+      <div id="shipMarkers"></div>
+      <div id="shipLabel" class="ship-label"></div>
+    </div>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>

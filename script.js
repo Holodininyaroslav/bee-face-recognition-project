@@ -2,10 +2,12 @@
 const LOCAL_BEEBOARD_BASE = "http://127.0.0.1:8877";
 const LOCAL_HIVE_URL = `${LOCAL_HIVE_BASE}/?fresh=github-pages-local`;
 const LOCAL_BEEBOARD_VIEWER_URL = `${LOCAL_BEEBOARD_BASE}/?hive=${encodeURIComponent(LOCAL_HIVE_URL)}&processor=0#viewer`;
+const REPO_RAW_BASE = "https://raw.githubusercontent.com/Holodininyaroslav/bee-face-recognition-project/main";
 const INSTALLER_URLS = {
   suite: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_face_full_local_suite_installer.zip",
   ursina: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_ursina_game_installer.zip",
-  beeboard: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip",
+  beeboard: `${REPO_RAW_BASE}/installers/beeboard_interface_installer.zip`,
+  satellite: `${REPO_RAW_BASE}/installers/satellite_communication_installer.zip`,
   physical: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip",
   hive: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/ai_mips_hive_service_installer.zip",
   repository: "https://github.com/Holodininyaroslav/bee-face-recognition-project"
@@ -1461,8 +1463,6 @@ cleanStageLocalization.forEach((localizedStage, index) => {
     if (stage[key] && localizedStage[key]) Object.assign(stage[key], localizedStage[key]);
   });
 });
-
-
 function setLanguage(lang) {
   const dict = translations[lang] || translations.en;
   const extra = detailUi[lang] || detailUi.en;
@@ -2325,4 +2325,3 @@ document.querySelectorAll("[data-local-open]").forEach((node) => {
     }
   });
 });
-

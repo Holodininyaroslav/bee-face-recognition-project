@@ -220,3 +220,20 @@ This project was built with AI-assisted development. The engineering work includ
 ## Resume Summary
 
 **Bee Face Recognition Project** - AI-assisted engineering prototype by Yaroslav Kholodinin integrating local CPU/OpenCL face recognition, optional Colab/CUDA inference, an AI MIPS Hive interface, bee/statue 3D simulation, BeeBoard 3D review, physical and CAD mechanics simulations, partial SystemVerilog AI MIPS hardware sources, local installers, and research-concept modules for Li-Fi, neutrino, satellite, and EOS-based swarm infrastructure.
+
+## Final Satellite And BeeBoard Packages
+
+The repository contains the final source trees and self-contained installers used by the current local project:
+
+- [BeeBoard interface source](source/beeboard/BeeBoard_Interface/)
+- [BeeBoard 3D model and CAD assets](source/beeboard/BeeBoard_v0_1_Micro_KiCad/)
+- [BeeBoard installer](installers/beeboard_interface_installer.zip)
+- [Satellite Communication source and Three.js assets](source/satellite/Satellite_Communication/)
+- [Satellite Communication installer](installers/satellite_communication_installer.zip)
+
+BeeBoard's 3D Board Review loads `source/beeboard/BeeBoard_v0_1_Micro_KiCad/BeeBoard_v0_1_Micro.glb` from the package-local `BeeBoard_v0_1_Micro_KiCad` directory. The package also includes the KiCad, STEP, SVG, SCAD, and preview assets used by the board-design view.
+
+Run `source/beeboard/BeeBoard_Interface/install_and_run.bat` on Windows to create its virtual environment and start BeeBoard at `http://127.0.0.1:8877/`.
+Run `source/satellite/Satellite_Communication/Start Satellite Communication.cmd` to start the local satellite simulator at `http://127.0.0.1:8765/`.
+
+Both installers are built from the same source directories linked above, so the archive and source tree stay aligned.

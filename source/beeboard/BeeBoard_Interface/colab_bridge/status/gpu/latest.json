@@ -1,0 +1,12 @@
+{
+  "id": "20260606_024050_gpu_06264c79",
+  "backend": "gpu",
+  "status": "queued_for_colab",
+  "created_at": "2026-06-05T23:40:50.791+00:00",
+  "source": "honeybird_live_canvas",
+  "channel": "live",
+  "image_file": "20260606_024050_gpu_06264c79.png",
+  "image_path": "C:\\Users\\79090\\Desktop\\Хомра\\BeeBoard_v0_1\\BeeBoard_Sim\\colab_bridge\\inbox\\gpu\\20260606_024050_gpu_06264c79.png",
+  "script": "C:\\Users\\79090\\Desktop\\Хомра\\BeeBoard_v0_1\\BeeBoard_Sim\\colab_bridge\\colab_gpu_bee_statue.py",
+  "note": "Backend is locked by folder and manifest. CPU and GPU queues are separate."
+}
