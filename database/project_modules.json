@@ -92,6 +92,16 @@
       "description": "Linked 2D/3D bee game demonstration built from the Bee_game desktop archive, without background music in the published installer."
     },
     {
+      "id": "nvidia_cuda_bee_simulation",
+      "name": "NVIDIA/CUDA local bee simulation",
+      "status": "working local NVIDIA runtime",
+      "entrypoints": [
+        "installers/nvidia_bee_simulation/Start NVIDIA Bee Simulation.bat",
+        "installers/nvidia_bee_simulation/README.md"
+      ],
+      "description": "Additive local 2D/3D bee game package for NVIDIA systems. Its PyTorch matcher requires CUDA, performs embedding and matching on the NVIDIA GPU, and does not fall back to CPU. The existing AMD/OpenCL Bgame remains unchanged."
+    },
+    {
       "id": "beeboard_3d",
       "name": "BeeBoard 3D",
       "status": "working local runtime",

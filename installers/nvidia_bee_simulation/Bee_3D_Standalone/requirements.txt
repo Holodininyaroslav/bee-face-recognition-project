@@ -1,0 +1,7 @@
+ursina==8.3.0
+numpy>=1.26
+opencv-python>=4.9
+Pillow>=10.0
+rapidocr-onnxruntime==1.4.4
+pygame>=2.6
+torch>=2.4

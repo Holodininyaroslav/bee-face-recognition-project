@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.log
+*.npz
+**/identity_output/
+**/identity_incoming/
+**/incoming_cpu/
+**/incoming_opencl/
+**/incoming_cpu_batch/
+**/incoming_opencl_batch/
+**/output_cpu/
+**/output_opencl/
+**/output_cpu_batch/
+**/output_opencl_batch/

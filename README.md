@@ -35,7 +35,20 @@ The current project package is built around the local Hive service.
 - Physical wing calibration / bee-shell simulation.
 - Browser CAD mechanics simulation.
 - Bgame linked 2D/3D game demonstration.
+- Separate NVIDIA/CUDA local bee-game implementation with GPU face matching.
 - Local installer package for the complete tool suite.
+
+## NVIDIA/CUDA Local Bee Game
+
+The repository now includes an additive NVIDIA implementation at
+`installers/nvidia_bee_simulation/`. It contains the local 2D/3D bee game,
+mini-map, three face statues, model assets, and a CUDA-only PyTorch face
+matcher. The matcher reports `nvidia-cuda-pytorch` and the selected NVIDIA
+device, and refuses to fall back to CPU when CUDA is unavailable.
+
+The existing AMD/OpenCL detector, CPU path, and original local game package
+remain unchanged. See the NVIDIA folder README for installation and launch
+instructions.
 
 ## Face Recognition Pipeline
 
@@ -66,6 +79,10 @@ Recommended behavior:
 - **AMD/Radeon machine:** use the OpenCL path.
 - **No supported GPU:** use the CPU path.
 - **NVIDIA/CUDA machine:** use the optional Colab/CUDA notebook, or add a CUDA local build later if a CUDA environment is available.
+
+For the local NVIDIA game implementation, use
+`installers/nvidia_bee_simulation/Start NVIDIA Bee Simulation.bat` after
+installing a CUDA-enabled PyTorch build.
 
 Colab is no longer the only path. It is an optional external GPU service and must be connected deliberately.
 

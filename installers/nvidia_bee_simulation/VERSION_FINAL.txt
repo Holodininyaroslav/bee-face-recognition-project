@@ -1,0 +1,15 @@
+﻿Bee Linked Simulation
+Final Submission Version
+Date: 2026-06-19
+
+This folder contains the complete final game version:
+- 2D Pygame control map
+- Ursina 3D visualization
+- local NVIDIA CUDA face recognition files
+- reference face data
+- sound effects, with background music disabled for the published build
+- launch script
+- Russian documentation and submission text
+
+Start with:
+Start Bee Linked Game.bat
