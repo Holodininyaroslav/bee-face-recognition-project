@@ -2,12 +2,10 @@
 const LOCAL_BEEBOARD_BASE = "http://127.0.0.1:8877";
 const LOCAL_HIVE_URL = `${LOCAL_HIVE_BASE}/?fresh=github-pages-local`;
 const LOCAL_BEEBOARD_VIEWER_URL = `${LOCAL_BEEBOARD_BASE}/?hive=${encodeURIComponent(LOCAL_HIVE_URL)}&processor=0#viewer`;
-const REPO_RAW_BASE = "https://raw.githubusercontent.com/Holodininyaroslav/bee-face-recognition-project/main";
 const INSTALLER_URLS = {
   suite: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_face_full_local_suite_installer.zip",
   ursina: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_ursina_game_installer.zip",
-  beeboard: `${REPO_RAW_BASE}/installers/beeboard_interface_installer.zip`,
-  satellite: `${REPO_RAW_BASE}/installers/satellite_communication_installer.zip`,
+  beeboard: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/beeboard_interface_installer.zip",
   physical: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/physical_simulation_installer.zip",
   hive: "https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/ai_mips_hive_service_installer.zip",
   repository: "https://github.com/Holodininyaroslav/bee-face-recognition-project"
@@ -341,7 +339,18 @@ const translations = {
     downloadUrsina: "Bgame installer",
     downloadBeeBoard: "BeeBoard installer",
     downloadPhysical: "Physical installer",
-    back: "Back"
+    back: "Back",
+    stageLabel: "STAGE",
+    unknown: "Unknown",
+    processedImages: "image(s) processed",
+    acceptedImages: "Accepted",
+    processing: "Processing",
+    running: "Running...",
+    ready: "Local Hive ready",
+    error: "Local Hive error",
+    bestLabel: "best match",
+    scoreValue: "similarity",
+    marginValue: "margin"
   },
   ru: {
     kicker: "COLAB GPU / Р РђРЎРџРћР—РќРђР’РђРќРР• Р›РР¦ / РРќРўР•Р Р¤Р•Р™РЎ РџР РћР•РљРўРђ",
@@ -1144,6 +1153,99 @@ const stageDiagramNotes = [
   }
 ];
 
+const cleanRussianStageDiagramNotes = [
+  [
+    "Пользователь выбирает одну или несколько фотографий или скриншотов в браузере.",
+    "Файл передается как данные изображения, без готового имени человека.",
+    "Сервер декодирует картинку в RGB-пиксели, которые может прочитать детектор.",
+    "Пиксели укладываются в фиксированный формат входа нейросети."
+  ],
+  [
+    "Полный скриншот может содержать фон, интерфейс и другие объекты.",
+    "Детектор ищет участок, где вероятнее всего находится лицо.",
+    "Для распознавания сохраняется только полезная область лица.",
+    "Фрагмент приводится к одному размеру и нормализуется."
+  ],
+  [
+    "Нормализованное лицо поступает в сеть DeepID.",
+    "Первые фильтры находят простые локальные признаки и уменьшают размер карты.",
+    "Следующие фильтры объединяют простые признаки в более сильные признаки лица.",
+    "Последняя свертка сохраняет компактную пространственную информацию о лице.",
+    "Полносвязные слои объединяют важные признаки во внутреннее представление.",
+    "Итоговый вектор из 160 чисел является компактным цифровым отпечатком лица."
+  ],
+  [
+    "Это новый вектор признаков лица, который создала нейросеть.",
+    "Это сохраненные векторы известных людей из эталонного набора проекта.",
+    "Каждый эталон сравнивается с новым вектором по косинусному сходству.",
+    "Система сохраняет самого близкого и второго по близости человека для проверки уверенности."
+  ],
+  [
+    "Лучшее значение сходства показывает, насколько близко самое сильное совпадение.",
+    "Второе совпадение показывает ближайшего конкурента среди остальных людей.",
+    "Этот порог отсекает слишком слабые совпадения.",
+    "Этот порог требует, чтобы победитель заметно опережал второй результат.",
+    "Принимается только уверенное совпадение; иначе результат считается неизвестным."
+  ],
+  [
+    "Логическое значение сообщает интерфейсу, принято ли распознавание.",
+    "Имя возвращается только после успешной проверки уверенности.",
+    "Показатели добавлены, чтобы результат можно было проверить и настроить.",
+    "Ответ записывает, использовался ли путь GPU/Colab или CPU.",
+    "Время выполнения показывает длительность запроса распознавания.",
+    "Веб-интерфейс читает этот JSON и показывает одинаковый ответ в простой и интегрированной демонстрации."
+  ]
+];
+
+const cleanHebrewStageDiagramNotes = [
+  [
+    "המשתמש בוחר תמונה אחת או יותר או צילומי מסך בדפדפן.",
+    "הקובץ מועבר כנתוני תמונה, בלי זהות מוכנה של אדם.",
+    "השרת מפענח את התמונה לפיקסלי RGB שהגלאי יכול לקרוא.",
+    "הפיקסלים מסודרים בפורמט הקלט הקבוע שהרשת העצבית מצפה לו."
+  ],
+  [
+    "צילום המסך המלא עשוי להכיל רקע, ממשק ואובייקטים נוספים.",
+    "הגלאי מחפש את האזור שבו סביר ביותר שנמצא פרצוף.",
+    "לזיהוי נשמר רק אזור הפנים הרלוונטי.",
+    "האזור מותאם לגודל אחיד ועובר נרמול."
+  ],
+  [
+    "הפנים המנורמלים נכנסים לרשת DeepID.",
+    "המסננים הראשונים מזהים מאפיינים מקומיים פשוטים ומקטינים את גודל המפה.",
+    "המסננים הבאים משלבים מאפיינים פשוטים למאפייני פנים חזקים יותר.",
+    "הקונבולוציה האחרונה שומרת מידע מרחבי קומפקטי על הפנים.",
+    "השכבות המחוברות במלואן מאחדות מאפיינים חשובים לייצוג פנימי.",
+    "הווקטור הסופי, בן 160 מספרים, הוא טביעת האצבע הדיגיטלית של הפנים."
+  ],
+  [
+    "זהו וקטור הפנים החדש שנוצר על ידי הרשת.",
+    "אלה וקטורים שמורים של אנשים מוכרים מתוך קבוצת הייחוס של הפרויקט.",
+    "כל דוגמת ייחוס מושווית לווקטור החדש לפי דמיון קוסינוסי.",
+    "המערכת שומרת את האדם הקרוב ביותר ואת השני בקרבתו לצורך בדיקת הביטחון."
+  ],
+  [
+    "ציון הדמיון הטוב ביותר מראה עד כמה ההתאמה החזקה קרובה.",
+    "ההתאמה השנייה מראה מי המתחרה הקרוב ביותר.",
+    "הסף הזה מסנן התאמות חלשות שאינן דומות מספיק.",
+    "הסף הזה דורש שהמנצח יהיה טוב יותר באופן ברור מהתוצאה השנייה.",
+    "רק התאמה בטוחה מתקבלת; אחרת התוצאה היא לא ידוע."
+  ],
+  [
+    "ערך לוגי מודיע לממשק אם הזיהוי התקבל.",
+    "השם שנבחר מוחזר רק לאחר שמבדקי הביטחון עברו בהצלחה.",
+    "המדדים נכללים כדי שאפשר יהיה לבדוק ולכוונן את התוצאה.",
+    "התשובה מתעדת אם נעשה שימוש במסלול GPU/Colab או CPU.",
+    "זמן הביצוע מציג כמה זמן ארכה בקשת הזיהוי.",
+    "ממשק האינטרנט קורא את ה-JSON ומציג את אותה תשובה בהדגמה הפשוטה והמשולבת."
+  ]
+];
+
+stageDiagramNotes.forEach((stage, index) => {
+  stage.ru = cleanRussianStageDiagramNotes[index];
+  stage.he = cleanHebrewStageDiagramNotes[index];
+});
+
 let currentStageIndex = -1;
 let stageCodeMode = "short";
 let detectorSourceLoaded = false;
@@ -1170,20 +1272,20 @@ const cleanRuTranslations = {
   toolPhysicalText: "Скачать локальный пакет физической симуляции.",
   simpleKicker: "ПРОСТОЙ РЕЖИМ",
   simpleTitle: "Простая демонстрация распознавания лиц",
-  simpleNote: "Загрузите одно изображение или пачку, выберите GPU или CPU и нажмите «Распознать».",
+  simpleNote: "Загрузите одно или несколько изображений, выберите режим GPU или CPU и нажмите «Распознать».",
   imageTitle: "Изображение / скриншот",
   dropHint: "Выберите одно или несколько изображений для анализа на GPU/CPU.",
   mode: "Режим вычислений",
   gpu: "GPU",
   cpu: "CPU",
-  score: "Минимальный score",
-  margin: "Минимальный margin",
+  score: "Минимальный порог сходства",
+  margin: "Минимальный отрыв между совпадениями",
   recognize: "Распознать",
   builtIn: "Встроенные проверки на статуях",
   tableImage: "Изображение / скриншот",
   tableMode: "Режим вычислений",
-  tableScore: "Минимальный score",
-  tableMargin: "Минимальный margin",
+  tableScore: "Минимальный порог сходства",
+  tableMargin: "Минимальный отрыв между совпадениями",
   tableRun: "Запуск",
   resultTitle: "Результат детектора",
   summary: "Загрузите изображение и нажмите «Распознать».",
@@ -1196,15 +1298,15 @@ const cleanRuTranslations = {
   step2Title: "Обрезка лица и нормализация",
   step2Text: "Детектор ищет область лица, вырезает полезный фрагмент, приводит его к входному размеру сети и нормализует значения цвета и яркости.",
   step3Title: "Извлечение признаков",
-  step3Text: "Нейросеть превращает изображение лица в числовой вектор признаков, или embedding. Такой вектор описывает лицо компактнее и устойчивее, чем сырые пиксели.",
+  step3Text: "Нейросеть превращает изображение лица в числовой вектор признаков. Такой вектор описывает лицо компактнее и устойчивее, чем сырые пиксели.",
   step4Title: "Сравнение с эталонами",
-  step4Text: "Новый embedding сравнивается с сохраненными эталонами известных людей. Ближайший эталон становится best label, второй ближайший сохраняется как runner up.",
-  step5Title: "Решение по score и margin",
-  step5Text: "Ответ принимается только если лучший score достаточно высокий и отрыв от второго результата достаточно большой. Иначе система возвращает Unknown, чтобы не подставлять неправильное имя.",
+  step4Text: "Новый вектор сравнивается с сохраненными эталонами известных людей. Ближайшее совпадение становится основным результатом, а второе по близости используется для проверки уверенности.",
+  step5Title: "Решение по сходству и отрыву",
+  step5Text: "Результат принимается только при достаточно высоком сходстве и заметном отрыве от второго совпадения. Иначе система показывает «Неизвестно», чтобы не подставлять неправильное имя.",
   step6Title: "JSON-ответ",
-  step6Text: "Интерфейс получает короткое резюме и JSON с именем, best score, runner up, margin, backend-режимом, временем выполнения и флагом accepted.",
-  modeExplainTitle: "Режим GPU и CPU",
-  modeExplainText: "GPU-режим выполняет тяжелые операции над изображениями и векторами через ускоритель. CPU-режим выполняет ту же логику на процессоре. Ожидаемый ответ по личности должен быть тем же; меняется в основном место вычислений и время выполнения.",
+  step6Text: "Интерфейс получает короткое резюме и JSON с именем, лучшим сходством, вторым совпадением, отрывом, режимом обработки, временем выполнения и признаком принятия.",
+  modeExplainTitle: "Режимы GPU и CPU",
+  modeExplainText: "Режим GPU выполняет тяжелые операции над изображениями и векторами на ускорителе. Режим CPU выполняет ту же логику на процессоре. Результат распознавания должен оставаться одинаковым; меняются главным образом место и время вычислений.",
   openStage: "Открыть схему",
   complexKicker: "ИНТЕГРИРОВАННЫЙ РЕЖИМ",
   complexTitle: "Интегрированный интерфейс проекта",
@@ -1218,14 +1320,25 @@ const cleanRuTranslations = {
   back: "Назад",
   sourceKicker: "ПОЛНЫЙ ИСХОДНЫЙ КОД ДЕТЕКТОРА",
   sourceTitle: "Полная реализация нейросетевого распознавателя",
-  sourceIntro: "Откройте полный модуль Colab-детектора, если нужно увидеть части вокруг шести этапов вычислений: импорты, загрузку весов, выбор CUDA, модель DeepID, препроцессинг, эталонные embeddings, batch-распознавание, правила решения и JSON/API-связку.",
+  sourceIntro: "Откройте полный модуль Colab-детектора, если нужно увидеть части вокруг шести этапов вычислений: импорты, загрузку весов, выбор CUDA, модель DeepID, предварительную обработку, эталонные векторы, пакетное распознавание, правила решения и связь с JSON/API.",
   openDetectorSource: "Открыть полный исходный код детектора",
   hideDetectorSource: "Скрыть полный исходный код детектора",
   openRawDetectorSource: "Открыть raw-файл исходника",
   sourceClosed: "Закрыто. Используйте это, когда фрагментов этапов недостаточно.",
-  sourceLoading: "Загружаю исходный код детектора из репозитория...",
-  sourceLoaded: "Показан точный исходный код нейросетевого детектора, скопированный из Colab-модуля. Raw-ссылка открывает полный модуль.",
-  sourceError: "Не удалось загрузить исходный файл детектора с этого сайта."
+  sourceLoading: "Загружаю исходный код детектора из репозитория…",
+  sourceLoaded: "Показан точный исходный код нейросетевого детектора из модуля Colab. Ссылка Raw открывает полный модуль.",
+  sourceError: "Не удалось загрузить исходный файл детектора с этого сайта.",
+  stageLabel: "ЭТАП",
+  unknown: "Неизвестно",
+  processedImages: "изображений обработано",
+  acceptedImages: "Принято",
+  processing: "Обработка",
+  running: "Выполняется…",
+  ready: "Локальный Hive готов",
+  error: "Ошибка локального Hive",
+  bestLabel: "лучшее совпадение",
+  scoreValue: "сходство",
+  marginValue: "отрыв"
 };
 
 const cleanHeTranslations = {
@@ -1310,13 +1423,13 @@ const cleanDetailUi = {
   ru: {
     schemeTitle: "Схема",
     stageStatsTitle: "Слои и нейронные связи",
-    layersLabel: "Слои / операции",
-    connectionsLabel: "Связи нейронов / MAC",
-    tensorLabel: "Размер тензора / вектора",
-    cudaLabel: "Раскладка CUDA",
-    cudaTitle: "Как это реализуется в CUDA в проекте",
-    nextLevel: "Следующий уровень",
-    prevLevel: "Предыдущий уровень",
+    layersLabel: "Слои и операции",
+    connectionsLabel: "Связи нейронов и операции MAC",
+    tensorLabel: "Размер тензора или вектора",
+    cudaLabel: "Распределение по CUDA",
+    cudaTitle: "Как CUDA реализует этот этап в проекте",
+    nextLevel: "Следующий этап",
+    prevLevel: "Предыдущий этап",
     backToSimple: "Вернуться в простую демонстрацию",
     openFullCode: "Открыть полный Colab/CUDA-код этого этапа",
     showShortCode: "Показать короткую схему этапа",
@@ -1349,14 +1462,14 @@ const cleanStageLocalization = [
       he: "התמונה נטענת כמערך RGB ומוכנה להעברה אל הגלאי."
     },
     diagram: {
-      ru: ["Файл", "RGB-пиксели", "Face crop", "55 x 47 x 3"],
+      ru: ["Файл", "RGB-пиксели", "Область лица", "55 x 47 x 3"],
       he: ["קובץ", "פיקסלי RGB", "חיתוך פנים", "55 x 47 x 3"]
     },
     layers: { ru: "0 нейронных слоев, это этап подготовки входа", he: "0 שכבות עצביות; זה שלב הכנת הקלט" },
     connections: { ru: "55 x 47 x 3 = 7 755 входных значений", he: "55 x 47 x 3 = 7,755 ערכי קלט" },
     cudaShort: { ru: "cudaMalloc + cudaMemcpy для входного тензора", he: "cudaMalloc ו-cudaMemcpy עבור טנזור הקלט" },
     cuda: {
-      ru: "На этом этапе CUDA используется для выделения буфера под нормализованное лицо и копирования данных с host на device. Сама нейросеть запускается только после готовности этого буфера.",
+      ru: "На этом этапе CUDA выделяет буфер для нормализованного лица и копирует данные с центрального процессора на видеокарту. Нейросеть запускается после подготовки этого буфера.",
       he: "בשלב הזה CUDA מקצה באפר לתמונת הפנים המנורמלת ומעתיקה נתונים מה-host אל ה-device. הרשת עצמה מתחילה לרוץ רק לאחר שהבאפר מוכן."
     }
   },
@@ -1367,68 +1480,68 @@ const cleanStageLocalization = [
       he: "הגלאי בוחר את אזור הפנים, מתאים אותו לגודל קבוע ומנרמל את הערוצים."
     },
     diagram: {
-      ru: ["Скриншот", "Область лица", "Resize", "Нормализованный тензор"],
+      ru: ["Скриншот", "Область лица", "Изменение размера", "Нормализованный тензор"],
       he: ["צילום מסך", "אזור פנים", "שינוי גודל", "טנזור מנורמל"]
     },
-    layers: { ru: "Препроцессинг перед сверточными слоями", he: "עיבוד מקדים לפני שכבות הקונבולוציה" },
-    connections: { ru: "Те же 7 755 значений после resize и нормализации", he: "אותם 7,755 ערכים לאחר שינוי גודל ונרמול" },
+    layers: { ru: "Предварительная обработка перед сверточными слоями", he: "עיבוד מקדים לפני שכבות הקונבולוציה" },
+    connections: { ru: "Те же 7 755 значений после изменения размера и нормализации", he: "אותם 7,755 ערכים לאחר שינוי גודל ונרמול" },
     cudaShort: { ru: "Нормализованный тензор копируется в GPU-память", he: "הטנזור המנורמל מועתק לזיכרון GPU" },
     cuda: {
-      ru: "В проекте crop/resize выполняются перед запуском CUDA kernels, затем результат отправляется в device buffer. Это сохраняет одинаковый вход для CPU и GPU режима.",
+      ru: "В проекте обрезка и изменение размера выполняются перед запуском ядер CUDA, затем результат отправляется в буфер видеокарты. Поэтому вход для режимов CPU и GPU остается одинаковым.",
       he: "בפרויקט crop/resize מתבצעים לפני הרצת kernels של CUDA, ואז התוצאה נשלחת לבאפר ב-device. כך נשמר קלט זהה למצבי CPU ו-GPU."
     }
   },
   {
     title: { ru: "Извлечение признаков", he: "חילוץ מאפיינים" },
     summary: {
-      ru: "DeepID-подобная сеть превращает лицо в компактный 160D embedding.",
+      ru: "Сеть, построенная по принципу DeepID, превращает лицо в компактный вектор признаков размером 160D.",
       he: "רשת בסגנון DeepID ממירה את הפנים ל-embedding קומפקטי בגודל 160D."
     },
     diagram: {
-      ru: ["55 x 47 x 3", "Conv + ReLU", "Pool", "Dense", "160D embedding"],
+      ru: ["55 x 47 x 3", "Свертка + ReLU", "Пулинг", "Полносвязный слой", "Вектор 160D"],
       he: ["55 x 47 x 3", "Conv + ReLU", "Pool", "Dense", "160D embedding"]
     },
-    layers: { ru: "4 сверточных блока, pooling, dense-слои и нормализация", he: "4 בלוקים של convolution, pooling, שכבות dense ונרמול" },
-    connections: { ru: "Основная часть MAC выполняется в conv и dense слоях", he: "רוב פעולות ה-MAC מתבצעות בשכבות conv ו-dense" },
+    layers: { ru: "4 сверточных блока, пулинг, полносвязные слои и нормализация", he: "4 בלוקים של convolution, pooling, שכבות dense ונרמול" },
+    connections: { ru: "Основная часть операций MAC выполняется в сверточных и полносвязных слоях", he: "רוב פעולות ה-MAC מתבצעות בשכבות conv ו-dense" },
     cudaShort: { ru: "conv_relu, max_pool_2x2, dense, add_relu_12", he: "conv_relu, max_pool_2x2, dense, add_relu_12" },
     cuda: {
-      ru: "CUDA раскладывает convolution, pooling, dense, add/ReLU и normalization на отдельные kernels. Каждый output activation независим, поэтому блоки потоков параллельно считают пиксели, каналы и нейроны.",
+      ru: "CUDA распределяет свертку, пулинг, полносвязные слои, ReLU и нормализацию по отдельным ядрам. Независимые выходные значения вычисляются параллельно.",
       he: "CUDA מפרקת convolution, pooling, dense, add/ReLU ו-normalization ל-kernels נפרדים. כל output activation עצמאי, ולכן בלוקי threads מחשבים במקביל פיקסלים, ערוצים ונוירונים."
     }
   },
   {
     title: { ru: "Сравнение с эталонами", he: "השוואה מול דוגמאות ייחוס" },
     summary: {
-      ru: "Новый 160D embedding сравнивается с сохраненными эталонами известных людей.",
+      ru: "Новый вектор признаков 160D сравнивается с сохраненными эталонами известных людей.",
       he: "ה-embedding החדש בגודל 160D מושווה לדוגמאות ייחוס שמורות של אנשים מוכרים."
     },
     diagram: {
-      ru: ["160D embedding", "Матрица эталонов", "Dot products", "Лучший + второй"],
+      ru: ["Вектор 160D", "Матрица эталонов", "Скалярные произведения", "Лучший + второй"],
       he: ["160D embedding", "מטריצת ייחוס", "Dot products", "הטוב ביותר + השני"]
     },
     layers: { ru: "1 слой сравнения по банку эталонов", he: "שכבת השוואה אחת מול בנק הייחוס" },
     connections: { ru: "N x 160 умножений сходства для текущего набора эталонов", he: "N x 160 הכפלות דמיון עבור סט הייחוס הנוכחי" },
     cudaShort: { ru: "Один блок/группа на эталон", he: "בלוק/קבוצה אחת לכל דוגמת ייחוס" },
     cuda: {
-      ru: "CUDA-версия может назначить один блок на каждого кандидата и свести 160 произведений в один similarity score. CPU-режим выполняет ту же математику последовательно или обычными векторными циклами.",
+      ru: "CUDA может назначить отдельный блок для каждого кандидата и свести 160 произведений в один показатель сходства. CPU выполняет ту же математику последовательно или обычными векторными циклами.",
       he: "גרסת CUDA יכולה להקצות בלוק אחד לכל מועמד ולצמצם 160 מכפלות לציון similarity אחד. מצב CPU מבצע את אותה מתמטיקה באופן סדרתי או בלולאות וקטור רגילות."
     }
   },
   {
-    title: { ru: "Решение по score и margin", he: "החלטה לפי score ו-margin" },
+    title: { ru: "Решение по сходству и отрыву", he: "החלטה לפי score ו-margin" },
     summary: {
-      ru: "Лучший результат проходит пороги confidence и margin; иначе возвращается Unknown.",
+      ru: "Лучший результат проходит пороги сходства и отрыва; иначе возвращается «Неизвестно».",
       he: "התוצאה הטובה ביותר עוברת ספי confidence ו-margin; אחרת מוחזר Unknown."
     },
     diagram: {
-      ru: ["Лучший score", "Второй score", "Margin", "Accepted / Unknown"],
+      ru: ["Лучшее сходство", "Второе сходство", "Отрыв", "Принято / Неизвестно"],
       he: ["הציון הטוב ביותר", "הציון השני", "Margin", "Accepted / Unknown"]
     },
     layers: { ru: "Логический слой принятия решения", he: "שכבה לוגית לקבלת החלטה" },
-    connections: { ru: "Сравнение двух score и двух порогов", he: "השוואה של שני ציונים ושני ספים" },
+    connections: { ru: "Сравнение двух показателей сходства и двух порогов", he: "השוואה של שני ציונים ושני ספים" },
     cudaShort: { ru: "Пороговая проверка после GPU/CPU вычислений", he: "בדיקת ספים לאחר חישובי GPU/CPU" },
     cuda: {
-      ru: "После вычисления similarity проект проверяет minimum score и minimum margin. Это не меняет нейросеть, а защищает интерфейс от уверенного, но неверного имени.",
+      ru: "После вычисления сходства проект проверяет минимальный порог и минимальный отрыв. Это защищает интерфейс от уверенного, но неверного имени.",
       he: "לאחר חישוב similarity הפרויקט בודק minimum score ו-minimum margin. זה לא משנה את הרשת, אלא מגן על הממשק מפני הצגת שם שגוי בביטחון גבוה."
     }
   },
@@ -1439,14 +1552,14 @@ const cleanStageLocalization = [
       he: "התוצאה נארזת כ-JSON שנקרא על ידי ההדגמה הפשוטה וממשק Hive."
     },
     diagram: {
-      ru: ["Label", "Scores", "Backend", "Elapsed time", "UI update"],
+      ru: ["Имя", "Показатели", "Режим обработки", "Время выполнения", "Обновление экрана"],
       he: ["Label", "Scores", "Backend", "Elapsed time", "עדכון UI"]
     },
     layers: { ru: "API-слой ответа", he: "שכבת API לתגובה" },
     connections: { ru: "Поля JSON связывают детектор, Colab и интерфейс", he: "שדות JSON מחברים בין הגלאי, Colab והממשק" },
-    cudaShort: { ru: "CUDA результат сериализуется после синхронизации", he: "תוצאת CUDA עוברת serialization לאחר סנכרון" },
+    cudaShort: { ru: "Результат CUDA преобразуется в JSON после синхронизации", he: "תוצאת CUDA עוברת serialization לאחר סנכרון" },
     cuda: {
-      ru: "После cudaDeviceSynchronize backend собирает label, scores, backend mode и elapsed time в JSON. Интерфейс показывает один и тот же ответ в простой и интегрированной демонстрации.",
+      ru: "После cudaDeviceSynchronize сервер собирает имя, показатели, режим обработки и время выполнения в JSON. Интерфейс показывает один и тот же ответ в простой и интегрированной демонстрации.",
       he: "לאחר cudaDeviceSynchronize ה-backend אוסף label, scores, backend mode ו-elapsed time לתוך JSON. הממשק מציג אותה תשובה בהדגמה הפשוטה והמשולבת."
     }
   }
@@ -1463,6 +1576,8 @@ cleanStageLocalization.forEach((localizedStage, index) => {
     if (stage[key] && localizedStage[key]) Object.assign(stage[key], localizedStage[key]);
   });
 });
+
+
 function setLanguage(lang) {
   const dict = translations[lang] || translations.en;
   const extra = detailUi[lang] || detailUi.en;
@@ -1870,7 +1985,10 @@ function patternCodeAnnotation(line) {
   const lang = document.documentElement.lang || "en";
   const trimmed = line.trim();
   const found = colabCodePatternAnnotations.find(([pattern]) => pattern.test(trimmed));
-  return (found && (found[1][lang] || found[1].en)) || codeAnnotationFallback[lang] || codeAnnotationFallback.en;
+  const candidate = (found && (found[1][lang] || found[1].en)) || codeAnnotationFallback[lang] || codeAnnotationFallback.en;
+  return lang !== "en" && looksLikeMojibake(candidate)
+    ? codeAnnotationFallback[lang] || codeAnnotationFallback.en
+    : candidate;
 }
 
 function looksLikeMojibake(text) {
@@ -2030,7 +2148,7 @@ function renderStageDetail(index, shouldScroll = true) {
   const total = stageDetails.length;
   currentStageIndex = (index + total) % total;
   const data = stageDetails[currentStageIndex];
-  stageDetailKicker.textContent = `LEVEL ${data.level}`;
+  stageDetailKicker.textContent = `${uiText("stageLabel")} ${data.level}`;
   stageDetailTitle.textContent = localized(data.title);
   stageDetailSummary.textContent = localized(data.summary);
   stageLayers.textContent = localized(data.layers);
@@ -2103,22 +2221,22 @@ async function runRecognition(file, mode, score, margin) {
   const payload = await response.json();
   payload.requested_min_score = score;
   payload.requested_min_margin = margin;
-  return { markdown: payload.identity || payload.best_label || "Unknown", json: payload };
+  return { markdown: payload.identity || payload.best_label || uiText("unknown"), json: payload };
 }
 
 function renderResults(results) {
   resultList.innerHTML = "";
   const accepted = results.filter((item) => item.json?.accepted).length;
-  summaryBox.textContent = `${results.length} image(s) processed. Accepted: ${accepted}.`;
+  summaryBox.textContent = `${results.length} ${uiText("processedImages")}. ${uiText("acceptedImages")}: ${accepted}.`;
   results.forEach((item) => {
     const row = document.createElement("article");
     row.className = `result-row ${item.json?.accepted ? "accepted" : "unknown"}`;
     const title = document.createElement("strong");
-    title.textContent = `${item.file}: ${item.json?.identity || "Unknown"}`;
+    title.textContent = `${item.file}: ${item.json?.identity || uiText("unknown")}`;
     const meta = document.createElement("span");
     const score = item.json?.best_score;
     const margin = item.json?.margin;
-    meta.textContent = `${item.json?.mode || selectedMode()} | best ${item.json?.best_label || "-"} | score ${Number(score ?? 0).toFixed(6)} | margin ${Number(margin ?? 0).toFixed(6)}`;
+    meta.textContent = `${item.json?.mode || selectedMode()} | ${uiText("bestLabel")}: ${item.json?.best_label || "-"} | ${uiText("scoreValue")}: ${Number(score ?? 0).toFixed(6)} | ${uiText("marginValue")}: ${Number(margin ?? 0).toFixed(6)}`;
     row.append(title, meta);
     resultList.appendChild(row);
   });
@@ -2141,21 +2259,21 @@ async function recognizeSelectedFiles() {
   const score = Number(scoreInput.value);
   const margin = Number(marginInput.value);
   recognizeButton.disabled = true;
-  backendStatus.textContent = "Running...";
-  summaryBox.textContent = `Processing ${files.length} image(s) on ${mode}...`;
+  backendStatus.textContent = uiText("running");
+  summaryBox.textContent = `${uiText("processing")} ${files.length} ${uiText("processedImages")} (${mode})…`;
   resultList.innerHTML = "";
   jsonBox.textContent = "{}";
   try {
     const results = [];
     for (const file of files) {
-      summaryBox.textContent = `Processing ${file.name} on ${mode}...`;
+      summaryBox.textContent = `${uiText("processing")}: ${file.name} (${mode})…`;
       const result = await runRecognition(file, mode, score, margin);
       results.push({ file: file.name, ...result });
       renderResults(results);
     }
-    backendStatus.textContent = "Local Hive ready";
+    backendStatus.textContent = uiText("ready");
   } catch (error) {
-    backendStatus.textContent = "Local Hive error";
+    backendStatus.textContent = uiText("error");
     renderError(error);
   } finally {
     recognizeButton.disabled = false;
