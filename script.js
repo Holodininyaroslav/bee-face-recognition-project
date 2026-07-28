@@ -1585,7 +1585,7 @@ function setLanguage(lang) {
   document.documentElement.dir = lang === "he" ? "rtl" : "ltr";
   document.querySelectorAll("[data-i18n]").forEach((node) => {
     const key = node.dataset.i18n;
-    if (dict[key] || extra[key]) node.textContent = repairLocalizedText(dict[key] || extra[key]);
+    if (dict[key] || extra[key]) node.textContent = dict[key] || extra[key];
   });
   document.querySelectorAll(".lang").forEach((button) => {
     button.classList.toggle("active", button.dataset.lang === lang);
@@ -1611,12 +1611,9 @@ function showView(id) {
 }
 
 function localized(value) {
-  if (!value) return "";
-  if (typeof value === "string") return repairLocalizedText(value);
-  if (Array.isArray(value)) return value.map((item) => repairLocalizedText(item));
+  if (!value || typeof value === "string") return value || "";
   const lang = document.documentElement.lang || "en";
-  const selected = value[lang] || value.en || "";
-  return Array.isArray(selected) ? selected.map((item) => repairLocalizedText(item)) : repairLocalizedText(selected);
+  return value[lang] || value.en || "";
 }
 
 const codeAnnotationFallback = {
@@ -1629,6 +1626,159 @@ const codeBlankAnnotation = {
   en: "Visual separator between logical parts of the stage.",
   ru: "Визуальный разделитель между логическими частями этапа.",
   he: "מפריד חזותי בין חלקים לוגיים של השלב."
+};
+
+const detailedCodeLineAnnotations = {
+  "# colab_ai_mips_bee_world.py: image crop/resize/normalization path": {
+    en: "Names the exact project module and the preprocessing path shown below: crop, aspect-ratio-preserving resize, padding, and tensor normalization.",
+    ru: "Указывает точный модуль проекта и путь предварительной обработки ниже: обрезка, масштабирование с сохранением пропорций, поля и нормализация тензора.",
+    he: "מציינת את מודול הפרויקט המדויק ואת מסלול העיבוד המקדים שמוצג בהמשך: חיתוך, שינוי גודל עם שמירת יחס, שוליים ונרמול טנזור."
+  },
+  "def _preprocess_pil(self, img: Image.Image, device: str)": {
+    en: "Defines the preprocessing function. It receives one Pillow image and the target device name, then returns a model-ready tensor.",
+    ru: "Объявляет функцию предварительной обработки. Она принимает одно изображение Pillow и имя целевого устройства, затем возвращает тензор, готовый для модели.",
+    he: "מגדירה את פונקציית העיבוד המקדים. היא מקבלת תמונת Pillow אחת ואת שם התקן היעד, ומחזירה טנזור מוכן למודל."
+  },
+  "torch, _, _ = self._ensure_torch()": {
+    en: "Obtains the PyTorch runtime from the detector. The two underscore variables are returned helper values that this function does not need.",
+    ru: "Получает среду PyTorch из детектора. Две переменные с подчёркиванием получают служебные возвращаемые значения, которые этой функции не нужны.",
+    he: "מקבלת את סביבת PyTorch מהגלאי. שני המשתנים עם קו תחתון מקבלים ערכי עזר מוחזרים שהפונקציה הזו אינה צריכה."
+  },
+  "img = img.convert(\"RGB\")": {
+    en: "Converts the input to three RGB color channels. This removes grayscale or alpha-channel differences before building the tensor.",
+    ru: "Приводит вход к трём цветовым каналам RGB. Это убирает различия между серыми изображениями и изображениями с альфа-каналом до построения тензора.",
+    he: "ממירה את הקלט לשלושה ערוצי צבע RGB. כך מוסרים הבדלים בין תמונות אפורות או תמונות עם ערוץ אלפא לפני בניית הטנזור."
+  },
+  "src_w, src_h = img.size": {
+    en: "Reads the original image width and height in pixels: src_w is width and src_h is height.",
+    ru: "Считывает исходные ширину и высоту изображения в пикселях: `src_w` — ширина, `src_h` — высота.",
+    he: "קוראת את רוחב וגובה התמונה המקורית בפיקסלים: `src_w` הוא הרוחב ו-`src_h` הוא הגובה."
+  },
+  "target_w, target_h = 47, 55": {
+    en: "Sets the network input frame to 47 pixels wide by 55 pixels high. After channels are moved first, one image tensor has shape [3, 55, 47].",
+    ru: "Задаёт кадр входа нейросети: 47 пикселей по ширине и 55 по высоте. После переноса каналов вперёд один тензор изображения имеет размерность `[3, 55, 47]`.",
+    he: "מגדירה את מסגרת הקלט של הרשת: רוחב 47 פיקסלים וגובה 55 פיקסלים. לאחר העברת הערוצים להתחלה, טנזור תמונה אחד הוא בגודל `[3, 55, 47]`."
+  },
+  "scale = min(target_w / src_w, target_h / src_h)": {
+    en: "Computes one scale factor that makes the image fit inside 47 x 55 without stretching it. The smaller ratio preserves the original aspect ratio.",
+    ru: "Вычисляет единый коэффициент масштаба, чтобы изображение поместилось в 47 x 55 без растяжения. Меньшее из двух отношений сохраняет исходные пропорции.",
+    he: "מחשבת גורם קנה מידה יחיד כדי שהתמונה תיכנס ל-47 x 55 בלי למתוח אותה. היחס הקטן מבין השניים שומר על יחס הממדים המקורי."
+  },
+  "resized_w = max(1, int(src_w * scale))": {
+    en: "Calculates the scaled width in whole pixels and guarantees that it is at least one pixel wide.",
+    ru: "Вычисляет масштабированную ширину в целых пикселях и гарантирует, что она будет не меньше одного пикселя.",
+    he: "מחשבת את הרוחב לאחר שינוי הגודל בפיקסלים שלמים ומבטיחה שהוא יהיה לפחות פיקסל אחד."
+  },
+  "resized_h = max(1, int(src_h * scale))": {
+    en: "Calculates the scaled height in whole pixels and guarantees that it is at least one pixel high.",
+    ru: "Вычисляет масштабированную высоту в целых пикселях и гарантирует, что она будет не меньше одного пикселя.",
+    he: "מחשבת את הגובה לאחר שינוי הגודל בפיקסלים שלמים ומבטיחה שהוא יהיה לפחות פיקסל אחד."
+  },
+  "resized = img.resize((resized_w, resized_h), Image.BILINEAR)": {
+    en: "Resizes the image to the calculated dimensions with bilinear interpolation, which blends neighboring pixels for a smoother result.",
+    ru: "Масштабирует изображение до вычисленных размеров билинейной интерполяцией: новый пиксель получается смешиванием соседних пикселей.",
+    he: "משנה את גודל התמונה למידות המחושבות באמצעות אינטרפולציה ביליניארית: כל פיקסל חדש מחושב משילוב של פיקסלים שכנים."
+  },
+  "canvas = Image.new(\"RGB\", (target_w, target_h), (0, 0, 0))": {
+    en: "Creates a black RGB canvas exactly 47 x 55 pixels. It is the fixed frame that receives the resized image.",
+    ru: "Создаёт чёрный RGB-кадр ровно 47 x 55 пикселей. Это фиксированная рамка, в которую будет помещено масштабированное изображение.",
+    he: "יוצרת קנבס RGB שחור בגודל מדויק של 47 x 55 פיקסלים. זו המסגרת הקבועה שאליה מוכנסת התמונה ששונתה בגודלה."
+  },
+  "pad_x = (target_w - resized_w) // 2": {
+    en: "Finds the left horizontal padding in pixels. Integer division centers the resized image inside the 47-pixel-wide canvas.",
+    ru: "Находит левое горизонтальное поле в пикселях. Целочисленное деление центрирует масштабированное изображение внутри кадра шириной 47 пикселей.",
+    he: "מחשבת את השוליים השמאליים בפיקסלים. חלוקה שלמה ממקמת את התמונה ששונתה בגודלה במרכז הקנבס שרוחבו 47 פיקסלים."
+  },
+  "pad_y = (target_h - resized_h) // 2": {
+    en: "Finds the top vertical padding in pixels so the resized image is centered inside the 55-pixel-high canvas.",
+    ru: "Находит верхнее вертикальное поле в пикселях, чтобы масштабированное изображение было по центру кадра высотой 55 пикселей.",
+    he: "מחשבת את השוליים העליונים בפיקסלים כדי שהתמונה ששונתה בגודלה תמורכז בתוך קנבס בגובה 55 פיקסלים."
+  },
+  "canvas.paste(resized, (pad_x, pad_y))": {
+    en: "Places the resized image onto the black canvas at the calculated left and top offsets. Any remaining area stays black padding.",
+    ru: "Помещает масштабированное изображение на чёрный кадр по вычисленным смещениям слева и сверху. Оставшаяся область остаётся чёрным полем.",
+    he: "מדביקה את התמונה ששונתה בגודלה על הקנבס השחור לפי ההיסטים המחושבים משמאל ומלמעלה. השטח הנותר נשאר שוליים שחורים."
+  },
+  "arr = np.asarray(canvas, dtype=np.float32) / 255.0": {
+    en: "Converts the 47 x 55 RGB canvas into a float32 array with shape [55, 47, 3] and changes pixel values from 0..255 to 0.0..1.0.",
+    ru: "Преобразует RGB-кадр 47 x 55 в массив `float32` размерности `[55, 47, 3]` и переводит значения пикселей из диапазона 0..255 в 0.0..1.0.",
+    he: "ממירה את קנבס ה-RGB בגודל 47 x 55 למערך `float32` בגודל `[55, 47, 3]` ומעבירה את ערכי הפיקסלים מהטווח 0..255 לטווח 0.0..1.0."
+  },
+  "arr = arr[..., ::-1].copy()": {
+    en: "Reverses the last axis of the array, changing channel order from RGB to BGR. copy() makes the reversed data contiguous for PyTorch.",
+    ru: "Разворачивает последнюю ось массива, меняя порядок каналов с RGB на BGR. `copy()` создаёт непрерывный участок памяти, удобный для PyTorch.",
+    he: "הופכת את הציר האחרון של המערך ומשנה את סדר הערוצים מ-RGB ל-BGR. ‏`copy()` יוצרת אזור זיכרון רציף שמתאים ל-PyTorch."
+  },
+  "arr = np.transpose(arr, (2, 0, 1))": {
+    en: "Reorders the array axes from [height, width, channels] = [55, 47, 3] to PyTorch channel-first [channels, height, width] = [3, 55, 47].",
+    ru: "Переставляет оси из `[высота, ширина, каналы] = [55, 47, 3]` в порядок PyTorch `[каналы, высота, ширина] = [3, 55, 47]`.",
+    he: "מסדרת מחדש את צירי המערך מ-`[גובה, רוחב, ערוצים] = [55, 47, 3]` לסדר של PyTorch: `[ערוצים, גובה, רוחב] = [3, 55, 47]`."
+  },
+  "return torch.from_numpy(arr).to(device, non_blocking=True)": {
+    en: "Wraps the NumPy array as a PyTorch tensor and moves it to the selected CPU or CUDA device. non_blocking=True allows an asynchronous copy when the memory setup permits it.",
+    ru: "Оборачивает массив NumPy в тензор PyTorch и переносит его на выбранный CPU или CUDA-устройство. `non_blocking=True` разрешает асинхронное копирование, когда это допускает конфигурация памяти.",
+    he: "עוטפת את מערך NumPy כטנזור PyTorch ומעבירה אותו ל-CPU או להתקן CUDA שנבחר. ‏`non_blocking=True` מאפשר העתקה אסינכרונית כאשר תצורת הזיכרון תומכת בכך."
+  },
+  "def _variants(self, path: str | Path) -> list[tuple[str, Image.Image]]": {
+    en: "Defines a helper that creates several image variants from one file. Each variant gets a name and a Pillow image for a separate recognition attempt.",
+    ru: "Объявляет вспомогательную функцию, создающую несколько вариантов из одного файла. Каждый вариант получает имя и изображение Pillow для отдельной попытки распознавания.",
+    he: "מגדירה פונקציית עזר שיוצרת כמה גרסאות מתמונה אחת. כל גרסה מקבלת שם ותמונת Pillow לניסיון זיהוי נפרד."
+  },
+  "img = Image.open(path).convert(\"RGB\")": {
+    en: "Opens the file from path and immediately converts it to three RGB channels, just as the main preprocessing function does.",
+    ru: "Открывает файл по `path` и сразу приводит его к трём каналам RGB, как и основная функция предварительной обработки.",
+    he: "פותחת את הקובץ לפי `path` ומיד ממירה אותו לשלושה ערוצי RGB, כמו פונקציית העיבוד המקדים הראשית."
+  },
+  "variants = [(\"full\", img)]": {
+    en: "Starts the variant list with the complete original image, labeled full.",
+    ru: "Начинает список вариантов с полного исходного изображения, помеченного как `full`.",
+    he: "מתחילה את רשימת הגרסאות עם התמונה המקורית המלאה, המסומנת `full`."
+  },
+  "w, h = img.size": {
+    en: "Reads the width w and height h of the complete image so later crop coordinates can be calculated.",
+    ru: "Считывает ширину `w` и высоту `h` полного изображения, чтобы затем вычислить координаты обрезки.",
+    he: "קוראת את הרוחב `w` ואת הגובה `h` של התמונה המלאה כדי לחשב בהמשך את קואורדינטות החיתוך."
+  },
+  "for ratio in (0.86, 0.74, 0.62, 0.50, 0.40)": {
+    en: "Repeats the crop operation for five center-crop scales: 86%, 74%, 62%, 50%, and 40% of the shorter image side.",
+    ru: "Повторяет обрезку для пяти масштабов центрального квадрата: 86%, 74%, 62%, 50% и 40% от меньшей стороны изображения.",
+    he: "חוזרת על החיתוך עבור חמישה גדלים של חיתוך מרכזי: 86%, 74%, 62%, 50% ו-40% מהצלע הקצרה של התמונה."
+  },
+  "side = int(min(w, h) * ratio)": {
+    en: "Calculates the side length of the square center crop from the shorter original side and the current ratio.",
+    ru: "Вычисляет длину стороны квадратной центральной обрезки из меньшей исходной стороны и текущего коэффициента.",
+    he: "מחשבת את אורך הצלע של החיתוך הריבועי המרכזי לפי הצלע המקורית הקצרה והיחס הנוכחי."
+  },
+  "if side < 60": {
+    en: "Rejects a crop that would be smaller than 60 x 60 pixels, because such a small crop has too little facial detail.",
+    ru: "Отбрасывает обрезку меньше 60 x 60 пикселей, потому что в таком маленьком фрагменте слишком мало деталей лица.",
+    he: "דוחה חיתוך שקטן מ-60 x 60 פיקסלים, כי בחיתוך קטן כזה יש מעט מדי פרטי פנים."
+  },
+  "continue": {
+    en: "Skips the current crop size and continues with the next ratio when the crop is too small.",
+    ru: "Пропускает текущий размер обрезки и переходит к следующему коэффициенту, если фрагмент слишком мал.",
+    he: "מדלגת על גודל החיתוך הנוכחי וממשיכה ליחס הבא כאשר החיתוך קטן מדי."
+  },
+  "left = (w - side) // 2": {
+    en: "Calculates the x-coordinate of the crop's left edge so the square is centered horizontally.",
+    ru: "Вычисляет x-координату левого края обрезки, чтобы квадрат был выровнен по центру горизонтально.",
+    he: "מחשבת את קואורדינטת x של הקצה השמאלי של החיתוך כדי שהריבוע יהיה ממורכז אופקית."
+  },
+  "top = (h - side) // 2": {
+    en: "Calculates the y-coordinate of the crop's top edge so the square is centered vertically.",
+    ru: "Вычисляет y-координату верхнего края обрезки, чтобы квадрат был выровнен по центру вертикально.",
+    he: "מחשבת את קואורדינטת y של הקצה העליון של החיתוך כדי שהריבוע יהיה ממורכז אנכית."
+  },
+  "variants.append((f\"center_{int(ratio * 100)}\", img.crop((left, top, left + side, top + side))))": {
+    en: "Cuts the centered square, labels it with its percentage such as center_86, and adds it to the recognition attempts.",
+    ru: "Вырезает центральный квадрат, даёт ему метку с процентом, например `center_86`, и добавляет его к попыткам распознавания.",
+    he: "חותכת את הריבוע המרכזי, נותנת לו תווית עם האחוז, למשל `center_86`, ומוסיפה אותו לניסיונות הזיהוי."
+  },
+  "return variants": {
+    en: "Returns the complete list: the full image plus every valid centered crop.",
+    ru: "Возвращает полный список: исходное изображение и все допустимые центральные обрезки.",
+    he: "מחזירה את הרשימה המלאה: התמונה המקורית וכל החיתוכים המרכזיים התקינים."
+  }
 };
 
 const codeLineAnnotations = {
@@ -1987,66 +2137,40 @@ const colabCodePatternAnnotations = [
 function patternCodeAnnotation(line) {
   const lang = document.documentElement.lang || "en";
   const trimmed = line.trim();
+  const exact = detailedCodeLineAnnotations[trimmed];
+  if (exact) return exact[lang] || exact.en;
   const found = colabCodePatternAnnotations.find(([pattern]) => pattern.test(trimmed));
-  return repairLocalizedText(
-    (found && (found[1][lang] || found[1].en)) || codeAnnotationFallback[lang] || codeAnnotationFallback.en
-  );
+  const candidate = (found && (found[1][lang] || found[1].en)) || codeAnnotationFallback[lang] || codeAnnotationFallback.en;
+  return lang !== "en" && looksLikeMojibake(candidate)
+    ? codeAnnotationFallback[lang] || codeAnnotationFallback.en
+    : candidate;
 }
 
 function looksLikeMojibake(text) {
-  return typeof text === "string" && /[РСЧ][\u0080-\u00bf\u0402-\u040f\u0450-\u045f]/.test(text);
-}
-
-function repairLocalizedText(value) {
-  if (!looksLikeMojibake(value)) return value || "";
-  const cp1251Special = {
-    0x0402: 0x80, 0x0403: 0x81, 0x201a: 0x82, 0x0453: 0x83,
-    0x201e: 0x84, 0x2026: 0x85, 0x2020: 0x86, 0x2021: 0x87,
-    0x20ac: 0x88, 0x2030: 0x89, 0x0409: 0x8a, 0x2039: 0x8b,
-    0x040a: 0x8c, 0x040c: 0x8d, 0x040b: 0x8e, 0x040f: 0x8f,
-    0x0452: 0x90, 0x2018: 0x91, 0x2019: 0x92, 0x201c: 0x93,
-    0x201d: 0x94, 0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97,
-    0x2122: 0x99, 0x0459: 0x9a, 0x203a: 0x9b, 0x045a: 0x9c,
-    0x045c: 0x9d, 0x045b: 0x9e, 0x045f: 0x9f, 0x0401: 0xa8,
-    0x040e: 0xa1, 0x045e: 0xa2, 0x0408: 0xa3, 0x0490: 0xa5, 0x0491: 0xb4,
-    0x0404: 0xaa, 0x0407: 0xaf, 0x0406: 0xb2, 0x0456: 0xb3,
-    0x0451: 0xb8, 0x2116: 0xb9, 0x0454: 0xba, 0x0458: 0xbc, 0x0405: 0xbd,
-    0x0455: 0xbe, 0x0457: 0xbf
-  };
-  const bytes = [];
-  for (const character of value) {
-    const point = character.codePointAt(0);
-    if (point <= 0x7f) bytes.push(point);
-    else if (point >= 0x00a0 && point <= 0x00ff) bytes.push(point);
-    else if (point >= 0x0410 && point <= 0x044f) bytes.push(point - 0x350);
-    else if (cp1251Special[point] !== undefined) bytes.push(cp1251Special[point]);
-    else return value;
-  }
-  try {
-    return new TextDecoder("utf-8", { fatal: true }).decode(new Uint8Array(bytes));
-  } catch {
-    return value;
-  }
+  return typeof text === "string" && /(?:Рџ|Рћ|РЎ|Р’|Р­|РЅ|Р°|СЃ|С‚|СЂ|СЊ|СЏ|Чђ|Чћ|Ч©|Ч”|Ч™|Ч•|Чџ|Ч)/.test(text);
 }
 
 function cleanLocalizedCodeAnnotation(match, lang) {
   const candidate = match && (match[lang] || match.en);
-  return repairLocalizedText(candidate);
+  if (lang !== "en" && looksLikeMojibake(candidate)) {
+    return codeAnnotationFallback[lang] || codeAnnotationFallback.en;
+  }
+  return candidate;
 }
 
 function codeAnnotation(stage, line) {
   const lang = document.documentElement.lang || "en";
   const trimmed = line.trim();
-  if (!trimmed) return repairLocalizedText(codeBlankAnnotation[lang] || codeBlankAnnotation.en);
+  if (!trimmed) return codeBlankAnnotation[lang] || codeBlankAnnotation.en;
+  const exact = detailedCodeLineAnnotations[trimmed];
+  if (exact) return exact[lang] || exact.en;
   const match = codeLineAnnotations[stage.level]?.[trimmed];
   return cleanLocalizedCodeAnnotation(match, lang) || patternCodeAnnotation(line);
 }
 
 function uiText(key) {
   const lang = document.documentElement.lang || "en";
-  return repairLocalizedText(
-    detailUi[lang]?.[key] || translations[lang]?.[key] || detailUi.en[key] || translations.en[key] || key
-  );
+  return detailUi[lang]?.[key] || translations[lang]?.[key] || detailUi.en[key] || translations.en[key] || key;
 }
 
 function renderStageCode(stage) {
