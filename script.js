@@ -1585,7 +1585,7 @@ function setLanguage(lang) {
   document.documentElement.dir = lang === "he" ? "rtl" : "ltr";
   document.querySelectorAll("[data-i18n]").forEach((node) => {
     const key = node.dataset.i18n;
-    if (dict[key] || extra[key]) node.textContent = dict[key] || extra[key];
+    if (dict[key] || extra[key]) node.textContent = repairLocalizedText(dict[key] || extra[key]);
   });
   document.querySelectorAll(".lang").forEach((button) => {
     button.classList.toggle("active", button.dataset.lang === lang);
@@ -1611,9 +1611,12 @@ function showView(id) {
 }
 
 function localized(value) {
-  if (!value || typeof value === "string") return value || "";
+  if (!value) return "";
+  if (typeof value === "string") return repairLocalizedText(value);
+  if (Array.isArray(value)) return value.map((item) => repairLocalizedText(item));
   const lang = document.documentElement.lang || "en";
-  return value[lang] || value.en || "";
+  const selected = value[lang] || value.en || "";
+  return Array.isArray(selected) ? selected.map((item) => repairLocalizedText(item)) : repairLocalizedText(selected);
 }
 
 const codeAnnotationFallback = {
@@ -2134,43 +2137,184 @@ const colabCodePatternAnnotations = [
   }]
 ];
 
+const sourceImportMeaning = {
+  json: { ru: "для чтения и формирования JSON-ответов", he: "לקריאה וליצירה של תשובות JSON" },
+  math: { ru: "для математических вычислений", he: "לחישובים מתמטיים" },
+  struct: { ru: "для работы с двоичным представлением данных", he: "לעבודה עם ייצוג בינארי של נתונים" },
+  time: { ru: "для измерения времени выполнения", he: "למדידת זמן הביצוע" },
+  numpy: { ru: "для операций над числовыми массивами", he: "לפעולות על מערכים מספריים" },
+  PIL: { ru: "для загрузки, обработки и рисования изображений", he: "לטעינה, עיבוד וציור של תמונות" },
+  dataclasses: { ru: "для описания структурированного состояния объектов", he: "להגדרת מצב מובנה של אובייקטים" },
+  datetime: { ru: "для фиксации времени событий", he: "לרישום זמן של אירועים" },
+  pathlib: { ru: "для безопасной работы с путями и файлами", he: "לעבודה בטוחה עם נתיבים וקבצים" },
+  typing: { ru: "для аннотаций типов Python", he: "להערות טיפוסים של Python" },
+  torch: { ru: "для тензорных вычислений и запуска на CUDA", he: "לחישובי טנזורים והרצה ב-CUDA" },
+  fastapi: { ru: "для HTTP-API детектора", he: "ל-HTTP API של הגלאי" }
+};
+
+const sourceFunctionMeaning = {
+  _resample: { ru: "выбирает качественный алгоритм изменения размера изображения", he: "בוחרת אלגוריתם איכותי לשינוי גודל התמונה" },
+  _font: { ru: "подбирает шрифт для подписей в интерфейсе", he: "בוחרת גופן לכיתובים בממשק" },
+  _text: { ru: "рисует текстовую подпись на изображении", he: "מציירת כיתוב על תמונה" },
+  _text_center: { ru: "выравнивает подпись по центру перед рисованием", he: "ממרכזת כיתוב לפני הציור" },
+  _hex_points: { ru: "вычисляет вершины шестиугольника", he: "מחשבת את קודקודי המשושה" },
+  _draw_hex: { ru: "рисует шестиугольный элемент интерфейса", he: "מציירת רכיב ממשק משושה" },
+  _paste_fit: { ru: "масштабирует изображение и размещает его в заданной области", he: "משנה את גודל התמונה וממקמת אותה באזור נתון" },
+  _image_paths: { ru: "собирает список файлов изображений из папки", he: "אוספת רשימת קובצי תמונה מתיקייה" },
+  _angle_delta: { ru: "вычисляет кратчайшую разницу между углами", he: "מחשבת את ההפרש הקצר ביותר בין זוויות" },
+  _now: { ru: "формирует текущее время для журнала", he: "יוצרת את הזמן הנוכחי ליומן" },
+  _preprocess_pil: { ru: "приводит изображение к формату входного тензора", he: "ממירה תמונה לפורמט טנזור הקלט" },
+  _variants: { ru: "создаёт варианты кадра для более устойчивого распознавания", he: "יוצרת וריאציות של הפריים לזיהוי יציב יותר" },
+  _embed_variants: { ru: "собирает пакет вариантов и вычисляет их векторы признаков", he: "בונה אצווה של וריאציות ומחשבת את וקטורי התכונות שלהן" },
+  load_references: { ru: "загружает эталонные лица и их векторы", he: "טוענת פנים לדוגמה ואת הווקטורים שלהן" },
+  detect_image: { ru: "запускает полный цикл распознавания одного изображения", he: "מריצה את כל מחזור הזיהוי של תמונה אחת" },
+  _decide: { ru: "принимает решение по лучшему совпадению и запасу уверенности", he: "מקבלת החלטה לפי ההתאמה הטובה ביותר ופער הביטחון" },
+  detect_file_ui: { ru: "обрабатывает файл, загруженный из веб-интерфейса", he: "מעבדת קובץ שהועלה מממשק האינטרנט" }
+};
+
+const sourceCommentMeaning = {
+  "# Exact neural detector source excerpt from source/colab_ai_mips_bee_world.py": {
+    ru: "Заголовок панели: ниже показан точный фрагмент исходного кода нейросетевого детектора.",
+    he: "כותרת הלוח: בהמשך מוצג קטע מדויק מקוד המקור של הגלאי הנוירוני."
+  },
+  "# Raw link beside this panel opens the complete Colab module.": {
+    ru: "Поясняет, что соседняя ссылка открывает полный исходный модуль Colab без сокращений.",
+    he: "מסביר שהקישור שליד הלוח פותח את מודול Colab המלא ללא קיצורים."
+  }
+};
+
+function sourceLineAnnotation(line, lang) {
+  const text = line.trim();
+  const hebrew = lang === "he";
+  const importFrom = text.match(/^from\s+([\w.]+)\s+import\s+(.+)$/);
+  const importModule = text.match(/^import\s+(.+)$/);
+  const functionMatch = text.match(/^def\s+([\w]+)\s*\(/);
+  const classMatch = text.match(/^class\s+([\w]+)(?:\(|:)/);
+  const assignment = text.match(/^([A-Z][A-Z0-9_]*|[a-z_][\w.]*)\s*=/);
+  if (/^from __future__ import annotations$/.test(text)) {
+    return hebrew ? "מפעילה הערות טיפוסים דחויות של Python, כדי שטיפוסים ייבדקו רק לאחר הגדרת הקוד." : "Включает отложенные аннотации типов Python, чтобы ссылки на типы могли использоваться после определения кода.";
+  }
+  if (importFrom) {
+    const meaning = sourceImportMeaning[importFrom[1]];
+    return hebrew
+      ? `מייבאת ${importFrom[2]} מתוך ${importFrom[1]} ${meaning?.he || "לשימוש בקוד הגלאי"}.`
+      : `Импортирует ${importFrom[2]} из ${importFrom[1]} ${meaning?.ru || "для использования в коде детектора"}.`;
+  }
+  if (importModule) {
+    const moduleName = importModule[1].split(/\s+as\s+/)[0];
+    const meaning = sourceImportMeaning[moduleName];
+    return hebrew
+      ? `מייבאת את המודול ${importModule[1]} ${meaning?.he || "לשימוש בקוד הגלאי"}.`
+      : `Импортирует модуль ${importModule[1]} ${meaning?.ru || "для использования в коде детектора"}.`;
+  }
+  if (/^@dataclass\b/.test(text)) return hebrew ? "מסמנת שהמחלקה הבאה היא מבנה נתונים עם בנאי ושדות שנוצרים אוטומטית." : "Помечает следующий класс как структуру данных с автоматически создаваемыми полями и конструктором.";
+  if (classMatch) return hebrew ? `מגדירה את המחלקה ${classMatch[1]}, שמאגדת מצב או לוגיקה של רכיב במערכת.` : `Объявляет класс ${classMatch[1]}, объединяющий состояние или логику компонента системы.`;
+  if (functionMatch) {
+    const meaning = sourceFunctionMeaning[functionMatch[1]];
+    return hebrew ? `מגדירה את הפונקציה ${functionMatch[1]}: ${meaning?.he || "הגוף שלה מבצע פעולה מוגדרת של הגלאי או הממשק"}.` : `Объявляет функцию ${functionMatch[1]}: ${meaning?.ru || "её тело выполняет определённую операцию детектора или интерфейса"}.`;
+  }
+  if (/^#/.test(text)) {
+    const note = sourceCommentMeaning[text];
+    return note ? note[hebrew ? "he" : "ru"] : (hebrew ? "הערת תיעוד למקטע הקוד הבא; היא אינה מבוצעת על ידי Python." : "Комментарий документации к следующему фрагменту кода; Python его не выполняет.");
+  }
+  if (/^if\s+/.test(text)) {
+    const condition = text.replace(/^if\s+/, "").replace(/:$/, "");
+    return hebrew ? `בודקת את התנאי \`${condition}\` ובוחרת את ענף הביצוע המתאים.` : `Проверяет условие \`${condition}\` и выбирает подходящую ветку выполнения.`;
+  }
+  if (/^(else|elif)\b/.test(text)) return hebrew ? "מגדירה את החלופה לתנאי שנבדק לפני כן." : "Задаёт альтернативную ветку к ранее проверенному условию.";
+  if (/^for\s+/.test(text)) {
+    const loop = text.replace(/^for\s+/, "").replace(/:$/, "");
+    return hebrew ? `עוברת בלולאה על \`${loop}\`, כדי לעבד כל רכיב בתורו.` : `Перебирает в цикле \`${loop}\`, чтобы обработать каждый элемент по очереди.`;
+  }
+  if (/^with\s+/.test(text)) return hebrew ? "פותחת הקשר עבודה שמנקה את המשאב אוטומטית בסיום." : "Открывает контекст работы, который автоматически освободит ресурс после завершения.";
+  if (/^try:/.test(text)) return hebrew ? "מתחילה אזור מוגן: שגיאה תטופל במקום להפיל את התהליך." : "Начинает защищённый блок: ошибка будет обработана, а не остановит процесс.";
+  if (/^except\b/.test(text)) return hebrew ? "מטפלת בשגיאה שהתרחשה בבלוק המוגן." : "Обрабатывает ошибку, возникшую в защищённом блоке.";
+  if (/^finally:/.test(text)) return hebrew ? "מגדירה ניקוי חובה, שמתבצע גם כאשר אירעה שגיאה." : "Задаёт обязательную очистку, которая выполняется даже при ошибке.";
+  if (/^return\b/.test(text)) {
+    const result = text.replace(/^return\s*/, "") || "None";
+    if (result === "[]") return hebrew ? "מחזירה רשימה ריקה, כי לא נמצאו קבצים מתאימים." : "Возвращает пустой список: подходящих файлов не найдено.";
+    return hebrew ? `מחזירה את הערך \`${result}\` לקוד שקרא לפונקציה.` : `Возвращает значение \`${result}\` в код, вызвавший функцию.`;
+  }
+  if (assignment) {
+    const name = assignment[1];
+    const special = {
+      IDENTITIES: hebrew ? "קובעת את רשימת הזהויות שהמערכת יודעת לזהות." : "Задаёт список людей, которых система умеет распознавать.",
+      IMG_EXTS: hebrew ? "מגדירה את סיומות קובצי התמונה המותרות." : "Определяет допустимые расширения файлов изображений.",
+      MIN_SCORE: hebrew ? "מגדירה את סף הדמיון המינימלי לקבלת זהות." : "Задаёт минимальный порог сходства для принятия личности.",
+      MIN_MARGIN: hebrew ? "מגדירה את הפער המינימלי בין המקום הראשון לשני." : "Задаёт минимальный отрыв между первым и вторым совпадением."
+    }[name];
+    return special || (hebrew ? `שומרת את תוצאת הביטוי במשתנה ${name}, להמשך החישוב.` : `Сохраняет результат выражения в переменной ${name} для следующего шага вычислений.`);
+  }
+  if (/^pass\b/.test(text)) return hebrew ? "משאירה ענף ריק במכוון; אין כאן פעולה לביצוע." : "Оставляет ветку намеренно пустой: действие на этом месте не требуется.";
+  if (/^(break|continue)\b/.test(text)) return hebrew ? "משנה את מהלך הלולאה: מפסיקה אותה או עוברת לאיטרציה הבאה." : "Изменяет ход цикла: прерывает его либо переходит к следующей итерации.";
+  return hebrew ? "מבצעת את פעולת Python המוצגת משמאל כחלק מהחישוב או מהכנת נתוני הגלאי." : "Выполняет показанную слева операцию Python как часть вычисления или подготовки данных детектора.";
+}
+
 function patternCodeAnnotation(line) {
   const lang = document.documentElement.lang || "en";
   const trimmed = line.trim();
   const exact = detailedCodeLineAnnotations[trimmed];
-  if (exact) return exact[lang] || exact.en;
+  if (exact) return repairLocalizedText(exact[lang] || exact.en);
   const found = colabCodePatternAnnotations.find(([pattern]) => pattern.test(trimmed));
-  const candidate = (found && (found[1][lang] || found[1].en)) || codeAnnotationFallback[lang] || codeAnnotationFallback.en;
-  return lang !== "en" && looksLikeMojibake(candidate)
-    ? codeAnnotationFallback[lang] || codeAnnotationFallback.en
-    : candidate;
+  const genericNotes = new Set([
+    "Comment from the real Colab detector block; it names the stage or source file.",
+    "Python control-flow line that chooses a branch, repeats work, protects cleanup, or returns a value.",
+    "Project code line used by the connected Colab detector for this computation stage."
+  ]);
+  if (found && found[0].source !== "." && !genericNotes.has(found[1].en) && !found[1].en.startsWith("Comment from")) {
+    return repairLocalizedText(found[1][lang] || found[1].en);
+  }
+  return sourceLineAnnotation(trimmed, lang);
 }
 
 function looksLikeMojibake(text) {
-  return typeof text === "string" && /(?:Рџ|Рћ|РЎ|Р’|Р­|РЅ|Р°|СЃ|С‚|СЂ|СЊ|СЏ|Чђ|Чћ|Ч©|Ч”|Ч™|Ч•|Чџ|Ч)/.test(text);
+  return typeof text === "string" && /[РСЧ][\u0080-\u00bf\u0402-\u040f\u0450-\u045f]/.test(text);
+}
+
+function repairLocalizedText(value) {
+  if (!looksLikeMojibake(value)) return value || "";
+  const cp1251Special = {
+    0x0402: 0x80, 0x0403: 0x81, 0x201a: 0x82, 0x0453: 0x83, 0x201e: 0x84, 0x2026: 0x85, 0x2020: 0x86, 0x2021: 0x87,
+    0x20ac: 0x88, 0x2030: 0x89, 0x0409: 0x8a, 0x2039: 0x8b, 0x040a: 0x8c, 0x040c: 0x8d, 0x040b: 0x8e, 0x040f: 0x8f,
+    0x0452: 0x90, 0x2018: 0x91, 0x2019: 0x92, 0x201c: 0x93, 0x201d: 0x94, 0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97,
+    0x2122: 0x99, 0x0459: 0x9a, 0x203a: 0x9b, 0x045a: 0x9c, 0x045c: 0x9d, 0x045b: 0x9e, 0x045f: 0x9f, 0x0401: 0xa8,
+    0x040e: 0xa1, 0x045e: 0xa2, 0x0408: 0xa3, 0x0490: 0xa5, 0x0491: 0xb4, 0x0404: 0xaa, 0x0407: 0xaf, 0x0406: 0xb2,
+    0x0456: 0xb3, 0x0451: 0xb8, 0x2116: 0xb9, 0x0454: 0xba, 0x0458: 0xbc, 0x0405: 0xbd, 0x0455: 0xbe, 0x0457: 0xbf
+  };
+  const bytes = [];
+  for (const character of value) {
+    const point = character.codePointAt(0);
+    if (point <= 0x7f) bytes.push(point);
+    else if (point >= 0x0080 && point <= 0x009f) bytes.push(point);
+    else if (point >= 0x00a0 && point <= 0x00ff) bytes.push(point);
+    else if (point >= 0x0410 && point <= 0x044f) bytes.push(point - 0x350);
+    else if (cp1251Special[point] !== undefined) bytes.push(cp1251Special[point]);
+    else return value;
+  }
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(new Uint8Array(bytes));
+  } catch {
+    return value;
+  }
 }
 
 function cleanLocalizedCodeAnnotation(match, lang) {
-  const candidate = match && (match[lang] || match.en);
-  if (lang !== "en" && looksLikeMojibake(candidate)) {
-    return codeAnnotationFallback[lang] || codeAnnotationFallback.en;
-  }
-  return candidate;
+  return repairLocalizedText(match && (match[lang] || match.en));
 }
 
 function codeAnnotation(stage, line) {
   const lang = document.documentElement.lang || "en";
   const trimmed = line.trim();
-  if (!trimmed) return codeBlankAnnotation[lang] || codeBlankAnnotation.en;
+  if (!trimmed) return repairLocalizedText(codeBlankAnnotation[lang] || codeBlankAnnotation.en);
   const exact = detailedCodeLineAnnotations[trimmed];
-  if (exact) return exact[lang] || exact.en;
+  if (exact) return repairLocalizedText(exact[lang] || exact.en);
   const match = codeLineAnnotations[stage.level]?.[trimmed];
   return cleanLocalizedCodeAnnotation(match, lang) || patternCodeAnnotation(line);
 }
 
 function uiText(key) {
   const lang = document.documentElement.lang || "en";
-  return detailUi[lang]?.[key] || translations[lang]?.[key] || detailUi.en[key] || translations.en[key] || key;
+  return repairLocalizedText(detailUi[lang]?.[key] || translations[lang]?.[key] || detailUi.en[key] || translations.en[key] || key);
 }
 
 function renderStageCode(stage) {
@@ -2252,7 +2396,7 @@ function renderDetectorSource(source) {
     code.textContent = line || " ";
     const note = document.createElement("span");
     note.className = "code-note";
-    note.textContent = line.trim() ? patternCodeAnnotation(line) : (codeBlankAnnotation[lang] || codeBlankAnnotation.en);
+    note.textContent = line.trim() ? patternCodeAnnotation(line) : repairLocalizedText(codeBlankAnnotation[lang] || codeBlankAnnotation.en);
     row.append(code, note);
     fullDetectorSource.appendChild(row);
   });
