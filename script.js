@@ -1632,6 +1632,46 @@ const codeBlankAnnotation = {
 };
 
 const detailedCodeLineAnnotations = {
+  "print(\"torch:\", torch.__version__)": {
+    en: "Prints the installed PyTorch version. This is a diagnostic check only; it does not select a device or run the neural network.",
+    ru: "Выводит установленную версию PyTorch. Это только диагностическая проверка: она не выбирает устройство и не запускает нейросеть.",
+    he: "מדפיסה את גרסת PyTorch המותקנת. זו בדיקת אבחון בלבד; היא אינה בוחרת התקן ואינה מריצה את הרשת העצבית."
+  },
+  "print(\"cuda:\", torch.cuda.is_available())": {
+    en: "Prints whether PyTorch can use CUDA in this process. The result is True or False; this line only reports availability and does not start GPU computation.",
+    ru: "Выводит, может ли PyTorch использовать CUDA в этом процессе. Результат — True или False; строка только сообщает доступность и не запускает вычисление на GPU.",
+    he: "מדפיסה האם PyTorch יכול להשתמש ב-CUDA בתהליך הזה. התוצאה היא True או False; השורה רק מדווחת על זמינות ואינה מתחילה חישוב ב-GPU."
+  },
+  "if torch.cuda.is_available():": {
+    en: "Checks the availability result. The indented lines below run only when CUDA is available, preventing GPU-only calls on a CPU-only machine.",
+    ru: "Проверяет результат доступности CUDA. Вложенные ниже строки выполнятся только при наличии CUDA — это защищает от вызова GPU-функций на компьютере без GPU.",
+    he: "בודקת את תוצאת הזמינות של CUDA. השורות המוזחות למטה ירוצו רק כאשר CUDA זמינה, וכך נמנעת קריאה לפונקציות GPU במחשב ללא GPU."
+  },
+  "print(torch.cuda.get_device_name(0))": {
+    en: "Asks the CUDA driver for the name of device 0, the first available NVIDIA GPU, and prints it. It identifies the accelerator but does not run the model.",
+    ru: "Запрашивает у CUDA-драйвера имя устройства 0 — первой доступной видеокарты NVIDIA — и выводит его. Строка определяет ускоритель, но не запускает модель.",
+    he: "מבקשת ממנהל ההתקן של CUDA את שם התקן 0 — כרטיס ה-NVIDIA הזמין הראשון — ומדפיסה אותו. השורה מזהה את המאיץ אך אינה מריצה את המודל."
+  },
+  "if mode.lower() in (\"gpu\", \"cuda\") and torch.cuda.is_available():": {
+    en: "Selects the CUDA path only when the user requested GPU/CUDA mode and PyTorch confirmed that CUDA is available.",
+    ru: "Выбирает путь CUDA только если пользователь запросил режим GPU/CUDA и PyTorch подтвердил доступность CUDA.",
+    he: "בוחרת בנתיב CUDA רק כאשר המשתמש ביקש מצב GPU/CUDA ו-PyTorch אישר ש-CUDA זמינה."
+  },
+  "return \"cuda\" if torch.cuda.is_available() else \"cpu\"": {
+    en: "Chooses the automatic backend label: CUDA when available, otherwise CPU. The line chooses a mode; it does not perform recognition itself.",
+    ru: "Выбирает метку автоматического backend: CUDA при доступности, иначе CPU. Строка выбирает режим, но сама не выполняет распознавание.",
+    he: "בוחרת תווית backend אוטומטית: CUDA כאשר היא זמינה, אחרת CPU. השורה בוחרת מצב ואינה מבצעת זיהוי בעצמה."
+  },
+  "if device == \"cuda\":": {
+    en: "Checks whether the selected backend is CUDA before performing an operation that is meaningful only for GPU execution.",
+    ru: "Проверяет, выбран ли backend CUDA, перед операцией, которая имеет смысл только при выполнении на GPU.",
+    he: "בודקת האם ה-backend שנבחר הוא CUDA לפני פעולה שמשמעותית רק בהרצה על GPU."
+  },
+  "torch.cuda.synchronize()": {
+    en: "Waits for queued GPU kernels to finish. It is used before timing or reading results so the reported duration includes the real CUDA work.",
+    ru: "Ждёт завершения поставленных в очередь GPU-kernel. Это нужно перед измерением времени или чтением результата, чтобы длительность включала реальную работу CUDA.",
+    he: "ממתינה לסיום קרנלי ה-GPU שנמצאים בתור. הפעולה נדרשת לפני מדידת זמן או קריאת תוצאה, כדי שהמשך המדווח יכלול את עבודת CUDA האמיתית."
+  },
   "# colab_ai_mips_bee_world.py: image crop/resize/normalization path": {
     en: "Names the exact project module and the preprocessing path shown below: crop, aspect-ratio-preserving resize, padding, and tensor normalization.",
     ru: "Указывает точный модуль проекта и путь предварительной обработки ниже: обрезка, масштабирование с сохранением пропорций, поля и нормализация тензора.",
