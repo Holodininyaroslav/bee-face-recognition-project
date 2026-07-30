@@ -12,7 +12,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <title>Bee Face Recognition Project</title>
   <link rel="icon" type="image/png" href="assets/project-avatar.png">
-  <link rel="stylesheet" href="styles.css?v=combined-stages-20260730b">
+  <link rel="stylesheet" href="styles.css?v=cuda-source-variants-20260730a">
 </head>
 <body>
   <header class="topbar">
@@ -119,44 +119,60 @@
           <p class="kicker" data-i18n="howKicker">HOW THE DETECTOR WORKS</p>
           <h3 id="howItWorksTitle" data-i18n="howTitle">What happens to the image inside the neural network</h3>
           <p data-i18n="howIntro">
-            The demo sends the selected image to the connected Colab detector. The same recognition chain is used whether the request comes from this simple window or from the integrated Hive interface.
+            This inspector shows the detector-only CUDA module: one-time initialization, DeepID inference, reference comparison, and the final identity result. Hive and web-interface code are outside this source listing.
           </p>
+        </div>
+        <div class="detector-variant-panel" aria-labelledby="detectorVariantTitle">
+          <div>
+            <p class="kicker" data-i18n="variantKicker">CUDA SOURCE VARIANT</p>
+            <h4 id="detectorVariantTitle" data-i18n="variantTitle">Choose the recognition path to inspect</h4>
+            <p id="detectorVariantDescription"></p>
+          </div>
+          <div class="detector-variant-switch" role="group" aria-label="CUDA detector source variant">
+            <button class="variant-button active" type="button" data-detector-variant="single" aria-pressed="true" data-i18n="variantSingle">
+              Single-image recognition
+            </button>
+            <button class="variant-button" type="button" data-detector-variant="batch" aria-pressed="false" data-i18n="variantBatch">
+              Batch recognition
+            </button>
+          </div>
+          <p id="detectorVariantSource" class="variant-source"></p>
         </div>
         <div class="pipeline" aria-label="Detector pipeline stages">
           <article class="pipeline-step" role="button" tabindex="0" data-stage="0">
             <strong>01</strong>
-            <h4 data-i18n="step1Title">Image input</h4>
-            <p data-i18n="step1Text">The uploaded screenshot is decoded as pixels. If a batch is selected, the same steps are repeated for each file one by one.</p>
+            <h4 data-i18n="step1Title">Initialization and device selection</h4>
+            <p data-i18n="step1Text">Imports the detector dependencies, defines identity thresholds, initializes caches, and verifies whether the requested mode can use CUDA.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="1">
             <strong>02</strong>
-            <h4 data-i18n="step2Title">Face crop and normalization</h4>
-            <p data-i18n="step2Text">The detector searches for the face area, crops the useful region, resizes it to the network input size, and normalizes color and brightness values.</p>
+            <h4 data-i18n="step2Title">Weights and DeepID model</h4>
+            <p data-i18n="step2Text">Reads the trained binary tensors, builds the exact DeepID forward pass, moves its buffers to CPU or CUDA, and caches the model.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="2">
             <strong>03</strong>
-            <h4 data-i18n="step3Title">Feature extraction</h4>
-            <p data-i18n="step3Text">The neural network converts the face image into a numeric feature vector, also called an embedding. This vector describes the face pattern more compactly than raw pixels.</p>
+            <h4 data-i18n="step3Title">Screenshot variants and input tensors</h4>
+            <p data-i18n="step3Text">Converts the screenshot to RGB, creates full-frame and center-crop variants, resizes them to 47 × 55, normalizes pixels, and produces channel-first tensors.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="3">
             <strong>04</strong>
-            <h4 data-i18n="step4Title">Reference comparison</h4>
-            <p data-i18n="step4Text">The new embedding is compared with stored reference embeddings for known identities. The closest identity becomes the best label, and the second closest result is kept as the runner up.</p>
+            <h4 data-i18n="step4Title">One-time reference initialization</h4>
+            <p data-i18n="step4Text">Finds the known-person images, removes duplicate paths, embeds every reference in one model batch, and caches the normalized reference matrix.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="4">
             <strong>05</strong>
-            <h4 data-i18n="step5Title">Score and margin decision</h4>
-            <p data-i18n="step5Text">The answer is accepted only if the best score is high enough and the margin from the runner up is large enough. Otherwise the result is returned as Unknown instead of forcing a wrong name.</p>
+            <h4 data-i18n="step5Title">Embedding comparison and identity decision</h4>
+            <p data-i18n="step5Text">Embeds the prepared variants together, compares them with cached references, keeps each person’s best score, and applies score and margin thresholds.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="5">
             <strong>06</strong>
-            <h4 data-i18n="step6Title">Response JSON</h4>
-            <p data-i18n="step6Text">The interface receives a readable summary and a JSON object with the identity, best score, runner up, margin, backend mode, elapsed time, and acceptance flag.</p>
+            <h4 data-i18n="step6Title">Single-image execution and result</h4>
+            <p data-i18n="step6Text">Runs the complete path for one screenshot, measures completed inference time, and returns the selected identity, scores, device, and acceptance flag.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
         </div>
@@ -228,6 +244,7 @@
             </div>
             <div class="source-actions">
               <button id="loadFullDetectorSource" class="ghost" type="button" data-i18n="openDetectorSource">Show the complete combined code</button>
+              <a class="ghost link" href="source/cuda_deepid_detector.py" target="_blank" rel="noreferrer" data-i18n="openRawDetectorSource">Open detector-only raw source</a>
             </div>
           </div>
           <p id="fullSourceMeta" class="source-meta" data-i18n="sourceClosed">Closed. Open it to verify the total against stages 1–6.</p>
@@ -261,6 +278,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=combined-stages-20260730b"></script>
+  <script src="script.js?v=cuda-source-variants-20260730a"></script>
 </body>
 </html>

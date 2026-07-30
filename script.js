@@ -300,7 +300,7 @@ const translations = {
     json: "Detector JSON",
     howKicker: "HOW THE DETECTOR WORKS",
     howTitle: "What happens to the image inside the neural network",
-    howIntro: "The demo sends the selected image to the connected Colab detector. The same recognition chain is used whether the request comes from this simple window or from the integrated Hive interface.",
+    howIntro: "This inspector shows the detector-only CUDA module: one-time initialization, DeepID inference, reference comparison, and the final identity result. Hive and web-interface code are outside this source listing.",
     step1Title: "Image input",
     step1Text: "The uploaded screenshot is decoded as pixels. If a batch is selected, the same steps are repeated for each file one by one.",
     step2Title: "Face crop and normalization",
@@ -591,6 +591,9 @@ const stageReturnBottom = document.getElementById("stageReturnBottom");
 const loadFullDetectorSource = document.getElementById("loadFullDetectorSource");
 const fullDetectorSource = document.getElementById("fullDetectorSource");
 const fullSourceMeta = document.getElementById("fullSourceMeta");
+const detectorVariantDescription = document.getElementById("detectorVariantDescription");
+const detectorVariantSource = document.getElementById("detectorVariantSource");
+const detectorVariantButtons = Array.from(document.querySelectorAll("[data-detector-variant]"));
 
 const stageDetails = [
   {
@@ -1262,6 +1265,7 @@ let combinedRecognitionCode = "";
 let combinedRecognitionLineCount = 0;
 let stageRecognitionLineCount = 0;
 let exactStageCodeState = "idle";
+let activeDetectorVariant = "single";
 
 const cleanRuTranslations = {
   kicker: "COLAB GPU / РАСПОЗНАВАНИЕ ЛИЦ / ИНТЕРФЕЙС ПРОЕКТА",
@@ -1303,7 +1307,7 @@ const cleanRuTranslations = {
   json: "JSON детектора",
   howKicker: "КАК РАБОТАЕТ ДЕТЕКТОР",
   howTitle: "Что происходит с изображением внутри нейросети",
-  howIntro: "Простая демонстрация отправляет выбранное изображение в подключенный Colab-детектор. Эта же цепочка распознавания используется и здесь, и в интегрированном Hive-интерфейсе проекта.",
+  howIntro: "Этот просмотр показывает только CUDA-модуль детектора: одноразовую инициализацию, инференс DeepID, сравнение с эталонами и итоговую личность. Код Hive и веб-интерфейса в этот исходник не входит.",
   step1Title: "Входное изображение",
   step1Text: "Загруженный скриншот читается как набор пикселей. Если выбрана пачка файлов, эти же шаги выполняются для каждой картинки по очереди.",
   step2Title: "Обрезка лица и нормализация",
@@ -1397,7 +1401,7 @@ const cleanHeTranslations = {
   json: "JSON של הגלאי",
   howKicker: "איך הגלאי עובד",
   howTitle: "מה קורה לתמונה בתוך הרשת העצבית",
-  howIntro: "ההדגמה הפשוטה שולחת את התמונה שנבחרה אל גלאי Colab המחובר. אותה שרשרת זיהוי משמשת גם כאן וגם בממשק Hive המשולב של הפרויקט.",
+  howIntro: "התצוגה הזו מציגה רק את מודול גלאי CUDA: אתחול חד-פעמי, הסקת DeepID, השוואה לייחוסים ותוצאת הזהות הסופית. קוד Hive וממשק האינטרנט אינם כלולים בקוד מקור זה.",
   step1Title: "תמונת קלט",
   step1Text: "התמונה שהועלתה נקראת כאוסף פיקסלים. אם נבחרה אצווה, אותם שלבים מתבצעים עבור כל תמונה בנפרד.",
   step2Title: "חיתוך פנים ונרמול",
@@ -1598,6 +1602,387 @@ cleanStageLocalization.forEach((localizedStage, index) => {
   });
 });
 
+Object.assign(translations.en, {
+  variantKicker: "CUDA SOURCE VARIANT",
+  variantTitle: "Choose the recognition path to inspect",
+  variantSingle: "Single-image recognition",
+  variantBatch: "Batch recognition",
+  sourceTitle: "Complete detector code for the selected CUDA path",
+  sourceIntro: "The code below is the exact concatenation of the six full stages for the selected variant. The page verifies both the line count and exact text order.",
+  sourceClosed: "Closed. Open the complete code for the selected variant.",
+  sourceLoading: "Loading the dedicated CUDA detector module…",
+  sourceLoaded: "Verified: {total} lines in the complete {variant} code = {sum} lines across stages 1–6; the text is identical.",
+  sourceCountError: "Verification failed for {variant}: complete code {total} lines; stages 1–6 total {sum} lines.",
+  sourceError: "Could not load or verify the dedicated CUDA detector module.",
+  openRawDetectorSource: "Open detector-only raw source",
+  fullStageExact: "Exact block from source/cuda_deepid_detector.py",
+  fullStageDetector: "Exact block from source/cuda_deepid_detector.py",
+  fullStageNotebook: "Exact block from source/cuda_deepid_detector.py",
+  codeSourceFull: "Exact full source for this detector stage",
+  codeSourceShort: "Short executable-path sketch",
+  lineCount: "{count} lines"
+});
+
+Object.assign(translations.ru, {
+  variantKicker: "ВАРИАНТ CUDA-ИСХОДНИКА",
+  variantTitle: "Выберите путь распознавания для изучения",
+  variantSingle: "Одиночное распознавание",
+  variantBatch: "Пакетное распознавание",
+  sourceTitle: "Полный код детектора для выбранного CUDA-пути",
+  sourceIntro: "Код ниже — точное объединение полных кодов шести этапов выбранного варианта. Страница проверяет количество строк и точный порядок текста.",
+  sourceClosed: "Код закрыт. Откройте полный код выбранного варианта.",
+  sourceLoading: "Загружается отдельный модуль CUDA-детектора…",
+  sourceLoaded: "Проверено: {total} строк в полном коде варианта «{variant}» = {sum} строк на этапах 1–6; текст полностью совпадает.",
+  sourceCountError: "Ошибка проверки варианта «{variant}»: полный код — {total} строк, этапы 1–6 — {sum} строк.",
+  sourceError: "Не удалось загрузить или проверить отдельный модуль CUDA-детектора.",
+  openRawDetectorSource: "Открыть чистый исходник только детектора",
+  fullStageExact: "Точный блок из source/cuda_deepid_detector.py",
+  fullStageDetector: "Точный блок из source/cuda_deepid_detector.py",
+  fullStageNotebook: "Точный блок из source/cuda_deepid_detector.py",
+  codeSourceFull: "Точный полный исходник этого этапа детектора",
+  codeSourceShort: "Короткая схема исполняемого пути",
+  lineCount: "{count} строк"
+});
+
+Object.assign(translations.he, {
+  variantKicker: "גרסת קוד המקור של CUDA",
+  variantTitle: "בחרו את מסלול הזיהוי לעיון",
+  variantSingle: "זיהוי תמונה בודדת",
+  variantBatch: "זיהוי אצווה",
+  sourceTitle: "קוד הגלאי המלא למסלול CUDA שנבחר",
+  sourceIntro: "הקוד למטה הוא חיבור מדויק של הקוד המלא בששת השלבים של הגרסה שנבחרה. הדף בודק גם את מספר השורות וגם את סדר הטקסט המדויק.",
+  sourceClosed: "הקוד סגור. פתחו את הקוד המלא של הגרסה שנבחרה.",
+  sourceLoading: "טוען את מודול גלאי CUDA הייעודי…",
+  sourceLoaded: "נבדק: {total} שורות בקוד המלא של «{variant}» = {sum} שורות בשלבים 1–6; הטקסט זהה.",
+  sourceCountError: "בדיקת «{variant}» נכשלה: {total} שורות בקוד המלא לעומת {sum} בשלבים 1–6.",
+  sourceError: "לא ניתן לטעון או לאמת את מודול גלאי CUDA הייעודי.",
+  openRawDetectorSource: "פתיחת קוד המקור הגולמי של הגלאי בלבד",
+  fullStageExact: "מקטע מדויק מתוך source/cuda_deepid_detector.py",
+  fullStageDetector: "מקטע מדויק מתוך source/cuda_deepid_detector.py",
+  fullStageNotebook: "מקטע מדויק מתוך source/cuda_deepid_detector.py",
+  codeSourceFull: "קוד המקור המלא והמדויק של שלב הגלאי",
+  codeSourceShort: "תרשים קצר של מסלול הביצוע",
+  lineCount: "{count} שורות"
+});
+
+const commonDetectorStages = [
+  {
+    level: "01",
+    title: {
+      en: "Initialization and CUDA device selection",
+      ru: "Инициализация и выбор устройства CUDA",
+      he: "אתחול ובחירת התקן CUDA"
+    },
+    summary: {
+      en: "Defines the detector-only dependencies and thresholds, creates the detector object, lazily imports PyTorch, and selects CUDA only when the requested GPU mode is actually available.",
+      ru: "Определяет зависимости и пороги самого детектора, создаёт объект, лениво импортирует PyTorch и выбирает CUDA только тогда, когда запрошен GPU-режим и CUDA действительно доступна.",
+      he: "מגדיר את תלויות הגלאי ואת הספים, יוצר את אובייקט הגלאי, מייבא את PyTorch בעת הצורך ובוחר CUDA רק כאשר התבקש מצב GPU ו-CUDA זמינה בפועל."
+    },
+    diagram: {
+      en: ["Imports and constants", "Detector object", "Lazy PyTorch import", "CPU or CUDA"],
+      ru: ["Импорты и константы", "Объект детектора", "Ленивый импорт PyTorch", "CPU или CUDA"],
+      he: ["ייבואים וקבועים", "אובייקט הגלאי", "ייבוא PyTorch בעת הצורך", "CPU או CUDA"]
+    },
+    layers: { en: "No neural layer; runtime initialization", ru: "Нейрослоя нет; инициализация среды", he: "אין שכבה עצבית; אתחול סביבת הריצה" },
+    connections: { en: "No MACs; device and cache state only", ru: "MAC нет; только выбор устройства и состояние кэша", he: "אין MAC; רק בחירת התקן ומצב מטמון" },
+    tensor: "No input tensor yet",
+    cudaShort: { en: "torch.cuda.is_available() decides whether GPU mode is real", ru: "torch.cuda.is_available() определяет, является ли GPU-режим реальным", he: "torch.cuda.is_available() קובע אם מצב GPU אמיתי" },
+    cuda: {
+      en: "This stage does not perform inference. It creates empty caches and returns the literal device name \"cuda\" only when PyTorch reports a usable CUDA runtime; an explicit CPU request always remains on CPU.",
+      ru: "Этот этап ещё не выполняет инференс. Он создаёт пустые кэши и возвращает имя устройства «cuda» только когда PyTorch сообщает о рабочей CUDA-среде; явный запрос CPU всегда остаётся на CPU.",
+      he: "שלב זה עדיין אינו מבצע הסקה. הוא יוצר מטמונים ריקים ומחזיר את שם ההתקן \"cuda\" רק כאשר PyTorch מדווח על סביבת CUDA פעילה; בקשת CPU מפורשת נשארת תמיד ב-CPU."
+    },
+    code: `detector = DeepIDIdentityDetector(work_dir)
+device = detector._device_name("gpu")
+# device is "cuda" only when torch.cuda.is_available() is True`
+  },
+  {
+    level: "02",
+    title: {
+      en: "DeepID weights and neural model",
+      ru: "Веса DeepID и нейросетевая модель",
+      he: "משקלי DeepID והמודל העצבי"
+    },
+    summary: {
+      en: "Reads the trained binary tensors, validates their file signature, builds the exact DeepID convolution and dense layers, moves the model to the selected device, and caches it.",
+      ru: "Читает обученные бинарные тензоры, проверяет сигнатуру файла, строит точные свёрточные и полносвязные слои DeepID, переносит модель на выбранное устройство и кэширует её.",
+      he: "קורא את הטנזורים המאומנים מהקובץ הבינרי, מאמת את חתימת הקובץ, בונה את שכבות הקונבולוציה והשכבות הצפופות של DeepID, מעביר את המודל להתקן שנבחר ושומר אותו במטמון."
+    },
+    diagram: {
+      en: ["deepid_weights.bin", "Validate and reshape", "Build DeepIDTorch", "model.to(device).eval()"],
+      ru: ["deepid_weights.bin", "Проверка и изменение формы", "Создание DeepIDTorch", "model.to(device).eval()"],
+      he: ["deepid_weights.bin", "אימות ושינוי צורה", "בניית DeepIDTorch", "model.to(device).eval()"]
+    },
+    layers: { en: "4 convolution layers, 2 dense branches, 3 max pools", ru: "4 свёрточных слоя, 2 полносвязные ветви, 3 max-pooling", he: "4 שכבות קונבולוציה, 2 ענפים צפופים ו-3 max-pooling" },
+    connections: { en: "Learned Conv1–Conv4 and FC11–FC12 parameters", ru: "Обученные параметры Conv1–Conv4 и FC11–FC12", he: "פרמטרים מאומנים של Conv1–Conv4 ושל FC11–FC12" },
+    tensor: "55×47×3 → normalized 160D embedding",
+    cudaShort: { en: "model.to(\"cuda\") moves registered weight buffers to the NVIDIA GPU", ru: "model.to(\"cuda\") переносит зарегистрированные буферы весов на GPU NVIDIA", he: "model.to(\"cuda\") מעביר את מאגרי המשקלים הרשומים ל-GPU של NVIDIA" },
+    cuda: {
+      en: "PyTorch executes the convolution, pooling, matrix multiplication, ReLU, and L2 normalization on CUDA because both the registered model buffers and later input tensors reside on the CUDA device.",
+      ru: "PyTorch выполняет свёртки, pooling, матричные умножения, ReLU и L2-нормализацию через CUDA, потому что зарегистрированные буферы модели и последующие входные тензоры находятся на устройстве CUDA.",
+      he: "PyTorch מבצע את הקונבולוציות, ה-pooling, כפל המטריצות, ReLU ונרמול L2 דרך CUDA, מפני שגם מאגרי המודל הרשומים וגם טנזורי הקלט נמצאים בהתקן CUDA."
+    },
+    code: `weights = detector._load_weights()
+model, device = detector._model("gpu")
+# DeepIDTorch(weights).to(device).eval()`
+  },
+  {
+    level: "03",
+    title: {
+      en: "Screenshot variants and input tensors",
+      ru: "Варианты скриншота и входные тензоры",
+      he: "גרסאות צילום המסך וטנזורי הקלט"
+    },
+    summary: {
+      en: "Opens the existing screenshot, creates centered crops, letterboxes each image to 47×55, converts RGB bytes to normalized float values, changes channel order, and transfers each tensor to the selected device.",
+      ru: "Открывает существующий скриншот, создаёт центральные обрезки, вписывает каждое изображение в 47×55, переводит RGB-байты в нормализованные числа float, меняет порядок каналов и переносит каждый тензор на выбранное устройство.",
+      he: "פותח את צילום המסך הקיים, יוצר חיתוכים מרכזיים, מתאים כל תמונה למסגרת 47×55, ממיר בייטי RGB לערכי float מנורמלים, משנה את סדר הערוצים ומעביר כל טנזור להתקן שנבחר."
+    },
+    diagram: {
+      en: ["Screenshot path", "Full frame + center crops", "47×55 letterbox", "CHW float tensor on device"],
+      ru: ["Путь к скриншоту", "Полный кадр и центральные обрезки", "Вписывание в 47×55", "CHW float-тензор на устройстве"],
+      he: ["נתיב צילום המסך", "פריים מלא וחיתוכים מרכזיים", "התאמה ל-47×55", "טנזור float בסדר CHW על ההתקן"]
+    },
+    layers: { en: "Image preprocessing; no learned layer", ru: "Предобработка изображения; обучаемого слоя нет", he: "עיבוד מקדים של התמונה; אין שכבה נלמדת" },
+    connections: { en: "7,755 float values per prepared variant", ru: "7 755 значений float на каждый подготовленный вариант", he: "7,755 ערכי float לכל גרסה מוכנה" },
+    tensor: "Pillow RGB → NumPy 55×47×3 → PyTorch 3×55×47",
+    cudaShort: { en: "tensor.to(device, non_blocking=True) performs the host-to-device transfer", ru: "tensor.to(device, non_blocking=True) выполняет перенос host→device", he: "tensor.to(device, non_blocking=True) מבצע העברה מן המארח להתקן" },
+    cuda: {
+      en: "Cropping and Pillow resizing happen on the host. The final channel-first float tensor is created from NumPy and moved to CUDA before it enters the neural model.",
+      ru: "Обрезка и изменение размера средствами Pillow происходят на CPU. Итоговый float-тензор с каналом в первом измерении создаётся из NumPy и переносится в CUDA перед подачей в нейросеть.",
+      he: "החיתוך ושינוי הגודל באמצעות Pillow מתבצעים במארח. טנזור ה-float הסופי, שבו הערוץ הוא הממד הראשון, נוצר מתוך NumPy ומועבר ל-CUDA לפני הכניסה לרשת."
+    },
+    code: `variants = detector._variants(screenshot_path)
+tensors = [detector._preprocess_pil(image, device) for _, image in variants]
+x = torch.stack(tensors, dim=0)`
+  },
+  {
+    level: "04",
+    title: {
+      en: "One-time reference initialization",
+      ru: "Одноразовая инициализация эталонов",
+      he: "אתחול חד-פעמי של דוגמאות הייחוס"
+    },
+    summary: {
+      en: "Finds reference photographs for Adi, Faraj, and Slava, preprocesses them, embeds all references in one model call, synchronizes CUDA for a complete initialization, and caches the resulting matrix by device.",
+      ru: "Находит эталонные фотографии Ади, Фараджа и Славы, подготавливает их, получает векторы всех эталонов одним вызовом модели, синхронизирует CUDA до завершения и кэширует итоговую матрицу отдельно для каждого устройства.",
+      he: "מאתר תמונות ייחוס של Adi, Faraj ו-Slava, מעבד אותן, מחשב את כל וקטורי הייחוס בקריאת מודל אחת, מסנכרן את CUDA עד להשלמת האתחול ושומר את המטריצה במטמון לפי התקן."
+    },
+    diagram: {
+      en: ["Reference folders", "Prepared tensors", "One model batch", "Cached reference matrix"],
+      ru: ["Папки эталонов", "Подготовленные тензоры", "Один пакет модели", "Кэшированная матрица эталонов"],
+      he: ["תיקיות ייחוס", "טנזורים מוכנים", "אצוות מודל אחת", "מטריצת ייחוס במטמון"]
+    },
+    layers: { en: "Same DeepID forward pass, executed once per device", ru: "Тот же прямой проход DeepID, один раз для каждого устройства", he: "אותו מעבר קדמי של DeepID, פעם אחת לכל התקן" },
+    connections: { en: "All reference images are embedded in one stacked tensor", ru: "Все эталонные изображения объединяются в один тензор", he: "כל תמונות הייחוס נערמות לטנזור אחד" },
+    tensor: "N references × 3×55×47 → N×160 reference matrix",
+    cudaShort: { en: "Reference embeddings stay cached on CUDA for later comparisons", ru: "Векторы эталонов остаются в CUDA-кэше для последующих сравнений", he: "וקטורי הייחוס נשארים במטמון CUDA להשוואות הבאות" },
+    cuda: {
+      en: "This is the one-time detector warm-up requested in the count. A second call on the same device returns immediately because self.ref_emb already contains that device's reference matrix.",
+      ru: "Это одноразовый прогрев детектора, который включается в подсчёт. Повторный вызов на том же устройстве сразу завершается, потому что self.ref_emb уже содержит матрицу эталонов этого устройства.",
+      he: "זהו חימום הגלאי החד-פעמי שנכלל בספירה. קריאה נוספת באותו התקן חוזרת מיד, מפני ש-self.ref_emb כבר מכיל את מטריצת הייחוס של אותו התקן."
+    },
+    code: `detector.load_references("gpu")
+# self.ref_emb["cuda"] now stores all normalized reference embeddings`
+  }
+];
+
+const detectorVariantCatalog = {
+  single: {
+    label: {
+      en: "single-image recognition",
+      ru: "одиночное распознавание",
+      he: "זיהוי תמונה בודדת"
+    },
+    description: {
+      en: "One existing screenshot is expanded into several centered variants, processed as one tensor batch, compared with the cached references, and reduced to one identity result.",
+      ru: "Один существующий скриншот превращается в несколько центральных вариантов, обрабатывается одним пакетом тензоров, сравнивается с кэшированными эталонами и сводится к одному результату.",
+      he: "צילום מסך קיים אחד הופך לכמה גרסאות מרכזיות, מעובד כאצוות טנזורים אחת, מושווה לדוגמאות הייחוס שבמטמון ומצטמצם לתוצאת זהות אחת."
+    },
+    source: {
+      en: "Source boundary: module start through DeepIDIdentityDetector.detect_image; detect_batch is excluded.",
+      ru: "Граница исходника: от начала модуля до DeepIDIdentityDetector.detect_image; detect_batch исключён.",
+      he: "גבול קוד המקור: מתחילת המודול עד DeepIDIdentityDetector.detect_image; ‏detect_batch אינו נכלל."
+    },
+    stages: [
+      ...commonDetectorStages,
+      {
+        level: "05",
+        title: { en: "Embedding comparison and identity decision", ru: "Сравнение векторов и решение о личности", he: "השוואת וקטורים והחלטת זהות" },
+        summary: {
+          en: "Runs all variants through DeepID, multiplies their normalized embeddings by the cached reference matrix, keeps the best score for each person, checks score and margin thresholds, and returns Unknown when confidence is insufficient.",
+          ru: "Пропускает все варианты через DeepID, умножает нормализованные векторы на кэшированную матрицу эталонов, сохраняет лучший результат каждого человека, проверяет пороги сходства и отрыва и возвращает Unknown при недостаточной уверенности.",
+          he: "מעביר את כל הגרסאות דרך DeepID, מכפיל את הווקטורים המנורמלים במטריצת הייחוס שבמטמון, שומר את הציון הטוב ביותר לכל אדם, בודק ספי ציון ופער ומחזיר Unknown כאשר הביטחון אינו מספיק."
+        },
+        diagram: {
+          en: ["Variant batch", "160D embeddings", "Cosine-score matrix", "Best and runner-up", "Identity or Unknown"],
+          ru: ["Пакет вариантов", "Векторы 160D", "Матрица сходства", "Лучший и второй результат", "Имя или Unknown"],
+          he: ["אצוות גרסאות", "וקטורי 160D", "מטריצת דמיון", "הטוב ביותר והשני", "זהות או Unknown"]
+        },
+        layers: { en: "One batched DeepID forward plus score reduction", ru: "Один пакетный проход DeepID и свёртка результатов", he: "מעבר DeepID אחד באצווה וצמצום ציונים" },
+        connections: { en: "variant embeddings @ reference_embeddings.T", ru: "variant_embeddings @ reference_embeddings.T", he: "variant_embeddings @ reference_embeddings.T" },
+        tensor: "V×160 @ 160×N → V×N similarity matrix",
+        cudaShort: { en: "One CUDA model call for every crop of the screenshot", ru: "Один вызов CUDA-модели для всех обрезок скриншота", he: "קריאת מודל CUDA אחת לכל חיתוכי צילום המסך" },
+        cuda: {
+          en: "The variants are stacked before the model call, so CUDA processes them together. The similarity matrix is then copied to CPU only when _decide converts it to NumPy for label selection.",
+          ru: "Варианты объединяются до вызова модели, поэтому CUDA обрабатывает их вместе. Матрица сходства копируется на CPU только внутри _decide, когда преобразуется в NumPy для выбора имени.",
+          he: "הגרסאות נערמות לפני קריאת המודל ולכן CUDA מעבדת אותן יחד. מטריצת הדמיון מועתקת ל-CPU רק בתוך _decide, כאשר היא מומרת ל-NumPy לצורך בחירת השם."
+        },
+        code: `emb, device = detector._embed_variants(variants, "gpu")
+sims = emb @ detector.ref_emb[device].T
+result = detector._decide(variants, sims, device, screenshot_path, elapsed_ms, None)`
+      },
+      {
+        level: "06",
+        title: { en: "Single-image execution and result", ru: "Запуск одного изображения и результат", he: "הרצת תמונה בודדת והתוצאה" },
+        summary: {
+          en: "detect_image connects the complete path: load screenshot variants, time the model and comparison, synchronize CUDA before stopping the timer, and return the final result dictionary.",
+          ru: "detect_image соединяет полный путь: загружает варианты скриншота, измеряет работу модели и сравнение, синхронизирует CUDA перед остановкой таймера и возвращает итоговый словарь.",
+          he: "detect_image מחבר את המסלול המלא: טוען את גרסאות צילום המסך, מודד את פעולת המודל וההשוואה, מסנכרן את CUDA לפני עצירת השעון ומחזיר את מילון התוצאה הסופי."
+        },
+        diagram: {
+          en: ["detect_image(path)", "Variants", "CUDA embeddings", "Similarity", "_decide result"],
+          ru: ["detect_image(path)", "Варианты", "CUDA-векторы", "Сходство", "Результат _decide"],
+          he: ["detect_image(path)", "גרסאות", "וקטורי CUDA", "דמיון", "תוצאת _decide"]
+        },
+        layers: { en: "Orchestration of the preceding detector stages", ru: "Оркестрация предыдущих этапов детектора", he: "תזמור של שלבי הגלאי הקודמים" },
+        connections: { en: "One screenshot result dictionary", ru: "Один словарь результата скриншота", he: "מילון תוצאה אחד לצילום המסך" },
+        tensor: "Path → V×N scores → one result dictionary",
+        cudaShort: { en: "CUDA synchronization makes elapsed_ms measure completed GPU work", ru: "Синхронизация CUDA гарантирует, что elapsed_ms учитывает завершённую работу GPU", he: "סנכרון CUDA מבטיח ש-elapsed_ms מודד עבודת GPU שהושלמה" },
+        cuda: {
+          en: "CUDA launches are asynchronous. torch.cuda.synchronize() waits for the queued kernels before elapsed_ms is calculated, preventing the program from reporting only launch overhead as GPU time.",
+          ru: "Запуски CUDA асинхронны. torch.cuda.synchronize() ждёт завершения поставленных в очередь ядер до вычисления elapsed_ms, поэтому программа не выдаёт только накладные расходы запуска вместо времени GPU.",
+          he: "הפעלות CUDA הן אסינכרוניות. torch.cuda.synchronize() ממתין לסיום הקרנלים שבתור לפני חישוב elapsed_ms, וכך התוכנית אינה מדווחת רק על זמן השיגור במקום על זמן עבודת ה-GPU."
+        },
+        code: `result = detector.detect_image(screenshot_path, mode="gpu")
+print(result["identity"], result["best_score"], result["elapsed_ms"])`
+      }
+    ]
+  },
+  batch: {
+    label: {
+      en: "batch recognition",
+      ru: "пакетное распознавание",
+      he: "זיהוי אצווה"
+    },
+    description: {
+      en: "All variants from all screenshots are stacked into one large CUDA tensor and processed in one model call. Results are then split back by source image and summarized without pretending that sequential CPU work is a GPU batch.",
+      ru: "Все варианты всех скриншотов объединяются в один большой CUDA-тензор и обрабатываются одним вызовом модели. Затем результаты разделяются по исходным изображениям и сводятся в итог без подмены последовательной CPU-обработки GPU-пакетом.",
+      he: "כל הגרסאות מכל צילומי המסך נערמות לטנזור CUDA גדול אחד ומעובדות בקריאת מודל אחת. לאחר מכן התוצאות מפוצלות לפי תמונת המקור ומסוכמות, בלי להציג עיבוד CPU סדרתי כאצוות GPU."
+    },
+    source: {
+      en: "Source boundary: the complete dedicated module, including detect_batch and short_text.",
+      ru: "Граница исходника: весь отдельный модуль, включая detect_batch и short_text.",
+      he: "גבול קוד המקור: כל המודול הייעודי, כולל detect_batch ו-short_text."
+    },
+    stages: [
+      ...commonDetectorStages,
+      {
+        level: "05",
+        title: { en: "Shared decision helpers", ru: "Общие функции принятия решения", he: "פונקציות החלטה משותפות" },
+        summary: {
+          en: "Defines the shared embedding and decision functions used by the detector. The batch CPU branch calls detect_image for each file; the real GPU batch branch reuses _decide after its single combined model call.",
+          ru: "Определяет общие функции получения векторов и выбора имени. CPU-ветвь пакета вызывает detect_image для каждого файла; настоящая GPU-ветвь повторно использует _decide после одного общего вызова модели.",
+          he: "מגדיר את פונקציות חישוב הווקטורים וההחלטה המשותפות. ענף ה-CPU של האצווה קורא ל-detect_image עבור כל קובץ; ענף ה-GPU האמיתי משתמש שוב ב-_decide לאחר קריאת מודל משולבת אחת."
+        },
+        diagram: {
+          en: ["Shared preprocessing", "Shared score matrix", "_decide per image", "CPU fallback via detect_image"],
+          ru: ["Общая подготовка", "Общая матрица сходства", "_decide для каждого файла", "CPU fallback через detect_image"],
+          he: ["עיבוד מקדים משותף", "מטריצת דמיון משותפת", "_decide לכל תמונה", "מסלול CPU דרך detect_image"]
+        },
+        layers: { en: "Shared DeepID and decision code", ru: "Общий код DeepID и принятия решения", he: "קוד DeepID והחלטה משותף" },
+        connections: { en: "Normalized embeddings and per-identity score reduction", ru: "Нормализованные векторы и свёртка результатов по людям", he: "וקטורים מנורמלים וצמצום ציונים לפי זהות" },
+        tensor: "Per-image variant score matrices",
+        cudaShort: { en: "Shared helpers do not disguise the sequential CPU branch as GPU", ru: "Общие функции не выдают последовательную CPU-ветвь за GPU", he: "הפונקציות המשותפות אינן מציגות את ענף ה-CPU הסדרתי כ-GPU" },
+        cuda: {
+          en: "This stage contains both the reusable decision logic and the one-image function required by the explicit CPU fallback. The following stage contains the distinct, genuinely batched GPU implementation.",
+          ru: "На этом этапе находятся повторно используемая логика решения и функция одного изображения, необходимая явной CPU-ветви. Отдельная настоящая пакетная GPU-реализация находится на следующем этапе.",
+          he: "שלב זה מכיל את לוגיקת ההחלטה לשימוש חוזר ואת פונקציית התמונה הבודדת שנדרשת לענף ה-CPU המפורש. מימוש ה-GPU האצוותי האמיתי והנפרד נמצא בשלב הבא."
+        },
+        code: `# Shared by CPU and GPU batch branches:
+result = detector._decide(local_variants, local_scores, device, path, per_image_ms, hint)`
+      },
+      {
+        level: "06",
+        title: { en: "Parallel CUDA batch and summary", ru: "Параллельный CUDA-пакет и итог", he: "אצוות CUDA מקבילית וסיכום" },
+        summary: {
+          en: "Flattens variants from every screenshot into one list, stacks one CUDA input tensor, executes one DeepID forward pass and one matrix comparison, slices scores back per image, decides each identity, and returns aggregate timing and results.",
+          ru: "Объединяет варианты всех скриншотов в один список, создаёт один входной CUDA-тензор, выполняет один проход DeepID и одно матричное сравнение, разделяет результаты обратно по изображениям, определяет каждое имя и возвращает общий итог со временем.",
+          he: "מאחד את הגרסאות מכל צילומי המסך לרשימה אחת, יוצר טנזור קלט CUDA אחד, מבצע מעבר DeepID אחד והשוואת מטריצה אחת, מפצל את הציונים בחזרה לפי תמונה, קובע כל זהות ומחזיר סיכום כולל עם זמנים."
+        },
+        diagram: {
+          en: ["Many image paths", "All variants flattened", "One CUDA tensor", "One model call", "Split scores", "Batch result"],
+          ru: ["Много путей", "Все варианты объединены", "Один CUDA-тензор", "Один вызов модели", "Разделение результатов", "Пакетный итог"],
+          he: ["נתיבי תמונות רבים", "כל הגרסאות אוחדו", "טנזור CUDA אחד", "קריאת מודל אחת", "פיצול ציונים", "תוצאת אצווה"]
+        },
+        layers: { en: "One neural forward pass for the complete GPU batch", ru: "Один проход нейросети для всего GPU-пакета", he: "מעבר עצבי אחד לכל אצוות ה-GPU" },
+        connections: { en: "Batched embedding matrix @ cached reference matrix", ru: "Матрица пакетных векторов @ кэшированная матрица эталонов", he: "מטריצת וקטורי האצווה @ מטריצת הייחוס שבמטמון" },
+        tensor: "Σ variants × 3×55×47 → Σ variants × N scores",
+        cudaShort: { en: "One model(x) call processes all screenshots in parallel on CUDA", ru: "Один вызов model(x) параллельно обрабатывает все скриншоты через CUDA", he: "קריאת model(x) אחת מעבדת את כל צילומי המסך במקביל ב-CUDA" },
+        cuda: {
+          en: "The GPU path is structurally different from the CPU path: it stacks every prepared variant before inference, invokes model(x) once, computes all similarities at once, and synchronizes once. Only afterward are score slices assigned back to individual screenshots.",
+          ru: "GPU-путь структурно отличается от CPU-пути: он объединяет все подготовленные варианты до инференса, один раз вызывает model(x), сразу вычисляет все сходства и один раз синхронизирует CUDA. Только после этого части матрицы результатов сопоставляются отдельным скриншотам.",
+          he: "מסלול ה-GPU שונה מבנית ממסלול ה-CPU: הוא מערים את כל הגרסאות המוכנות לפני ההסקה, קורא ל-model(x) פעם אחת, מחשב את כל הדמיונות יחד ומסנכרן CUDA פעם אחת. רק לאחר מכן פרוסות הציונים משויכות בחזרה לצילומי המסך."
+        },
+        code: `batch = detector.detect_batch(image_paths, mode="gpu")
+# GPU branch performs one model(x) call for every prepared variant
+print(batch["results"], batch["total_ms"], batch["avg_ms_per_photo"])`
+      }
+    ]
+  }
+};
+
+function activeVariantDefinition() {
+  return detectorVariantCatalog[activeDetectorVariant] || detectorVariantCatalog.single;
+}
+
+function renderDetectorVariantUi() {
+  const variant = activeVariantDefinition();
+  if (stageDetails[0]?.variantKey !== activeDetectorVariant) {
+    const stages = variant.stages.map((stage) => ({ ...stage, variantKey: activeDetectorVariant }));
+    stageDetails.splice(0, stageDetails.length, ...stages);
+  }
+  if (detectorVariantDescription) detectorVariantDescription.textContent = localized(variant.description);
+  if (detectorVariantSource) detectorVariantSource.textContent = localized(variant.source);
+  detectorVariantButtons.forEach((button) => {
+    const selected = button.dataset.detectorVariant === activeDetectorVariant;
+    button.classList.toggle("active", selected);
+    button.setAttribute("aria-pressed", selected ? "true" : "false");
+  });
+  document.querySelectorAll(".pipeline-step").forEach((step, index) => {
+    const stage = stageDetails[index];
+    if (!stage) return;
+    const title = step.querySelector("h4");
+    const paragraph = step.querySelector("p");
+    if (title) title.textContent = localized(stage.title);
+    if (paragraph) paragraph.textContent = localized(stage.summary);
+  });
+}
+
+function selectDetectorVariant(name) {
+  if (!detectorVariantCatalog[name]) return;
+  activeDetectorVariant = name;
+  hideStageDetail();
+  stageCodeMode = "short";
+  exactStageCodeState = detectorSourceLoaded ? "idle" : "idle";
+  combinedRecognitionCode = "";
+  combinedRecognitionLineCount = 0;
+  stageRecognitionLineCount = 0;
+  renderDetectorVariantUi();
+  if (detectorSourceVisible) {
+    fullDetectorSource.innerHTML = "";
+    fullSourceMeta.textContent = uiText("sourceLoading");
+    ensureExactStageCode().then((ready) => {
+      if (ready && detectorSourceVisible) {
+        renderDetectorSource(combinedRecognitionCode);
+        updateDetectorSourceUi();
+      }
+    });
+  } else {
+    updateDetectorSourceUi();
+  }
+}
+
 
 function setLanguage(lang) {
   const dict = translations[lang] || translations.en;
@@ -1611,6 +1996,7 @@ function setLanguage(lang) {
   document.querySelectorAll(".lang").forEach((button) => {
     button.classList.toggle("active", button.dataset.lang === lang);
   });
+  renderDetectorVariantUi();
   if (currentStageIndex >= 0 && !stageDetail.classList.contains("hidden")) {
     renderStageDetail(currentStageIndex, false);
   }
@@ -2272,7 +2658,45 @@ function operationAnnotation(text, lang) {
     "Создаёт рабочую папку, если её нет; parents=True создаёт недостающие родительские папки, а exist_ok=True допускает уже существующую папку.",
     "יוצרת את תיקיית העבודה אם היא חסרה; parents=True יוצר תיקיות־אב חסרות ו-exist_ok=True מאפשר תיקייה שכבר קיימת."
   );
+  const registeredBuffer = text.match(/^self\.register_buffer\("([^"]+)",\s*(.+)\)$/);
+  if (registeredBuffer) return say(
+    `Registers the tensor produced by ${registeredBuffer[2]} as non-trainable model buffer “${registeredBuffer[1]}”. It will move with model.to(device) but will not be optimized.`,
+    `Регистрирует тензор, полученный из ${registeredBuffer[2]}, как необучаемый буфер модели «${registeredBuffer[1]}». Он переносится через model.to(device), но не оптимизируется.`,
+    `רושמת את הטנזור שמופק על ידי ${registeredBuffer[2]} כמאגר מודל לא-נלמד בשם „${registeredBuffer[1]}”. הוא יעבור עם model.to(device), אך לא יעבור אופטימיזציה.`
+  );
+  const convolution = text.match(/^([A-Za-z_]\w*)\s*=\s*F\.relu\(F\.conv2d\(([^,]+),\s*self\.([A-Za-z_]\w*),\s*self\.([A-Za-z_]\w*)\)\)$/);
+  if (convolution) return say(
+    `Convolves ${convolution[2]} with trained weights self.${convolution[3]} and bias self.${convolution[4]}, applies ReLU to remove negative responses, and stores the resulting feature map in ${convolution[1]}.`,
+    `Свёртывает ${convolution[2]} обученными весами self.${convolution[3]} и смещением self.${convolution[4]}, применяет ReLU для обнуления отрицательных откликов и сохраняет карту признаков в ${convolution[1]}.`,
+    `מבצעת קונבולוציה של ${convolution[2]} עם המשקלים המאומנים self.${convolution[3]} וההטיה self.${convolution[4]}, מפעילה ReLU לאיפוס תגובות שליליות ושומרת את מפת התכונות ב-${convolution[1]}.`
+  );
+  if (/^start\s*=\s*time\.perf_counter\(\)$/.test(text)) return say(
+    "Reads the high-resolution clock immediately before inference and stores that start timestamp for the later elapsed-time calculation.",
+    "Считывает высокоточный таймер непосредственно перед инференсом и сохраняет начальную отметку для последующего расчёта длительности.",
+    "קוראת את השעון ברזולוציה גבוהה מיד לפני ההסקה ושומרת את חותמת זמן ההתחלה לחישוב משך הזמן בהמשך."
+  );
+  const elapsedTimer = text.match(/^(elapsed_ms|total_ms)\s*=\s*\(time\.perf_counter\(\)\s*-\s*start\)\s*\*\s*1000\.0$/);
+  if (elapsedTimer) return say(
+    `Subtracts the saved start timestamp from the current high-resolution time, converts seconds to milliseconds, and stores the measured duration in ${elapsedTimer[1]}.`,
+    `Вычитает сохранённую начальную отметку из текущего значения высокоточного таймера, переводит секунды в миллисекунды и сохраняет длительность в ${elapsedTimer[1]}.`,
+    `מחסרת את חותמת זמן ההתחלה השמורה מן הזמן הנוכחי ברזולוציה גבוהה, ממירה שניות למילישניות ושומרת את משך הזמן ב-${elapsedTimer[1]}.`
+  );
   const actions = [
+    [/\.read_bytes\(\)/, "Reads the complete binary weights file into memory as bytes so its header and numeric records can be decoded.", "Читает весь бинарный файл весов в память как байты, чтобы затем разобрать его заголовок и числовые записи.", "קוראת את כל קובץ המשקלים הבינרי לזיכרון כבייטים, כדי לפענח את הכותרת ואת הרשומות המספריות."],
+    [/struct\.unpack_from\(/, "Decodes the requested fixed-width integer directly from the binary weights buffer at the current byte offset.", "Декодирует целое число фиксированного размера непосредственно из бинарного буфера весов по текущему смещению.", "מפענחת מספר שלם ברוחב קבוע ישירות ממאגר המשקלים הבינרי בהיסט הבייטים הנוכחי."],
+    [/np\.frombuffer\(/, "Views the next weight record as little-endian 32-bit floats, then copies it so the array no longer depends on the original byte buffer.", "Интерпретирует следующую запись весов как little-endian float32 и копирует её, чтобы массив больше не зависел от исходного буфера байтов.", "מפרשת את רשומת המשקלים הבאה כ-float32 בסדר little-endian ומעתיקה אותה, כדי שהמערך לא יהיה תלוי עוד במאגר הבייטים המקורי."],
+    [/\.reshape\(shapes\[/, "Reshapes the flat float record to the exact trained tensor shape registered for this layer name.", "Преобразует плоскую запись float в точную форму обученного тензора, указанную для имени этого слоя.", "משנה את צורת רשומת ה-float השטוחה לצורת הטנזור המאומן המדויקת הרשומה עבור שם השכבה."],
+    [/torch\.tensor\(/, "Creates a PyTorch tensor from the stored NumPy weights so the values can be registered in the neural model.", "Создаёт тензор PyTorch из сохранённых весов NumPy, чтобы зарегистрировать значения внутри нейросетевой модели.", "יוצרת טנזור PyTorch ממשקלי NumPy השמורים, כדי לרשום את הערכים בתוך המודל העצבי."],
+    [/\.permute\(3,\s*2,\s*0,\s*1\)/, "Reorders convolution weights from stored height-width-input-output layout to PyTorch output-input-height-width layout.", "Меняет порядок осей свёрточных весов из сохранённого H-W-In-Out в требуемый PyTorch Out-In-H-W.", "מסדרת מחדש את צירי משקלי הקונבולוציה מ-H-W-In-Out השמור אל Out-In-H-W הנדרש ב-PyTorch."],
+    [/self\.register_buffer\(/, "Registers this trained tensor as non-trainable model state, so model.to(device) moves it with the network without treating it as an optimizer parameter.", "Регистрирует обученный тензор как необучаемое состояние модели: model.to(device) перенесёт его вместе с сетью, но оптимизатор не будет считать его параметром.", "רושמת את הטנזור המאומן כמצב לא-נלמד של המודל; model.to(device) יעביר אותו עם הרשת בלי להתייחס אליו כפרמטר לאופטימיזציה."],
+    [/DeepIDTorch\(weights\)\.to\(device\)\.eval\(\)/, "Builds the DeepID model from decoded weights, moves every registered buffer to the selected CPU or CUDA device, and switches the model to inference mode.", "Создаёт DeepID из декодированных весов, переносит все зарегистрированные буферы на выбранное устройство CPU/CUDA и переводит модель в режим инференса.", "בונה את מודל DeepID מן המשקלים שפוענחו, מעביר את כל המאגרים הרשומים להתקן CPU או CUDA שנבחר ומעביר את המודל למצב הסקה."],
+    [/\.crop\(/, "Extracts the centered square pixel region described by the four crop coordinates and appends it as another recognition variant.", "Вырезает центральную квадратную область по четырём координатам и добавляет её как ещё один вариант распознавания.", "חותכת את אזור הפיקסלים הריבועי המרכזי לפי ארבע הקואורדינטות ומוסיפה אותו כגרסת זיהוי נוספת."],
+    [/_image_paths\(/, "Calls the detector helper that returns supported image files from this reference folder in a stable order.", "Вызывает вспомогательную функцию детектора, возвращающую поддерживаемые изображения из этой папки эталонов в стабильном порядке.", "קוראת לפונקציית העזר של הגלאי שמחזירה בסדר יציב קובצי תמונה נתמכים מתיקיית הייחוס הזו."],
+    [/\.resolve\(\)/, "Converts the reference path to an absolute normalized path so the same file is not added twice through different folder spellings.", "Преобразует путь эталона в абсолютный нормализованный путь, чтобы один файл не добавился дважды под разными вариантами пути.", "ממירה את נתיב קובץ הייחוס לנתיב מוחלט ומנורמל, כדי שאותו קובץ לא יתווסף פעמיים דרך כתיבי נתיב שונים."],
+    [/\.detach\(\)\.cpu\(\)\.numpy\(\)/, "Detaches the similarity tensor from autograd, transfers it from CUDA to CPU, and exposes it as a NumPy array for Python-side label selection.", "Отсоединяет матрицу сходства от autograd, переносит её из CUDA на CPU и представляет как NumPy-массив для выбора имени в Python.", "מנתקת את טנזור הדמיון מ-autograd, מעבירה אותו מ-CUDA ל-CPU וחושפת אותו כמערך NumPy לבחירת השם בצד Python."],
+    [/torch\.cuda\.synchronize\(\)/, "Blocks the CPU until all queued CUDA kernels finish, making cached data and measured elapsed time correspond to completed GPU work.", "Блокирует CPU до завершения всех поставленных в очередь CUDA-ядер, чтобы кэш и измеренное время соответствовали законченной работе GPU.", "חוסמת את ה-CPU עד שכל קרנלי CUDA שבתור מסתיימים, כך שהמטמון והזמן הנמדד מייצגים עבודת GPU שהושלמה."],
+    [/np\.mean\(/, "Computes the arithmetic mean of the accepted scores for the selected batch identity; the fallback list prevents an empty mean.", "Вычисляет среднее арифметическое принятых оценок выбранной личности в пакете; запасной список не допускает среднего по пустому набору.", "מחשבת את הממוצע החשבוני של הציונים שהתקבלו עבור זהות האצווה שנבחרה; רשימת ברירת המחדל מונעת ממוצע של קבוצה ריקה."],
+    [/self\._decide\(/, "Passes this image's variants and similarity-score slice to the shared threshold logic that returns its final identity dictionary.", "Передаёт варианты изображения и соответствующую часть матрицы сходства в общую пороговую логику, возвращающую итоговый словарь личности.", "מעבירה את גרסאות התמונה ואת פרוסת ציוני הדמיון שלה ללוגיקת הספים המשותפת שמחזירה את מילון הזהות הסופי."],
     [/^files\.upload\(/, "Opens Colab's file picker and returns the selected files as in-memory bytes for the next save command.", "Открывает выбор файла Colab и возвращает выбранные файлы как байты в памяти для следующей команды сохранения.", "פותחת את בורר הקבצים של Colab ומחזירה את הקבצים שנבחרו כבייטים בזיכרון לפקודת השמירה הבאה."],
     [/zipfile\.ZipFile\(/, "Opens the ZIP archive for reading; the surrounding context block closes it automatically.", "Открывает ZIP-архив для чтения; окружающий контекстный блок закроет его автоматически.", "פותחת את ארכיון ה-ZIP לקריאה; בלוק ההקשר שסביבו יסגור אותו אוטומטית."],
     [/\.extractall\(/, "Extracts every file from the opened ZIP archive into the folder passed in the parentheses.", "Извлекает все файлы из открытого ZIP-архива в папку, переданную в скобках.", "מחלצת כל קובץ מארכיון ה-ZIP הפתוח אל התיקייה שמועברת בסוגריים."],
@@ -2417,11 +2841,215 @@ function operationAnnotation(text, lang) {
     "Закрывает многострочный список параметров функции и начинает исполняемое тело этой функции.",
     "סוגרת את רשימת הפרמטרים הרב־שורתית של הפונקציה ומתחילה את גוף הפונקציה שמבוצע."
   );
+  if (text === "]") return say(
+    "Closes the two-entry list of candidate reference folders for the current known identity.",
+    "Закрывает список из двух возможных папок с эталонными изображениями текущего известного человека.",
+    "סוגרת את הרשימה בת שתי תיקיות הייחוס האפשריות עבור הזהות הידועה הנוכחית."
+  );
   if (/^[\]\),]$/.test(text)) return say(
     "Closes the list, tuple, or argument group that began on earlier lines; it only completes the surrounding expression.",
     "Закрывает список, кортеж или группу аргументов, начатую в предыдущих строках; она только завершает окружающее выражение.",
     "סוגרת רשימה, טופל או קבוצת ארגומנטים שהחלו בשורות קודמות; היא רק משלימה את הביטוי שסביבה."
   );
+  return "";
+}
+
+function structuralSourceAnnotation(text, lang) {
+  const say = (en, ru, he) => repairLocalizedText(lang === "ru" ? ru : lang === "he" ? he : en);
+  const exactStructuralLines = {
+    "self._torch, self._nn, self._F = torch, nn, F": [
+      "Caches the imported torch, torch.nn, and torch.nn.functional modules on this detector object, so later calls reuse them without importing PyTorch again.",
+      "Сохраняет импортированные модули torch, torch.nn и torch.nn.functional в объекте детектора, чтобы следующие вызовы использовали их без повторного импорта PyTorch.",
+      "שומרת באובייקט הגלאי את המודולים torch,‏ torch.nn ו-torch.nn.functional שיובאו, כדי שהקריאות הבאות ישתמשו בהם בלי לייבא שוב את PyTorch."
+    ],
+    "torch, _, _ = self._ensure_torch()": [
+      "Calls the lazy PyTorch initializer and keeps only the torch module; the two underscore targets deliberately discard the returned nn and functional modules.",
+      "Вызывает ленивую инициализацию PyTorch и сохраняет только модуль torch; две переменные «_» намеренно отбрасывают возвращённые модули nn и functional.",
+      "קוראת לאתחול העצל של PyTorch ושומרת רק את המודול torch; שני יעדי הקו התחתון משליכים במכוון את המודולים nn ו-functional שהוחזרו."
+    ],
+    "torch, nn, F = self._ensure_torch()": [
+      "Calls the lazy PyTorch initializer and unpacks its three returned modules into torch, nn, and F for model construction.",
+      "Вызывает ленивую инициализацию PyTorch и распаковывает три возвращённых модуля в torch, nn и F для построения модели.",
+      "קוראת לאתחול העצל של PyTorch ומפרקת את שלושת המודולים שהוחזרו אל torch,‏ nn ו-F לצורך בניית המודל."
+    ],
+    "src_w, src_h = img.size": [
+      "Reads the source image dimensions from Pillow and stores its width in src_w and height in src_h.",
+      "Читает размеры исходного изображения Pillow: ширину сохраняет в src_w, а высоту — в src_h.",
+      "קוראת את ממדי תמונת המקור מ-Pillow ושומרת את הרוחב ב-src_w ואת הגובה ב-src_h."
+    ],
+    "target_w, target_h = 47, 55": [
+      "Sets the exact DeepID input dimensions: target_w is 47 pixels and target_h is 55 pixels.",
+      "Задаёт точный размер входа DeepID: target_w равен 47 пикселям, target_h — 55 пикселям.",
+      "קובעת את ממדי הקלט המדויקים של DeepID:‏ target_w הוא 47 פיקסלים ו-target_h הוא 55 פיקסלים."
+    ],
+    "w, h = img.size": [
+      "Reads the current image width into w and height into h so the following crop coordinates can be calculated.",
+      "Читает текущую ширину изображения в w и высоту в h, чтобы далее вычислить координаты обрезки.",
+      "קוראת את רוחב התמונה הנוכחי אל w ואת הגובה אל h, כדי לחשב בהמשך את קואורדינטות החיתוך."
+    ],
+    "model, device = self._model(mode)": [
+      "Gets the cached or newly built DeepID model for the requested mode and unpacks the actual execution device selected by that method.",
+      "Получает кэшированную либо только что созданную модель DeepID для запрошенного режима и отдельно сохраняет фактически выбранное устройство выполнения.",
+      "מקבלת את מודל DeepID השמור במטמון או החדש עבור המצב המבוקש, ומפרקת בנפרד את התקן הביצוע שנבחר בפועל."
+    ],
+    "model, device = self._model(\"gpu\")": [
+      "Requests the CUDA DeepID model explicitly and stores both that model and its verified CUDA device for the shared batch forward pass.",
+      "Явно запрашивает CUDA-модель DeepID и сохраняет модель вместе с проверенным CUDA-устройством для общего пакетного прохода.",
+      "מבקשת במפורש את מודל DeepID של CUDA ושומרת גם את המודל וגם את התקן CUDA המאומת לצורך מעבר האצווה המשותף."
+    ],
+    "label, ref_path = self.ref_items[ref_index]": [
+      "Looks up the reference record at ref_index and unpacks its known person's label and source image path.",
+      "Берёт эталонную запись с индексом ref_index и распаковывает имя известного человека и путь к его изображению.",
+      "קוראת את רשומת הייחוס באינדקס ref_index ומפרקת ממנה את תווית האדם הידוע ואת נתיב תמונת המקור."
+    ],
+    "emb, device = self._embed_variants(variants, mode)": [
+      "Embeds every prepared variant in one model batch and stores both the resulting embedding matrix and the actual CPU/CUDA device used.",
+      "Вычисляет признаки всех подготовленных вариантов одним пакетом модели и сохраняет матрицу эмбеддингов вместе с фактически использованным устройством CPU/CUDA.",
+      "מחשבת הטמעות לכל הגרסאות המוכנות באצוות מודל אחת ושומרת גם את מטריצת ההטמעות וגם את התקן ה-CPU/CUDA שבו נעשה שימוש בפועל."
+    ],
+    "counts[label] = counts.get(label, 0) + 1": [
+      "Increments the number of batch images accepted as this label, starting from zero when the label has not appeared before.",
+      "Увеличивает число изображений пакета, принятых как label; если это имя ещё не встречалось, отсчёт начинается с нуля.",
+      "מגדילה את מספר תמונות האצווה שהתקבלו כתווית זו; אם התווית טרם הופיעה, הספירה מתחילה מאפס."
+    ],
+    "counts[label],": [
+      "Supplies this label's accepted-image count as the first element of its sorting key, so labels recognized in more images rank higher.",
+      "Передаёт число принятых изображений этого имени как первый элемент ключа сортировки, поэтому имя с большим числом распознаваний получает приоритет.",
+      "מספקת את מספר התמונות שהתקבלו עבור התווית כרכיב הראשון במפתח המיון, ולכן תווית שזוהתה ביותר תמונות מדורגת גבוה יותר."
+    ],
+    "sum(scores.get(label, [0.0])) / len(scores.get(label, [1.0])),": [
+      "Calculates this label's mean accepted score as the second sorting key; fallback lists keep the expression defined if no scores exist.",
+      "Вычисляет среднюю принятую оценку этого имени как второй ключ сортировки; запасные списки не допускают деления на ноль при отсутствии оценок.",
+      "מחשבת את ממוצע הציונים שהתקבלו עבור התווית כמפתח המיון השני; רשימות ברירת המחדל מונעות חלוקה באפס אם אין ציונים."
+    ],
+    "),": [
+      "Closes the two-value sorting-key tuple returned by the lambda; the trailing comma separates this keyword argument from the next one.",
+      "Закрывает кортеж из двух значений, возвращаемый lambda как ключ сортировки; запятая отделяет этот именованный аргумент от следующего.",
+      "סוגרת את טופל שני הערכים שה-lambda מחזירה כמפתח מיון; הפסיק מפריד את ארגומנט מילת-המפתח הזה מן הבא."
+    ],
+    ")[0]": [
+      "Closes the sorted call and selects element 0, the highest-ranked label after reverse sorting by count and mean score.",
+      "Закрывает вызов sorted и выбирает элемент 0 — имя с наивысшим рейтингом после обратной сортировки по числу распознаваний и средней оценке.",
+      "סוגרת את קריאת sorted ובוחרת את איבר 0 — התווית המדורגת ראשונה לאחר מיון יורד לפי מספר הזיהויים וממוצע הציון."
+    ],
+    "]": [
+      "Closes the two-entry list of candidate reference folders for the current known identity.",
+      "Закрывает список из двух возможных папок с эталонными изображениями текущего известного человека.",
+      "סוגרת את הרשימה בת שתי תיקיות הייחוס האפשריות עבור הזהות הידועה הנוכחית."
+    ],
+    ") -> dict[str, Any]:": [
+      "Closes the multi-line detect_batch parameter list, declares that the method returns a string-keyed dictionary, and begins its executable body.",
+      "Закрывает многострочный список параметров detect_batch, объявляет возврат словаря со строковыми ключами и начинает исполняемое тело метода.",
+      "סוגרת את רשימת הפרמטרים הרב-שורתית של detect_batch, מצהירה שהמתודה מחזירה מילון בעל מפתחות מחרוזת ומתחילה את הגוף שמבוצע."
+    ]
+  };
+  const exactStructural = exactStructuralLines[text];
+  if (exactStructural) return repairLocalizedText(exactStructural[lang === "ru" ? 1 : lang === "he" ? 2 : 0]);
+  if (text === "@staticmethod") return say(
+    "Marks short_text as a utility method that receives no detector instance; callers invoke it on the class or object using only the result argument.",
+    "Помечает short_text как служебный метод без экземпляра детектора: он использует только переданный result и может вызываться через класс или объект.",
+    "מסמן את short_text כמתודת עזר שאינה מקבלת מופע גלאי; היא משתמשת רק בארגומנט result וניתן לקרוא לה דרך המחלקה או האובייקט."
+  );
+  const simpleParameter = text.match(/^([A-Za-z_]\w*),$/);
+  if (simpleParameter) return say(
+    `Adds positional parameter ${simpleParameter[1]} to the multi-line function signature being declared.`,
+    `Добавляет позиционный параметр ${simpleParameter[1]} в многострочную сигнатуру объявляемой функции.`,
+    `מוסיף את הפרמטר המיקומי ${simpleParameter[1]} לחתימת הפונקציה הרב-שורתית שמוגדרת.`
+  );
+  const parameter = text.match(/^([A-Za-z_]\w*)\s*:\s*([^=,]+)(?:\s*=\s*(.+))?,?$/);
+  if (parameter) {
+    const defaultText = parameter[3]
+      ? ` The default value is ${parameter[3].replace(/,$/, "")}.`
+      : "";
+    const defaultRu = parameter[3]
+      ? ` Значение по умолчанию: ${parameter[3].replace(/,$/, "")}.`
+      : "";
+    const defaultHe = parameter[3]
+      ? ` ערך ברירת המחדל הוא ${parameter[3].replace(/,$/, "")}.`
+      : "";
+    return say(
+      `Declares parameter ${parameter[1]} with type ${parameter[2].trim()}.${defaultText}`,
+      `Объявляет параметр ${parameter[1]} с типом ${parameter[2].trim()}.${defaultRu}`,
+      `מגדיר את הפרמטר ${parameter[1]} עם הטיפוס ${parameter[2].trim()}.${defaultHe}`
+    );
+  }
+  const typedLocal = text.match(/^([A-Za-z_]\w*)\s*:\s*(.+?)\s*=\s*(.+)$/);
+  if (typedLocal) return say(
+    `Creates local variable ${typedLocal[1]} with declared type ${typedLocal[2]} and initializes it with ${typedLocal[3]}.`,
+    `Создаёт локальную переменную ${typedLocal[1]} с объявленным типом ${typedLocal[2]} и начальным значением ${typedLocal[3]}.`,
+    `יוצרת את המשתנה המקומי ${typedLocal[1]} עם הטיפוס המוצהר ${typedLocal[2]} ומאתחלת אותו בערך ${typedLocal[3]}.`
+  );
+  const dictEntry = text.match(/^["']([^"']+)["']\s*:\s*(.+?)(?:,)?$/);
+  if (dictEntry) return say(
+    `Adds dictionary field “${dictEntry[1]}” with value ${dictEntry[2].replace(/,$/, "")}.`,
+    `Добавляет в словарь поле «${dictEntry[1]}» со значением ${dictEntry[2].replace(/,$/, "")}.`,
+    `מוסיף למילון את השדה „${dictEntry[1]}” עם הערך ${dictEntry[2].replace(/,$/, "")}.`
+  );
+  const augmented = text.match(/^(.+?)\s*(\+=|-=|\*=|\/=)\s*(.+)$/);
+  if (augmented) return say(
+    `Updates ${augmented[1]} in place by applying ${augmented[2].slice(0, -1)} to its current value and ${augmented[3]}.`,
+    `Обновляет ${augmented[1]} на месте: применяет операцию ${augmented[2].slice(0, -1)} к текущему значению и ${augmented[3]}.`,
+    `מעדכן את ${augmented[1]} במקום באמצעות הפעולה ${augmented[2].slice(0, -1)} על הערך הנוכחי ועל ${augmented[3]}.`
+  );
+  const raiseMatch = text.match(/^raise\s+([A-Za-z_]\w*)\((.*)\)$/);
+  if (raiseMatch) return say(
+    `Stops this detection path by raising ${raiseMatch[1]} with the diagnostic message or value ${raiseMatch[2]}.`,
+    `Останавливает этот путь распознавания исключением ${raiseMatch[1]} с диагностическим сообщением или значением ${raiseMatch[2]}.`,
+    `עוצר את מסלול הזיהוי הזה באמצעות החריג ${raiseMatch[1]} עם הודעת האבחון או הערך ${raiseMatch[2]}.`
+  );
+  const openRaise = text.match(/^raise\s+([A-Za-z_]\w*)\($/);
+  if (openRaise) return say(
+    `Begins raising ${openRaise[1]}; the following string lines provide the complete diagnostic message before the call is closed.`,
+    `Начинает создание исключения ${openRaise[1]}; следующие строки задают полное диагностическое сообщение до закрывающей скобки.`,
+    `מתחילה להעלות את החריג ${openRaise[1]}; שורות המחרוזת הבאות מספקות את הודעת האבחון המלאה עד לסוגר הסיום.`
+  );
+  const keywordArgument = text.match(/^([A-Za-z_]\w*)\s*=\s*(.+),$/);
+  if (keywordArgument) return say(
+    `Passes keyword argument ${keywordArgument[1]} with value ${keywordArgument[2]} to the multi-line call that began above.`,
+    `Передаёт именованный аргумент ${keywordArgument[1]} со значением ${keywordArgument[2]} в многострочный вызов, начатый выше.`,
+    `מעביר את ארגומנט מילת-המפתח ${keywordArgument[1]} עם הערך ${keywordArgument[2]} לקריאה הרב-שורתית שהחלה למעלה.`
+  );
+  const stringContinuation = text.match(/^([rubf]*)["'](.+)["'],?$/i);
+  if (stringContinuation) return say(
+    `Provides the string text “${stringContinuation[2]}” as part of the surrounding expression; adjacent string literals are concatenated by Python.`,
+    `Добавляет строковый текст «${stringContinuation[2]}» в окружающее выражение; соседние строковые литералы Python объединяет автоматически.`,
+    `מספק את הטקסט „${stringContinuation[2]}” כחלק מן הביטוי שמסביב; Python מחבר מחרוזות סמוכות אוטומטית.`
+  );
+  if (/^self\.work_dir\s*\/.+,$/.test(text)) return say(
+    "Builds one candidate reference-folder path relative to the detector working directory and adds it to the surrounding folder list.",
+    "Формирует один путь к папке эталонов относительно рабочей папки детектора и добавляет его в окружающий список папок.",
+    "בונה נתיב מועמד אחד לתיקיית ייחוס ביחס לתיקיית העבודה של הגלאי ומוסיף אותו לרשימת התיקיות שמסביב."
+  );
+  if (/^super\(\)\.__init__\(\)$/.test(text)) return say(
+    "Initializes the inherited torch.nn.Module state before DeepID registers its weight buffers.",
+    "Инициализирует унаследованное состояние torch.nn.Module до регистрации буферов весов DeepID.",
+    "מאתחל את מצב torch.nn.Module שעבר בירושה לפני ש-DeepID רושם את מאגרי המשקלים שלו."
+  );
+  const methodCall = text.match(/^([A-Za-z_][\w.]*)\((.*)\)$/);
+  if (methodCall) return say(
+    `Calls ${methodCall[1]} with arguments ${methodCall[2] || "none"}; the call performs that named operation immediately and its return value is not stored on this line.`,
+    `Вызывает ${methodCall[1]} с аргументами ${methodCall[2] || "без аргументов"}; операция выполняется сразу, а возвращаемое значение на этой строке не сохраняется.`,
+    `קורא ל-${methodCall[1]} עם הארגומנטים ${methodCall[2] || "ללא ארגומנטים"}; הפעולה מתבצעת מיד וערך ההחזרה אינו נשמר בשורה זו.`
+  );
+  const subscriptAssignment = text.match(/^([A-Za-z_][\w.]*)\[([^\]]+)\]\s*=\s*(.+)$/);
+  if (subscriptAssignment) return say(
+    `Stores ${subscriptAssignment[3]} under key or index ${subscriptAssignment[2]} in ${subscriptAssignment[1]}, updating that cache or result table for later lookup.`,
+    `Сохраняет ${subscriptAssignment[3]} по ключу или индексу ${subscriptAssignment[2]} в ${subscriptAssignment[1]}, обновляя кэш либо таблицу результатов для последующего поиска.`,
+    `שומרת את ${subscriptAssignment[3]} תחת המפתח או האינדקס ${subscriptAssignment[2]} בתוך ${subscriptAssignment[1]}, ומעדכנת את המטמון או טבלת התוצאות לחיפוש בהמשך.`
+  );
+  if (/^\[.*\bfor\b.*\bin\b.*\]$/.test(text)) return say(
+    "Builds a list comprehension: evaluates the expression before “for” once for every item produced by the iterator after “in”.",
+    "Создаёт список включением: вычисляет выражение перед «for» для каждого элемента последовательности после «in».",
+    "בונה list comprehension: מחשב את הביטוי שלפני “for” עבור כל איבר שמופק מן האיטרטור שאחרי “in”."
+  );
+  if (/^#/.test(text)) {
+    const body = text.replace(/^#+\s*/, "");
+    return say(
+      `Non-executable source comment: “${body}”. It documents the following or adjacent detector logic without changing runtime state.`,
+      `Неисполняемый комментарий исходника: «${body}». Он поясняет соседнюю логику детектора и не изменяет состояние программы.`,
+      `הערת קוד מקור שאינה מבוצעת: „${body}”. היא מתעדת את לוגיקת הגלאי הסמוכה ואינה משנה את מצב התוכנית.`
+    );
+  }
   return "";
 }
 
@@ -2485,8 +3113,17 @@ function englishSourceLineAnnotation(text) {
 
 function sourceLineAnnotation(line, lang) {
   const text = line.trim();
+  if (!text) {
+    return lang === "ru"
+      ? "Пустая строка визуально отделяет соседние логические части исходника; Python не выполняет на ней команду."
+      : lang === "he"
+        ? "שורה ריקה מפרידה חזותית בין חלקים לוגיים סמוכים בקוד המקור; Python אינה מבצעת בה פקודה."
+        : "Blank line separating adjacent logical source sections; Python executes no command on this line.";
+  }
   const operation = operationAnnotation(text, lang);
   if (operation) return operation;
+  const structural = structuralSourceAnnotation(text, lang);
+  if (structural) return structural;
   if (lang === "en") return englishSourceLineAnnotation(text);
   const hebrew = lang === "he";
   const importFrom = text.match(/^from\s+([\w.]+)\s+import\s+(.+)$/);
@@ -2612,8 +3249,7 @@ function codeAnnotation(stage, line) {
   if (!trimmed) return repairLocalizedText(codeBlankAnnotation[lang] || codeBlankAnnotation.en);
   const exact = detailedCodeLineAnnotations[trimmed];
   if (exact) return repairLocalizedText(exact[lang] || exact.en);
-  const match = codeLineAnnotations[stage.level]?.[trimmed];
-  return cleanLocalizedCodeAnnotation(match, lang) || patternCodeAnnotation(line);
+  return patternCodeAnnotation(line);
 }
 
 function uiText(key) {
@@ -2634,7 +3270,7 @@ function renderStageCode(stage) {
   }
   if (stageCodeSource) {
     stageCodeSource.textContent = fullMode
-      ? uiText(stage.level === "01" || stage.level === "06" ? "fullStageNotebook" : "fullStageDetector")
+      ? `${uiText("fullStageExact")} · ${uiText("lineCount").replace("{count}", String(stage.exactLineCount || codeLineCount(stage.exactCode)))}`
       : requestedFullMode
         ? uiText(exactStageCodeState === "error" ? "fullStageError" : "fullStageLoading")
         : uiText("codeSourceShort");
@@ -2669,23 +3305,34 @@ function exactCodeBlock(source, startPattern, endPattern) {
   return lines.slice(start, end).join("\n").trim();
 }
 
-function exactStageBlocks(detectorModule, notebookCode) {
-  const detector = (start, end) => exactCodeBlock(detectorModule, start, end);
-  const notebook = (start, end) => exactCodeBlock(notebookCode, start, end);
-  return {
-    // Stage 1 intentionally starts at line 1 of the same notebook shown in the source viewer.
-    // It ends immediately before the next UI helper so that it contains setup, payload loading,
-    // detector selection and startup — not a hand-written excerpt from the middle of the file.
-    "01": [exactCodeBlock(notebookCode, /^from __future__ import annotations\b/, /^def _image_paths\b/)].join("\n\n"),
-    "02": [detector(/^    def _preprocess_pil\b/, /^    def load_references\b/)].join("\n\n"),
-    "03": [detector(/^    def _ensure_torch\b/, /^    def _preprocess_pil\b/)].join("\n\n"),
-    "04": [detector(/^    def load_references\b/, /^    def _decide\b/)].join("\n\n"),
-    "05": [detector(/^    def _decide\b/, /^    def detect_image\b/)].join("\n\n"),
-    "06": [
-      notebook(/^def detect_uploaded\b/, /^def _lang_code\b/),
-      notebook(/^\s*@app\.post\("\/hive-api\/detect"\)/, /^\s*@app\.get\("\/hive-api\/record-detection"\)/)
-    ].filter(Boolean).join("\n\n")
+function detectorStageLineBlocks(detectorModule, variantName) {
+  const lines = detectorModule.replace(/\r\n/g, "\n").split("\n");
+  if (lines[lines.length - 1] === "") lines.pop();
+  const find = (pattern) => {
+    const index = lines.findIndex((line) => pattern.test(line));
+    if (index < 0) throw new Error(`missing detector boundary ${pattern}`);
+    return index;
   };
+  const boundaries = variantName === "batch"
+    ? [
+        0,
+        find(/^    def _load_weights\b/),
+        find(/^    def _preprocess_pil\b/),
+        find(/^    def load_references\b/),
+        find(/^    def _embed_variants\b/),
+        find(/^    def detect_batch\b/),
+        lines.length
+      ]
+    : [
+        0,
+        find(/^    def _load_weights\b/),
+        find(/^    def _preprocess_pil\b/),
+        find(/^    def load_references\b/),
+        find(/^    def _embed_variants\b/),
+        find(/^    def detect_image\b/),
+        find(/^    def detect_batch\b/)
+      ];
+  return boundaries.slice(0, -1).map((start, index) => lines.slice(start, boundaries[index + 1]));
 }
 
 function codeLineCount(source) {
@@ -2697,30 +3344,34 @@ async function ensureExactStageCode() {
   if (exactStageCodeState === "loading") return false;
   exactStageCodeState = "loading";
   try {
-    const [detectorResponse, notebookResponse] = await Promise.all([
-      fetch("source/colab_ai_mips_bee_world.py", { cache: "no-store" }),
-      fetch("colab/colab_public_one_image_site.ipynb", { cache: "no-store" })
-    ]);
+    const detectorResponse = await fetch("source/cuda_deepid_detector.py", { cache: "no-store" });
     if (!detectorResponse.ok) throw new Error("detector source HTTP " + detectorResponse.status);
-    if (!notebookResponse.ok) throw new Error("Colab notebook HTTP " + notebookResponse.status);
     detectorSourceText = await detectorResponse.text();
-    colabNotebookText = await notebookResponse.text();
     detectorSourceLoaded = true;
-    colabNotebookLoaded = true;
-    const blocks = exactStageBlocks(detectorSourceText, notebookCodeCells(colabNotebookText));
-    for (const stage of stageDetails) {
-      const exact = blocks[stage.level];
-      if (!exact) throw new Error("missing exact source block for stage " + stage.level);
-      stage.exactCode = exact;
+    const lineBlocks = detectorStageLineBlocks(detectorSourceText, activeDetectorVariant);
+    if (lineBlocks.length !== stageDetails.length) {
+      throw new Error(`expected ${stageDetails.length} stage blocks, found ${lineBlocks.length}`);
     }
-    const orderedStageCode = stageDetails.map((stage) => stage.exactCode);
-    stageRecognitionLineCount = orderedStageCode.reduce((total, source) => total + codeLineCount(source), 0);
-    combinedRecognitionCode = orderedStageCode.join("\n");
+    lineBlocks.forEach((lines, index) => {
+      stageDetails[index].exactCode = lines.join("\n");
+      stageDetails[index].exactLineCount = lines.length;
+    });
+    const combinedLines = lineBlocks.flat();
+    stageRecognitionLineCount = lineBlocks.reduce((total, lines) => total + lines.length, 0);
+    combinedRecognitionCode = combinedLines.join("\n");
     combinedRecognitionLineCount = codeLineCount(combinedRecognitionCode);
     if (combinedRecognitionLineCount !== stageRecognitionLineCount) {
       throw new Error(
         `combined recognition line count ${combinedRecognitionLineCount} does not equal stage sum ${stageRecognitionLineCount}`
       );
+    }
+    const expectedLines = detectorSourceText.replace(/\r\n/g, "\n").split("\n");
+    if (expectedLines[expectedLines.length - 1] === "") expectedLines.pop();
+    const expected = activeDetectorVariant === "batch"
+      ? expectedLines
+      : expectedLines.slice(0, expectedLines.findIndex((line) => /^    def detect_batch\b/.test(line)));
+    if (combinedLines.join("\n") !== expected.join("\n")) {
+      throw new Error("the combined stage text is not identical to the selected detector source boundary");
     }
     exactStageCodeState = "ready";
     return true;
@@ -2742,7 +3393,8 @@ function updateDetectorSourceUi() {
     const countKey = combinedRecognitionLineCount === stageRecognitionLineCount ? "sourceLoaded" : "sourceCountError";
     fullSourceMeta.textContent = uiText(countKey)
       .replace("{total}", String(combinedRecognitionLineCount))
-      .replace("{sum}", String(stageRecognitionLineCount));
+      .replace("{sum}", String(stageRecognitionLineCount))
+      .replace("{variant}", localized(activeVariantDefinition().label));
   }
 }
 
@@ -2815,6 +3467,15 @@ function buildStageDiagram(labels, notes) {
   });
 }
 
+function detectorDiagramNotes(labels) {
+  const lang = document.documentElement.lang || "en";
+  return labels.map((label, index) => {
+    if (lang === "ru") return `Шаг ${index + 1}: «${label}» — следующий конкретный объект или операция в этом этапе исходного кода.`;
+    if (lang === "he") return `צעד ${index + 1}: „${label}” הוא האובייקט או הפעולה הממשיים הבאים בשלב זה של קוד המקור.`;
+    return `Step ${index + 1}: “${label}” is the next concrete object or operation in this source-code stage.`;
+  });
+}
+
 function renderStageDetail(index, shouldScroll = true) {
   const total = stageDetails.length;
   currentStageIndex = (index + total) % total;
@@ -2833,7 +3494,8 @@ function renderStageDetail(index, shouldScroll = true) {
       if (currentStageIndex === index && stageCodeMode === "full") renderStageDetail(index, false);
     });
   }
-  buildStageDiagram(localized(data.diagram), localized(stageDiagramNotes[currentStageIndex]));
+  const diagramLabels = localized(data.diagram);
+  buildStageDiagram(diagramLabels, detectorDiagramNotes(diagramLabels));
   stageDetail.classList.remove("hidden");
   document.querySelectorAll(".pipeline-step").forEach((step) => {
     step.classList.toggle("active", Number(step.dataset.stage) === currentStageIndex);
@@ -2964,6 +3626,10 @@ document.querySelectorAll(".lang").forEach((button) => {
   button.addEventListener("click", () => setLanguage(button.dataset.lang));
 });
 
+detectorVariantButtons.forEach((button) => {
+  button.addEventListener("click", () => selectDetectorVariant(button.dataset.detectorVariant));
+});
+
 document.querySelectorAll(".pipeline-step").forEach((step) => {
   const open = () => renderStageDetail(Number(step.dataset.stage || 0));
   step.addEventListener("click", open);
@@ -2999,6 +3665,10 @@ recognizeButton.addEventListener("click", recognizeSelectedFiles);
 function applyDeepLink() {
   const params = new URLSearchParams(window.location.search);
   const hash = window.location.hash.replace("#", "");
+  const requestedVariant = params.get("detector_variant") || params.get("variant");
+  if (requestedVariant && detectorVariantCatalog[requestedVariant]) {
+    selectDetectorVariant(requestedVariant);
+  }
   const requestedLang = params.get("lang");
   if (requestedLang && translations[requestedLang]) {
     setLanguage(requestedLang);

@@ -18,6 +18,8 @@ It is not a commercial production service. It is a portfolio and course-style sy
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_face_full_local_suite_installer.zip
 - Optional Colab notebook:  
   https://colab.research.google.com/github/Holodininyaroslav/bee-face-recognition-project/blob/main/colab/colab_public_one_image_site.ipynb
+- Detector-only CUDA source, without Hive or web routes:
+  https://github.com/Holodininyaroslav/bee-face-recognition-project/blob/main/source/cuda_deepid_detector.py
 
 ## What Works Now
 
@@ -53,6 +55,16 @@ instructions.
 ## Face Recognition Pipeline
 
 The face detector is intentionally exposed as an engineering pipeline instead of a hidden black box.
+
+The GitHub Pages source inspector now has two explicit, non-mixed views:
+
+- **Single-image recognition:** module initialization through `detect_image`, 302 physical source lines.
+- **Batch recognition:** the complete detector-only module including the genuinely batched CUDA branch in `detect_batch`, 379 physical source lines.
+
+For either view, the six full stage blocks are exact consecutive slices of
+`source/cuda_deepid_detector.py`. The complete listing shown below the stages
+is assembled from those same blocks and is checked against the selected source
+boundary for both line count and exact text order.
 
 1. **Image capture** - the Hive UI, simple demo, or bee simulation provides an image / screenshot.
 2. **Face detection and crop** - the detector finds the face region and prepares a normalized crop.
