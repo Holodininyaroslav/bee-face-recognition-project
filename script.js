@@ -461,18 +461,16 @@ const translations = {
 };
 
 Object.assign(translations.en, {
-  sourceKicker: "EXACT SOURCES USED FOR RECOGNITION",
-  sourceTitle: "Two exact source files — shown separately",
-  sourceIntro: "The recognition path has two real source files plus binary DeepID weights. Stages 1 and 6 are blocks from the Colab notebook; stages 2–5 are blocks from the detector module. The source viewer always labels which exact file it shows and never presents the two files as one fictitious source.",
-  openNotebookSource: "Show complete exact Colab notebook code",
-  openDetectorSource: "Show complete exact detector module",
-  openRawDetectorSource: "Open complete exact detector module",
-  openRawNotebook: "Open complete exact Colab notebook",
-  sourceClosed: "Choose a file. Stage 1 and stage 6 use the notebook; stages 2–5 use the detector module.",
-  sourceLoading: "Loading the exact source file from the repository...",
-  sourceNotebookLoaded: "Showing executable code cells from the exact Colab notebook. Stage 1 begins with the first line of this same notebook.",
-  sourceDetectorLoaded: "Showing every line of the exact Python detector module. This is the source used by stages 2–5.",
-  sourceError: "Could not load this exact source file from the site.",
+  sourceKicker: "COMPLETE RECOGNITION CODE",
+  sourceTitle: "All six stages in one continuous code listing",
+  sourceIntro: "The listing below is assembled only from the exact full code displayed in stages 1–6, in the same order. Its line count is checked automatically against the sum of the six stage line counts.",
+  openDetectorSource: "Show the complete combined code",
+  hideDetectorSource: "Hide the complete combined code",
+  sourceClosed: "Closed. Open it to verify the total against stages 1–6.",
+  sourceLoading: "Loading the exact code for all six stages...",
+  sourceLoaded: "Verified: {total} lines in the complete code = {sum} lines across stages 1–6.",
+  sourceCountError: "Line-count error: {total} lines in the complete code, but the six stages contain {sum}.",
+  sourceError: "Could not assemble the complete code from stages 1–6.",
   fullStageLoading: "Loading this stage's exact blocks from the source files...",
   fullStageExact: "Exact blocks for this stage, extracted automatically from the source",
   fullStageNotebook: "Exact block from the Colab notebook — the same file can be opened below",
@@ -590,7 +588,6 @@ const stagePrev = document.getElementById("stagePrev");
 const stageNext = document.getElementById("stageNext");
 const stageReturnTop = document.getElementById("stageReturnTop");
 const stageReturnBottom = document.getElementById("stageReturnBottom");
-const loadFullNotebookSource = document.getElementById("loadFullNotebookSource");
 const loadFullDetectorSource = document.getElementById("loadFullDetectorSource");
 const fullDetectorSource = document.getElementById("fullDetectorSource");
 const fullSourceMeta = document.getElementById("fullSourceMeta");
@@ -1261,7 +1258,9 @@ let detectorSourceVisible = false;
 let detectorSourceText = "";
 let colabNotebookLoaded = false;
 let colabNotebookText = "";
-let sourceViewerKind = "notebook";
+let combinedRecognitionCode = "";
+let combinedRecognitionLineCount = 0;
+let stageRecognitionLineCount = 0;
 let exactStageCodeState = "idle";
 
 const cleanRuTranslations = {
@@ -1330,18 +1329,16 @@ const cleanRuTranslations = {
   downloadBeeBoard: "Установщик BeeBoard",
   downloadPhysical: "Установщик физической симуляции",
   back: "Назад",
-  sourceKicker: "ТОЧНЫЕ ИСХОДНИКИ, ИСПОЛЬЗУЕМЫЕ РАСПОЗНАВАНИЕМ",
-  sourceTitle: "Два точных исходных файла — показаны отдельно",
-  sourceIntro: "В пути распознавания есть два реальных исходных файла и бинарные веса DeepID. Этапы 1 и 6 взяты из ноутбука Colab, а этапы 2–5 — из модуля детектора. Просмотр всегда подписывает, какой именно файл показан, и больше не выдаёт два разных файла за один цельный исходник.",
-  openNotebookSource: "Показать полный точный код ноутбука Colab",
-  openDetectorSource: "Показать полный точный модуль детектора",
-  openRawDetectorSource: "Открыть полный точный модуль детектора",
-  openRawNotebook: "Открыть полный точный ноутбук Colab",
-  sourceClosed: "Выберите файл. Этапы 1 и 6 используют ноутбук, этапы 2–5 — модуль детектора.",
-  sourceLoading: "Загружается точный исходный файл из репозитория…",
-  sourceNotebookLoaded: "Показаны исполняемые ячейки точного ноутбука Colab. Первый этап начинается с первой строки этого же ноутбука.",
-  sourceDetectorLoaded: "Показаны все строки точного Python-модуля детектора. Именно этот исходник используют этапы 2–5.",
-  sourceError: "Не удалось загрузить этот точный исходный файл с сайта.",
+  sourceKicker: "ПОЛНЫЙ ОБЩИЙ КОД РАСПОЗНАВАНИЯ",
+  sourceTitle: "Все шесть этапов в одном непрерывном коде",
+  sourceIntro: "Код ниже собирается только из точного полного кода этапов 1–6 в том же порядке. Количество строк автоматически сверяется с суммой строк всех шести этапов.",
+  openDetectorSource: "Показать полный общий код",
+  hideDetectorSource: "Скрыть полный общий код",
+  sourceClosed: "Код закрыт. Откройте его, чтобы увидеть сверку с этапами 1–6.",
+  sourceLoading: "Загружается точный код всех шести этапов…",
+  sourceLoaded: "Проверено: количество строк общего кода — {total}; сумма по этапам 1–6 — {sum}. Значения совпадают.",
+  sourceCountError: "Ошибка проверки: количество строк общего кода — {total}; сумма по этапам 1–6 — {sum}.",
+  sourceError: "Не удалось собрать общий код из этапов 1–6.",
   fullStageLoading: "Загружаются точные блоки этапа из исходных файлов…",
   fullStageExact: "Точные блоки этого этапа, автоматически извлечённые из исходника",
   fullStageNotebook: "Точный блок из ноутбука Colab — этот же файл можно открыть ниже",
@@ -1426,18 +1423,16 @@ const cleanHeTranslations = {
   downloadBeeBoard: "מתקין BeeBoard",
   downloadPhysical: "מתקין סימולציה פיזיקלית",
   back: "חזרה",
-  sourceKicker: "קבצי המקור המדויקים שבהם הזיהוי משתמש",
-  sourceTitle: "שני קובצי מקור מדויקים — מוצגים בנפרד",
-  sourceIntro: "בנתיב הזיהוי יש שני קובצי מקור אמיתיים ומשקלי DeepID בינריים. שלבים 1 ו-6 נלקחים ממחברת Colab, ושלבים 2–5 ממודול הגלאי. התצוגה תמיד מציינת איזה קובץ מוצג ואינה מציגה שני קבצים שונים כקובץ מקור אחד.",
-  openNotebookSource: "הצג את קוד מחברת Colab המדויק המלא",
-  openDetectorSource: "הצג את מודול הגלאי המדויק המלא",
-  openRawDetectorSource: "פתח את מודול הגלאי המדויק המלא",
-  openRawNotebook: "פתח את מחברת Colab המדויקת המלאה",
-  sourceClosed: "בחרו קובץ. שלבים 1 ו-6 משתמשים במחברת; שלבים 2–5 משתמשים במודול הגלאי.",
-  sourceLoading: "טוען את קובץ המקור המדויק מהמאגר...",
-  sourceNotebookLoaded: "מוצגים תאי הקוד הניתנים להרצה מתוך מחברת Colab המדויקת. שלב 1 מתחיל בשורה הראשונה של אותה מחברת.",
-  sourceDetectorLoaded: "מוצגות כל השורות של מודול Python המדויק של הגלאי. זהו המקור שבו משתמשים שלבים 2–5.",
-  sourceError: "לא ניתן לטעון את קובץ המקור המדויק הזה מהאתר.",
+  sourceKicker: "הקוד המלא והמאוחד של הזיהוי",
+  sourceTitle: "כל ששת השלבים ברשימת קוד רציפה אחת",
+  sourceIntro: "הקוד למטה מורכב רק מהקוד המלא והמדויק שמוצג בשלבים 1–6, באותו סדר. מספר השורות נבדק אוטומטית מול סכום השורות של כל ששת השלבים.",
+  openDetectorSource: "הצג את הקוד המלא והמאוחד",
+  hideDetectorSource: "הסתר את הקוד המלא והמאוחד",
+  sourceClosed: "הקוד סגור. פתחו אותו כדי לראות את הבדיקה מול שלבים 1–6.",
+  sourceLoading: "טוען את הקוד המדויק של כל ששת השלבים...",
+  sourceLoaded: "נבדק: {total} שורות בקוד המלא = {sum} שורות בשלבים 1–6.",
+  sourceCountError: "שגיאת ספירת שורות: {total} בקוד המלא, אך {sum} בששת השלבים.",
+  sourceError: "לא ניתן להרכיב את הקוד המלא משלבים 1–6.",
   fullStageLoading: "טוען את בלוקי השלב המדויקים מקובצי המקור…",
   fullStageExact: "בלוקים מדויקים של שלב זה, שחולצו אוטומטית מקוד המקור",
   fullStageNotebook: "בלוק מדויק ממחברת Colab — אפשר לפתוח את אותו קובץ למטה",
@@ -1621,10 +1616,7 @@ function setLanguage(lang) {
   }
   updateDetectorSourceUi();
   if (detectorSourceVisible) {
-    const activeSource = sourceViewerKind === "notebook"
-      ? (colabNotebookLoaded ? notebookCodeCells(colabNotebookText) : "")
-      : detectorSourceText;
-    if (activeSource) renderDetectorSource(activeSource);
+    if (combinedRecognitionCode) renderDetectorSource(combinedRecognitionCode);
   }
 }
 
@@ -2696,6 +2688,10 @@ function exactStageBlocks(detectorModule, notebookCode) {
   };
 }
 
+function codeLineCount(source) {
+  return source ? source.split("\n").length : 0;
+}
+
 async function ensureExactStageCode() {
   if (exactStageCodeState === "ready") return true;
   if (exactStageCodeState === "loading") return false;
@@ -2717,6 +2713,15 @@ async function ensureExactStageCode() {
       if (!exact) throw new Error("missing exact source block for stage " + stage.level);
       stage.exactCode = exact;
     }
+    const orderedStageCode = stageDetails.map((stage) => stage.exactCode);
+    stageRecognitionLineCount = orderedStageCode.reduce((total, source) => total + codeLineCount(source), 0);
+    combinedRecognitionCode = orderedStageCode.join("\n");
+    combinedRecognitionLineCount = codeLineCount(combinedRecognitionCode);
+    if (combinedRecognitionLineCount !== stageRecognitionLineCount) {
+      throw new Error(
+        `combined recognition line count ${combinedRecognitionLineCount} does not equal stage sum ${stageRecognitionLineCount}`
+      );
+    }
     exactStageCodeState = "ready";
     return true;
   } catch (error) {
@@ -2728,14 +2733,16 @@ async function ensureExactStageCode() {
 
 function updateDetectorSourceUi() {
   if (!fullSourceMeta || !fullDetectorSource) return;
-  if (loadFullNotebookSource) loadFullNotebookSource.textContent = uiText("openNotebookSource");
-  if (loadFullDetectorSource) loadFullDetectorSource.textContent = uiText("openDetectorSource");
+  if (loadFullDetectorSource) {
+    loadFullDetectorSource.textContent = uiText(detectorSourceVisible ? "hideDetectorSource" : "openDetectorSource");
+  }
   if (!detectorSourceVisible) {
     fullSourceMeta.textContent = uiText("sourceClosed");
-  } else if (sourceViewerKind === "notebook" && colabNotebookLoaded) {
-    fullSourceMeta.textContent = uiText("sourceNotebookLoaded");
-  } else if (sourceViewerKind === "detector" && detectorSourceLoaded) {
-    fullSourceMeta.textContent = uiText("sourceDetectorLoaded");
+  } else if (exactStageCodeState === "ready") {
+    const countKey = combinedRecognitionLineCount === stageRecognitionLineCount ? "sourceLoaded" : "sourceCountError";
+    fullSourceMeta.textContent = uiText(countKey)
+      .replace("{total}", String(combinedRecognitionLineCount))
+      .replace("{sum}", String(stageRecognitionLineCount));
   }
 }
 
@@ -2769,34 +2776,17 @@ function renderDetectorSource(source) {
   });
 }
 
-function stageSourceKind(stage) {
-  return stage.level === "01" || stage.level === "06" ? "notebook" : "detector";
-}
-
-async function showExactSource(kind) {
+async function toggleCombinedRecognitionSource() {
   if (!fullSourceMeta || !fullDetectorSource) return;
-  sourceViewerKind = kind;
-  detectorSourceVisible = true;
-  fullDetectorSource.classList.remove("hidden");
+  detectorSourceVisible = !detectorSourceVisible;
+  fullDetectorSource.classList.toggle("hidden", !detectorSourceVisible);
+  updateDetectorSourceUi();
+  if (!detectorSourceVisible) return;
   fullSourceMeta.textContent = uiText("sourceLoading");
   try {
-    if (kind === "notebook") {
-      if (!colabNotebookLoaded) {
-        const response = await fetch("colab/colab_public_one_image_site.ipynb", { cache: "no-store" });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        colabNotebookText = await response.text();
-        colabNotebookLoaded = true;
-      }
-      renderDetectorSource(notebookCodeCells(colabNotebookText));
-    } else {
-      if (!detectorSourceLoaded) {
-        const response = await fetch("source/colab_ai_mips_bee_world.py", { cache: "no-store" });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        detectorSourceText = await response.text();
-        detectorSourceLoaded = true;
-      }
-      renderDetectorSource(detectorSourceText);
-    }
+    const ready = await ensureExactStageCode();
+    if (!ready || !combinedRecognitionCode) throw new Error("exact stage code is unavailable");
+    renderDetectorSource(combinedRecognitionCode);
     updateDetectorSourceUi();
   } catch (error) {
     fullSourceMeta.textContent = `${uiText("sourceError")} ${error.message || error}`;
@@ -2838,10 +2828,6 @@ function renderStageDetail(index, shouldScroll = true) {
   stageCudaShort.textContent = localized(data.cudaShort);
   stageCudaText.textContent = localized(data.cuda);
   renderStageCode(data);
-  // When the full-source viewer is open, keep it on the same real file as the selected stage.
-  if (detectorSourceVisible && sourceViewerKind !== stageSourceKind(data)) {
-    showExactSource(stageSourceKind(data));
-  }
   if (stageCodeMode === "full" && exactStageCodeState === "idle") {
     ensureExactStageCode().then(() => {
       if (currentStageIndex === index && stageCodeMode === "full") renderStageDetail(index, false);
@@ -2995,8 +2981,7 @@ stageCodeModeButton?.addEventListener("click", () => {
   stageCodeMode = stageCodeMode === "full" ? "short" : "full";
   if (currentStageIndex >= 0) renderStageDetail(currentStageIndex, false);
 });
-loadFullNotebookSource?.addEventListener("click", () => showExactSource("notebook"));
-loadFullDetectorSource?.addEventListener("click", () => showExactSource("detector"));
+loadFullDetectorSource?.addEventListener("click", toggleCombinedRecognitionSource);
 stageReturnTop.addEventListener("click", () => {
   hideStageDetail();
   document.getElementById("howItWorksTitle").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -3033,11 +3018,11 @@ function applyDeepLink() {
   }
   if (params.get("source") === "detector") {
     showView("simple");
-    showExactSource("detector");
+    toggleCombinedRecognitionSource();
   }
   if (params.get("source") === "notebook") {
     showView("simple");
-    showExactSource("notebook");
+    toggleCombinedRecognitionSource();
   }
 }
 

@@ -220,20 +220,17 @@
         <section class="source-panel" aria-labelledby="fullSourceTitle">
           <div class="source-head">
             <div>
-              <p class="kicker" data-i18n="sourceKicker">EXACT SOURCES USED FOR RECOGNITION</p>
-              <h3 id="fullSourceTitle" data-i18n="sourceTitle">Two exact source files — shown separately</h3>
+              <p class="kicker" data-i18n="sourceKicker">COMPLETE RECOGNITION CODE</p>
+              <h3 id="fullSourceTitle" data-i18n="sourceTitle">All six stages in one continuous code listing</h3>
               <p data-i18n="sourceIntro">
-                Stages 1 and 6 come from the Colab notebook. Stages 2–5 come from the detector module. Choose one file below; the page never combines them into a fictitious single source file.
+                The listing below is assembled from the exact full code displayed in stages 1–6, in the same order. Its line count must equal the sum of the six stage line counts.
               </p>
             </div>
             <div class="source-actions">
-              <button id="loadFullNotebookSource" class="ghost" type="button" data-i18n="openNotebookSource">Show complete exact Colab notebook code</button>
-              <button id="loadFullDetectorSource" class="ghost" type="button" data-i18n="openDetectorSource">Show complete exact detector module</button>
-              <a class="ghost link" href="source/colab_ai_mips_bee_world.py" target="_blank" rel="noreferrer" data-i18n="openRawDetectorSource">Open complete exact detector module</a>
-              <a class="ghost link" href="colab/colab_public_one_image_site.ipynb" target="_blank" rel="noreferrer" data-i18n="openRawNotebook">Open complete exact Colab notebook</a>
+              <button id="loadFullDetectorSource" class="ghost" type="button" data-i18n="openDetectorSource">Show the complete combined code</button>
             </div>
           </div>
-          <p id="fullSourceMeta" class="source-meta" data-i18n="sourceClosed">Closed. The stage cards select exact blocks from these two source files.</p>
+          <p id="fullSourceMeta" class="source-meta" data-i18n="sourceClosed">Closed. Open it to verify the total against stages 1–6.</p>
           <pre id="fullDetectorSource" class="source-code hidden"></pre>
         </section>
       </section>

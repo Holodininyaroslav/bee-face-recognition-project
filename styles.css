@@ -570,7 +570,7 @@ html[dir="rtl"] .code-note {
 
 .source-head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 360px);
   gap: 18px;
   align-items: start;
   padding: 20px;
@@ -592,6 +592,13 @@ html[dir="rtl"] .code-note {
   flex-wrap: wrap;
   gap: 10px;
   justify-content: flex-end;
+  width: 100%;
+  max-width: 360px;
+}
+
+.source-actions .ghost {
+  width: 100%;
+  white-space: normal;
 }
 
 .source-meta {
