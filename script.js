@@ -2183,8 +2183,39 @@ const sourceCommentMeaning = {
   }
 };
 
+function englishSourceLineAnnotation(text) {
+  const importFrom = text.match(/^from\s+([\w.]+)\s+import\s+(.+)$/);
+  const importModule = text.match(/^import\s+(.+)$/);
+  const functionMatch = text.match(/^def\s+([\w]+)\s*\(/);
+  const classMatch = text.match(/^class\s+([\w]+)(?:\(|:)/);
+  const assignment = text.match(/^([A-Z][A-Z0-9_]*|[a-z_][\w.]*)\s*=/);
+  if (text === "from __future__ import annotations") return "Enables postponed Python type annotations so type references remain valid throughout the module.";
+  if (importFrom) return `Imports ${importFrom[2]} from ${importFrom[1]} for this detector module.`;
+  if (importModule) return `Imports the ${importModule[1]} module used by the detector runtime.`;
+  if (/^@dataclass\b/.test(text)) return "Marks the following class as a data container with generated fields and constructor.";
+  if (classMatch) return `Defines the ${classMatch[1]} class that groups related detector state and behavior.`;
+  if (functionMatch) return `Defines ${functionMatch[1]}, a helper function used by the detector or interface.`;
+  if (/^#/.test(text)) return "Documentation comment for the following source fragment; Python does not execute it.";
+  if (/^if\s+/.test(text)) return `Checks the condition \`${text.replace(/^if\s+/, "").replace(/:$/, "")}\` and selects the appropriate execution branch.`;
+  if (/^(else|elif)\b/.test(text)) return "Defines the alternative branch for the preceding condition.";
+  if (/^for\s+/.test(text)) return `Iterates over \`${text.replace(/^for\s+/, "").replace(/:$/, "")}\` to process each item.`;
+  if (/^with\s+/.test(text)) return "Opens a managed context that releases its resource automatically when the block ends.";
+  if (/^try:/.test(text)) return "Starts a protected block so an error can be handled without stopping the detector.";
+  if (/^except\b/.test(text)) return "Handles an error raised inside the protected block.";
+  if (/^finally:/.test(text)) return "Defines cleanup that runs whether the protected block succeeds or fails.";
+  if (/^return\b/.test(text)) {
+    const result = text.replace(/^return\s*/, "") || "None";
+    return result === "[]" ? "Returns an empty list because no matching files were found." : `Returns \`${result}\` to the caller.`;
+  }
+  if (assignment) return `Stores this expression in ${assignment[1]} for a later detector step.`;
+  if (/^pass\b/.test(text)) return "Leaves this branch intentionally empty; no action is required here.";
+  if (/^(break|continue)\b/.test(text)) return "Changes the current loop by ending it or moving to the next iteration.";
+  return "Executes the Python operation shown on the left as part of detector computation or data preparation.";
+}
+
 function sourceLineAnnotation(line, lang) {
   const text = line.trim();
+  if (lang === "en") return englishSourceLineAnnotation(text);
   const hebrew = lang === "he";
   const importFrom = text.match(/^from\s+([\w.]+)\s+import\s+(.+)$/);
   const importModule = text.match(/^import\s+(.+)$/);
