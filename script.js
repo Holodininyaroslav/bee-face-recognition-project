@@ -461,16 +461,20 @@ const translations = {
 };
 
 Object.assign(translations.en, {
-  sourceKicker: "COLAB RUN ORDER + DETECTOR SOURCE",
-  sourceTitle: "From the Stage 1 startup cell to the detector module",
-  sourceIntro: "These are two source units in one run, not two versions of the detector. Stage 1 is a Colab notebook startup cell: it creates the work folder, checks PyTorch/CUDA, and uploads and unpacks the project. Only after that cell does Colab load the separate detector module, which therefore begins with its own imports. The view below repeats the Stage 1 cell first, marks the handoff, and then shows exact detector excerpts. The Raw link opens the complete detector-module file.",
-  openDetectorSource: "Open run order and detector excerpts",
-  hideDetectorSource: "Hide run order and detector excerpts",
+  sourceKicker: "EXACT SOURCES USED FOR RECOGNITION",
+  sourceTitle: "Complete detector module and complete Colab notebook",
+  sourceIntro: "Recognition uses two real source files plus binary DeepID weights. The Colab notebook prepares the payload, starts the UI/API, and calls the detector. A separate Python module contains the detector itself. The view below shows the entire exact detector module; a separate link opens the entire exact Colab notebook. Full code for every stage is selected directly from these two files instead of being maintained by hand.",
+  openDetectorSource: "Show complete exact detector module",
+  hideDetectorSource: "Hide complete exact detector module",
   openRawDetectorSource: "Open complete exact detector module",
-  sourceClosed: "Closed. Open this to see how the Stage 1 notebook cell hands control to the detector module.",
+  openRawNotebook: "Open complete exact Colab notebook",
+  sourceClosed: "Closed. Full stage code is selected from these two exact source files.",
   sourceLoading: "Loading the detector module from the repository...",
-  sourceLoaded: "Shown in execution order: 1) the same Stage 1 Colab cell, 2) the handoff to the module, 3) exact detector-source excerpts. The imports come after setup because they belong to the separate module file.",
-  sourceError: "Could not load the detector source file from this site."
+  sourceLoaded: "Showing every line of the exact Python detector module. Complete startup logic and API code are in the separate exact Colab notebook linked beside it.",
+  sourceError: "Could not load the detector source file from this site.",
+  fullStageLoading: "Loading this stage's exact blocks from the source files...",
+  fullStageExact: "Exact blocks for this stage, extracted automatically from the source",
+  fullStageError: "Could not load exact stage blocks; only the short sketch is shown."
 });
 
 Object.assign(translations.ru, {
@@ -1251,6 +1255,9 @@ let stageCodeMode = "short";
 let detectorSourceLoaded = false;
 let detectorSourceVisible = false;
 let detectorSourceText = "";
+let colabNotebookLoaded = false;
+let colabNotebookText = "";
+let exactStageCodeState = "idle";
 
 const cleanRuTranslations = {
   kicker: "COLAB GPU / РАСПОЗНАВАНИЕ ЛИЦ / ИНТЕРФЕЙС ПРОЕКТА",
@@ -1318,16 +1325,20 @@ const cleanRuTranslations = {
   downloadBeeBoard: "Установщик BeeBoard",
   downloadPhysical: "Установщик физической симуляции",
   back: "Назад",
-  sourceKicker: "ПОРЯДОК ЗАПУСКА COLAB + ИСХОДНИК ДЕТЕКТОРА",
-  sourceTitle: "От стартовой ячейки этапа 1 к модулю детектора",
-  sourceIntro: "Это не две версии детектора, а два исходных блока одного запуска. Этап 1 — стартовая ячейка ноутбука Colab: она создаёт рабочую папку, проверяет PyTorch/CUDA, загружает и распаковывает проект. Только после неё Colab загружает отдельный файл модуля детектора, поэтому этот файл закономерно начинается со своих импортов. Ниже сначала повторяется код этапа 1, затем явно показан переход к модулю и его точные фрагменты. Ссылка Raw открывает весь точный файл модуля.",
-  openDetectorSource: "Открыть порядок запуска и фрагменты детектора",
-  hideDetectorSource: "Скрыть порядок запуска и фрагменты детектора",
+  sourceKicker: "ТОЧНЫЕ ИСХОДНИКИ, ИСПОЛЬЗУЕМЫЕ РАСПОЗНАВАНИЕМ",
+  sourceTitle: "Полный модуль детектора и полный ноутбук Colab",
+  sourceIntro: "Распознавание использует два реальных исходных файла и бинарные веса DeepID. Ноутбук Colab подготавливает архив, запускает интерфейс/API и вызывает детектор. Отдельный Python-модуль содержит сам детектор. Ниже показывается весь точный модуль детектора; отдельная ссылка открывает весь точный ноутбук Colab. Полный код каждого этапа выбирается непосредственно из этих двух файлов, а не поддерживается вручную.",
+  openDetectorSource: "Показать полный точный модуль детектора",
+  hideDetectorSource: "Скрыть полный точный модуль детектора",
   openRawDetectorSource: "Открыть полный точный модуль детектора",
-  sourceClosed: "Закрыто. Откройте этот блок, чтобы увидеть, как ячейка этапа 1 передаёт управление модулю детектора.",
+  openRawNotebook: "Открыть полный точный ноутбук Colab",
+  sourceClosed: "Закрыто. Полный код этапов выбирается из этих двух точных исходных файлов.",
   sourceLoading: "Загружаю модуль детектора из репозитория…",
-  sourceLoaded: "Показано в порядке выполнения: 1) та же стартовая ячейка Colab из этапа 1, 2) переход к модулю, 3) точные фрагменты исходника детектора. Импорты идут после подготовки, потому что принадлежат отдельному файлу модуля.",
+  sourceLoaded: "Показаны все строки точного Python-модуля детектора. Полная стартовая логика и API находятся в отдельном точном ноутбуке Colab по соседней ссылке.",
   sourceError: "Не удалось загрузить исходный файл детектора с этого сайта.",
+  fullStageLoading: "Загружаются точные блоки этапа из исходных файлов…",
+  fullStageExact: "Точные блоки этого этапа, автоматически извлечённые из исходника",
+  fullStageError: "Не удалось загрузить точные блоки этапа; показана только краткая схема.",
   stageLabel: "ЭТАП",
   unknown: "Неизвестно",
   processedImages: "изображений обработано",
@@ -1407,16 +1418,20 @@ const cleanHeTranslations = {
   downloadBeeBoard: "מתקין BeeBoard",
   downloadPhysical: "מתקין סימולציה פיזיקלית",
   back: "חזרה",
-  sourceKicker: "סדר ההרצה ב-COLAB + קוד מקור הגלאי",
-  sourceTitle: "מתא ההפעלה של שלב 1 אל מודול הגלאי",
-  sourceIntro: "אלה אינם שני מימושים של הגלאי אלא שני קובצי מקור של אותה הרצה. שלב 1 הוא תא הפעלה במחברת Colab: הוא יוצר תיקיית עבודה, בודק את PyTorch/CUDA, מעלה ופורס את הפרויקט. רק לאחר התא הזה Colab טוען את קובץ מודול הגלאי הנפרד, ולכן הקובץ מתחיל ב-imports משלו. בתצוגה למטה מופיע תחילה אותו קוד של שלב 1, אחריו מעבר מסומן למודול וקטעים מדויקים ממנו. קישור Raw פותח את קובץ המודול המדויק במלואו.",
-  openDetectorSource: "פתח סדר הרצה וקטעי גלאי",
-  hideDetectorSource: "הסתר סדר הרצה וקטעי גלאי",
+  sourceKicker: "קבצי המקור המדויקים שבהם הזיהוי משתמש",
+  sourceTitle: "מודול הגלאי המלא ומחברת Colab המלאה",
+  sourceIntro: "הזיהוי משתמש בשני קובצי מקור אמיתיים ובמשקלי DeepID בינריים. מחברת Colab מכינה את הארכיון, מפעילה את הממשק וה-API וקוראת לגלאי. מודול Python נפרד מכיל את הגלאי עצמו. למטה מוצג כל מודול הגלאי המדויק; קישור נפרד פותח את מחברת Colab המדויקת במלואה. קוד מלא של כל שלב נבחר ישירות משני הקבצים האלה ואינו מתוחזק ידנית.",
+  openDetectorSource: "הצג את מודול הגלאי המדויק המלא",
+  hideDetectorSource: "הסתר את מודול הגלאי המדויק המלא",
   openRawDetectorSource: "פתח את מודול הגלאי המדויק המלא",
-  sourceClosed: "סגור. פתחו בלוק זה כדי לראות כיצד תא שלב 1 מעביר את השליטה למודול הגלאי.",
+  openRawNotebook: "פתח את מחברת Colab המדויקת המלאה",
+  sourceClosed: "סגור. הקוד המלא של השלבים נבחר משני קובצי המקור המדויקים האלה.",
   sourceLoading: "טוען את מודול הגלאי מהמאגר...",
-  sourceLoaded: "מוצג לפי סדר הביצוע: 1) אותו תא הפעלה של Colab משלב 1, 2) המעבר למודול, 3) קטעי מקור מדויקים של הגלאי. ה-imports מופיעים אחרי ההכנה מפני שהם שייכים לקובץ מודול נפרד.",
-  sourceError: "לא ניתן לטעון את קובץ המקור של הגלאי מהאתר הזה."
+  sourceLoaded: "מוצגות כל השורות של מודול Python המדויק של הגלאי. לוגיקת ההפעלה וה-API המלאים נמצאים במחברת Colab המדויקת בקישור הסמוך.",
+  sourceError: "לא ניתן לטעון את קובץ המקור של הגלאי מהאתר הזה.",
+  fullStageLoading: "טוען את בלוקי השלב המדויקים מקובצי המקור…",
+  fullStageExact: "בלוקים מדויקים של שלב זה, שחולצו אוטומטית מקוד המקור",
+  fullStageError: "לא ניתן לטעון את בלוקי השלב המדויקים; מוצגת רק הסקיצה הקצרה."
 };
 
 const cleanDetailUi = {
@@ -2603,15 +2618,20 @@ function uiText(key) {
 function renderStageCode(stage) {
   stageCode.innerHTML = "";
   const lang = document.documentElement.lang || "en";
-  const fullMode = stageCodeMode === "full" && stage.fullCode;
-  const source = fullMode ? stage.fullCode : stage.code;
+  const requestedFullMode = stageCodeMode === "full";
+  const fullMode = requestedFullMode && Boolean(stage.exactCode);
+  const source = fullMode ? stage.exactCode : stage.code;
   stageCode.setAttribute("dir", lang === "he" ? "rtl" : "ltr");
   stageCode.classList.toggle("full-code", Boolean(fullMode));
   if (stageCodeModeButton) {
-    stageCodeModeButton.textContent = uiText(fullMode ? "showShortCode" : "openFullCode");
+    stageCodeModeButton.textContent = uiText(requestedFullMode ? "showShortCode" : "openFullCode");
   }
   if (stageCodeSource) {
-    stageCodeSource.textContent = uiText(fullMode ? "codeSourceFull" : "codeSourceShort");
+    stageCodeSource.textContent = fullMode
+      ? uiText("fullStageExact")
+      : requestedFullMode
+        ? uiText(exactStageCodeState === "error" ? "fullStageError" : "fullStageLoading")
+        : uiText("codeSourceShort");
   }
   source.split("\n").forEach((line, index) => {
     const row = document.createElement("div");
@@ -2624,6 +2644,69 @@ function renderStageCode(stage) {
     row.append(code, note);
     stageCode.appendChild(row);
   });
+}
+
+function notebookCodeCells(rawNotebook) {
+  const notebook = JSON.parse(rawNotebook);
+  return (notebook.cells || [])
+    .filter((cell) => cell.cell_type === "code")
+    .map((cell) => Array.isArray(cell.source) ? cell.source.join("") : String(cell.source || ""))
+    .join("\n\n");
+}
+
+function exactCodeBlock(source, startPattern, endPattern) {
+  const lines = source.split(/\r?\n/);
+  const start = lines.findIndex((line) => startPattern.test(line));
+  if (start < 0) return "";
+  const endOffset = lines.slice(start + 1).findIndex((line) => endPattern.test(line));
+  const end = endOffset < 0 ? lines.length : start + 1 + endOffset;
+  return lines.slice(start, end).join("\n").trim();
+}
+
+function exactStageBlocks(detectorModule, notebookCode) {
+  const detector = (start, end) => exactCodeBlock(detectorModule, start, end);
+  const notebook = (start, end) => exactCodeBlock(notebookCode, start, end);
+  return {
+    "01": [notebook(/^def _payload_candidates\b/, /^def _image_paths\b/)].join("\n\n"),
+    "02": [detector(/^    def _preprocess_pil\b/, /^    def load_references\b/)].join("\n\n"),
+    "03": [detector(/^    def _ensure_torch\b/, /^    def _preprocess_pil\b/)].join("\n\n"),
+    "04": [detector(/^    def load_references\b/, /^    def _decide\b/)].join("\n\n"),
+    "05": [detector(/^    def _decide\b/, /^    def detect_image\b/)].join("\n\n"),
+    "06": [
+      notebook(/^def detect_uploaded\b/, /^def _lang_code\b/),
+      notebook(/^\s*@app\.post\("\/hive-api\/detect"\)/, /^\s*@app\.get\("\/hive-api\/record-detection"\)/)
+    ].filter(Boolean).join("\n\n")
+  };
+}
+
+async function ensureExactStageCode() {
+  if (exactStageCodeState === "ready") return true;
+  if (exactStageCodeState === "loading") return false;
+  exactStageCodeState = "loading";
+  try {
+    const [detectorResponse, notebookResponse] = await Promise.all([
+      fetch("source/colab_ai_mips_bee_world.py", { cache: "no-store" }),
+      fetch("colab/colab_public_one_image_site.ipynb", { cache: "no-store" })
+    ]);
+    if (!detectorResponse.ok) throw new Error("detector source HTTP " + detectorResponse.status);
+    if (!notebookResponse.ok) throw new Error("Colab notebook HTTP " + notebookResponse.status);
+    detectorSourceText = await detectorResponse.text();
+    colabNotebookText = await notebookResponse.text();
+    detectorSourceLoaded = true;
+    colabNotebookLoaded = true;
+    const blocks = exactStageBlocks(detectorSourceText, notebookCodeCells(colabNotebookText));
+    for (const stage of stageDetails) {
+      const exact = blocks[stage.level];
+      if (!exact) throw new Error("missing exact source block for stage " + stage.level);
+      stage.exactCode = exact;
+    }
+    exactStageCodeState = "ready";
+    return true;
+  } catch (error) {
+    console.error("Could not load exact stage code", error);
+    exactStageCodeState = "error";
+    return false;
+  }
 }
 
 function updateDetectorSourceUi() {
@@ -2645,30 +2728,7 @@ function findBlockEnd(lines, startIndex, matcher) {
 }
 
 function extractDetectorSource(source) {
-  const lines = source.split(/\r?\n/);
-  const importLines = lines
-    .slice(0, 90)
-    .filter((line) => /^(import|from)\s+/.test(line.trim()));
-  const helperStart = lines.findIndex((line) => /^def _image_paths\b/.test(line));
-  const helperEnd = findBlockEnd(lines, helperStart, (line) => /^def\s+/.test(line));
-  const classStart = lines.findIndex((line) => /^class DeepIDIdentityDetector\b/.test(line));
-  const classEnd = findBlockEnd(lines, classStart, (line) => /^def create_colab_ui\b/.test(line) || /^class\s+/.test(line));
-  const helperBlock = helperStart >= 0 ? lines.slice(helperStart, helperEnd) : [];
-  const classBlock = classStart >= 0 ? lines.slice(classStart, classEnd) : lines;
-  return [
-    "# === 1. COLAB NOTEBOOK STARTUP CELL: THIS IS THE SAME CODE AS STAGE 01 ===",
-    ...fullColabStageCode["01"].split("\n"),
-    "",
-    "# === 2. HANDOFF: THE SEPARATE DETECTOR MODULE IS LOADED AFTER THE CELL ABOVE ===",
-    "# === 3. EXACT SELECTED EXCERPTS FROM source/colab_ai_mips_bee_world.py ===",
-    "# The Raw link beside this panel opens the complete detector-module file.",
-    "",
-    ...importLines,
-    "",
-    ...helperBlock,
-    "",
-    ...classBlock
-  ].join("\n");
+  return source.replace(/\r\n/g, "\n");
 }
 
 function renderDetectorSource(source) {
@@ -2695,6 +2755,11 @@ async function toggleDetectorSource() {
   fullDetectorSource.classList.toggle("hidden", !detectorSourceVisible);
   updateDetectorSourceUi();
   if (!detectorSourceVisible) return;
+  if (detectorSourceLoaded) {
+    renderDetectorSource(detectorSourceText);
+    fullSourceMeta.textContent = uiText("sourceLoaded");
+    return;
+  }
   if (!detectorSourceLoaded) {
     fullSourceMeta.textContent = uiText("sourceLoading");
     try {
@@ -2745,6 +2810,11 @@ function renderStageDetail(index, shouldScroll = true) {
   stageCudaShort.textContent = localized(data.cudaShort);
   stageCudaText.textContent = localized(data.cuda);
   renderStageCode(data);
+  if (stageCodeMode === "full" && exactStageCodeState === "idle") {
+    ensureExactStageCode().then(() => {
+      if (currentStageIndex === index && stageCodeMode === "full") renderStageDetail(index, false);
+    });
+  }
   buildStageDiagram(localized(data.diagram), localized(stageDiagramNotes[currentStageIndex]));
   stageDetail.classList.remove("hidden");
   document.querySelectorAll(".pipeline-step").forEach((step) => {
