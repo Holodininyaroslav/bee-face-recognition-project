@@ -221,12 +221,13 @@
           <div class="source-head">
             <div>
               <p class="kicker" data-i18n="sourceKicker">EXACT SOURCES USED FOR RECOGNITION</p>
-              <h3 id="fullSourceTitle" data-i18n="sourceTitle">Complete detector module and complete Colab notebook</h3>
+              <h3 id="fullSourceTitle" data-i18n="sourceTitle">Two exact source files — shown separately</h3>
               <p data-i18n="sourceIntro">
-                Recognition uses a Colab notebook and a separate detector module. The view below shows the complete exact detector module; the notebook link opens the complete exact notebook that prepares and calls it.
+                Stages 1 and 6 come from the Colab notebook. Stages 2–5 come from the detector module. Choose one file below; the page never combines them into a fictitious single source file.
               </p>
             </div>
             <div class="source-actions">
+              <button id="loadFullNotebookSource" class="ghost" type="button" data-i18n="openNotebookSource">Show complete exact Colab notebook code</button>
               <button id="loadFullDetectorSource" class="ghost" type="button" data-i18n="openDetectorSource">Show complete exact detector module</button>
               <a class="ghost link" href="source/colab_ai_mips_bee_world.py" target="_blank" rel="noreferrer" data-i18n="openRawDetectorSource">Open complete exact detector module</a>
               <a class="ghost link" href="colab/colab_public_one_image_site.ipynb" target="_blank" rel="noreferrer" data-i18n="openRawNotebook">Open complete exact Colab notebook</a>

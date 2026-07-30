@@ -462,18 +462,21 @@ const translations = {
 
 Object.assign(translations.en, {
   sourceKicker: "EXACT SOURCES USED FOR RECOGNITION",
-  sourceTitle: "Complete detector module and complete Colab notebook",
-  sourceIntro: "Recognition uses two real source files plus binary DeepID weights. The Colab notebook prepares the payload, starts the UI/API, and calls the detector. A separate Python module contains the detector itself. The view below shows the entire exact detector module; a separate link opens the entire exact Colab notebook. Full code for every stage is selected directly from these two files instead of being maintained by hand.",
+  sourceTitle: "Two exact source files — shown separately",
+  sourceIntro: "The recognition path has two real source files plus binary DeepID weights. Stages 1 and 6 are blocks from the Colab notebook; stages 2–5 are blocks from the detector module. The source viewer always labels which exact file it shows and never presents the two files as one fictitious source.",
+  openNotebookSource: "Show complete exact Colab notebook code",
   openDetectorSource: "Show complete exact detector module",
-  hideDetectorSource: "Hide complete exact detector module",
   openRawDetectorSource: "Open complete exact detector module",
   openRawNotebook: "Open complete exact Colab notebook",
-  sourceClosed: "Closed. Full stage code is selected from these two exact source files.",
-  sourceLoading: "Loading the detector module from the repository...",
-  sourceLoaded: "Showing every line of the exact Python detector module. Complete startup logic and API code are in the separate exact Colab notebook linked beside it.",
-  sourceError: "Could not load the detector source file from this site.",
+  sourceClosed: "Choose a file. Stage 1 and stage 6 use the notebook; stages 2–5 use the detector module.",
+  sourceLoading: "Loading the exact source file from the repository...",
+  sourceNotebookLoaded: "Showing executable code cells from the exact Colab notebook. Stage 1 begins with the first line of this same notebook.",
+  sourceDetectorLoaded: "Showing every line of the exact Python detector module. This is the source used by stages 2–5.",
+  sourceError: "Could not load this exact source file from the site.",
   fullStageLoading: "Loading this stage's exact blocks from the source files...",
   fullStageExact: "Exact blocks for this stage, extracted automatically from the source",
+  fullStageNotebook: "Exact block from the Colab notebook — the same file can be opened below",
+  fullStageDetector: "Exact block from the detector module — the same file can be opened below",
   fullStageError: "Could not load exact stage blocks; only the short sketch is shown."
 });
 
@@ -587,6 +590,7 @@ const stagePrev = document.getElementById("stagePrev");
 const stageNext = document.getElementById("stageNext");
 const stageReturnTop = document.getElementById("stageReturnTop");
 const stageReturnBottom = document.getElementById("stageReturnBottom");
+const loadFullNotebookSource = document.getElementById("loadFullNotebookSource");
 const loadFullDetectorSource = document.getElementById("loadFullDetectorSource");
 const fullDetectorSource = document.getElementById("fullDetectorSource");
 const fullSourceMeta = document.getElementById("fullSourceMeta");
@@ -1257,6 +1261,7 @@ let detectorSourceVisible = false;
 let detectorSourceText = "";
 let colabNotebookLoaded = false;
 let colabNotebookText = "";
+let sourceViewerKind = "notebook";
 let exactStageCodeState = "idle";
 
 const cleanRuTranslations = {
@@ -1326,18 +1331,21 @@ const cleanRuTranslations = {
   downloadPhysical: "Установщик физической симуляции",
   back: "Назад",
   sourceKicker: "ТОЧНЫЕ ИСХОДНИКИ, ИСПОЛЬЗУЕМЫЕ РАСПОЗНАВАНИЕМ",
-  sourceTitle: "Полный модуль детектора и полный ноутбук Colab",
-  sourceIntro: "Распознавание использует два реальных исходных файла и бинарные веса DeepID. Ноутбук Colab подготавливает архив, запускает интерфейс/API и вызывает детектор. Отдельный Python-модуль содержит сам детектор. Ниже показывается весь точный модуль детектора; отдельная ссылка открывает весь точный ноутбук Colab. Полный код каждого этапа выбирается непосредственно из этих двух файлов, а не поддерживается вручную.",
+  sourceTitle: "Два точных исходных файла — показаны отдельно",
+  sourceIntro: "В пути распознавания есть два реальных исходных файла и бинарные веса DeepID. Этапы 1 и 6 взяты из ноутбука Colab, а этапы 2–5 — из модуля детектора. Просмотр всегда подписывает, какой именно файл показан, и больше не выдаёт два разных файла за один цельный исходник.",
+  openNotebookSource: "Показать полный точный код ноутбука Colab",
   openDetectorSource: "Показать полный точный модуль детектора",
-  hideDetectorSource: "Скрыть полный точный модуль детектора",
   openRawDetectorSource: "Открыть полный точный модуль детектора",
   openRawNotebook: "Открыть полный точный ноутбук Colab",
-  sourceClosed: "Закрыто. Полный код этапов выбирается из этих двух точных исходных файлов.",
-  sourceLoading: "Загружаю модуль детектора из репозитория…",
-  sourceLoaded: "Показаны все строки точного Python-модуля детектора. Полная стартовая логика и API находятся в отдельном точном ноутбуке Colab по соседней ссылке.",
-  sourceError: "Не удалось загрузить исходный файл детектора с этого сайта.",
+  sourceClosed: "Выберите файл. Этапы 1 и 6 используют ноутбук, этапы 2–5 — модуль детектора.",
+  sourceLoading: "Загружается точный исходный файл из репозитория…",
+  sourceNotebookLoaded: "Показаны исполняемые ячейки точного ноутбука Colab. Первый этап начинается с первой строки этого же ноутбука.",
+  sourceDetectorLoaded: "Показаны все строки точного Python-модуля детектора. Именно этот исходник используют этапы 2–5.",
+  sourceError: "Не удалось загрузить этот точный исходный файл с сайта.",
   fullStageLoading: "Загружаются точные блоки этапа из исходных файлов…",
   fullStageExact: "Точные блоки этого этапа, автоматически извлечённые из исходника",
+  fullStageNotebook: "Точный блок из ноутбука Colab — этот же файл можно открыть ниже",
+  fullStageDetector: "Точный блок из модуля детектора — этот же файл можно открыть ниже",
   fullStageError: "Не удалось загрузить точные блоки этапа; показана только краткая схема.",
   stageLabel: "ЭТАП",
   unknown: "Неизвестно",
@@ -1419,18 +1427,21 @@ const cleanHeTranslations = {
   downloadPhysical: "מתקין סימולציה פיזיקלית",
   back: "חזרה",
   sourceKicker: "קבצי המקור המדויקים שבהם הזיהוי משתמש",
-  sourceTitle: "מודול הגלאי המלא ומחברת Colab המלאה",
-  sourceIntro: "הזיהוי משתמש בשני קובצי מקור אמיתיים ובמשקלי DeepID בינריים. מחברת Colab מכינה את הארכיון, מפעילה את הממשק וה-API וקוראת לגלאי. מודול Python נפרד מכיל את הגלאי עצמו. למטה מוצג כל מודול הגלאי המדויק; קישור נפרד פותח את מחברת Colab המדויקת במלואה. קוד מלא של כל שלב נבחר ישירות משני הקבצים האלה ואינו מתוחזק ידנית.",
+  sourceTitle: "שני קובצי מקור מדויקים — מוצגים בנפרד",
+  sourceIntro: "בנתיב הזיהוי יש שני קובצי מקור אמיתיים ומשקלי DeepID בינריים. שלבים 1 ו-6 נלקחים ממחברת Colab, ושלבים 2–5 ממודול הגלאי. התצוגה תמיד מציינת איזה קובץ מוצג ואינה מציגה שני קבצים שונים כקובץ מקור אחד.",
+  openNotebookSource: "הצג את קוד מחברת Colab המדויק המלא",
   openDetectorSource: "הצג את מודול הגלאי המדויק המלא",
-  hideDetectorSource: "הסתר את מודול הגלאי המדויק המלא",
   openRawDetectorSource: "פתח את מודול הגלאי המדויק המלא",
   openRawNotebook: "פתח את מחברת Colab המדויקת המלאה",
-  sourceClosed: "סגור. הקוד המלא של השלבים נבחר משני קובצי המקור המדויקים האלה.",
-  sourceLoading: "טוען את מודול הגלאי מהמאגר...",
-  sourceLoaded: "מוצגות כל השורות של מודול Python המדויק של הגלאי. לוגיקת ההפעלה וה-API המלאים נמצאים במחברת Colab המדויקת בקישור הסמוך.",
-  sourceError: "לא ניתן לטעון את קובץ המקור של הגלאי מהאתר הזה.",
+  sourceClosed: "בחרו קובץ. שלבים 1 ו-6 משתמשים במחברת; שלבים 2–5 משתמשים במודול הגלאי.",
+  sourceLoading: "טוען את קובץ המקור המדויק מהמאגר...",
+  sourceNotebookLoaded: "מוצגים תאי הקוד הניתנים להרצה מתוך מחברת Colab המדויקת. שלב 1 מתחיל בשורה הראשונה של אותה מחברת.",
+  sourceDetectorLoaded: "מוצגות כל השורות של מודול Python המדויק של הגלאי. זהו המקור שבו משתמשים שלבים 2–5.",
+  sourceError: "לא ניתן לטעון את קובץ המקור המדויק הזה מהאתר.",
   fullStageLoading: "טוען את בלוקי השלב המדויקים מקובצי המקור…",
   fullStageExact: "בלוקים מדויקים של שלב זה, שחולצו אוטומטית מקוד המקור",
+  fullStageNotebook: "בלוק מדויק ממחברת Colab — אפשר לפתוח את אותו קובץ למטה",
+  fullStageDetector: "בלוק מדויק ממודול הגלאי — אפשר לפתוח את אותו קובץ למטה",
   fullStageError: "לא ניתן לטעון את בלוקי השלב המדויקים; מוצגת רק הסקיצה הקצרה."
 };
 
@@ -1609,8 +1620,11 @@ function setLanguage(lang) {
     renderStageDetail(currentStageIndex, false);
   }
   updateDetectorSourceUi();
-  if (detectorSourceLoaded && detectorSourceVisible) {
-    renderDetectorSource(detectorSourceText);
+  if (detectorSourceVisible) {
+    const activeSource = sourceViewerKind === "notebook"
+      ? (colabNotebookLoaded ? notebookCodeCells(colabNotebookText) : "")
+      : detectorSourceText;
+    if (activeSource) renderDetectorSource(activeSource);
   }
 }
 
@@ -2628,7 +2642,7 @@ function renderStageCode(stage) {
   }
   if (stageCodeSource) {
     stageCodeSource.textContent = fullMode
-      ? uiText("fullStageExact")
+      ? uiText(stage.level === "01" || stage.level === "06" ? "fullStageNotebook" : "fullStageDetector")
       : requestedFullMode
         ? uiText(exactStageCodeState === "error" ? "fullStageError" : "fullStageLoading")
         : uiText("codeSourceShort");
@@ -2667,7 +2681,10 @@ function exactStageBlocks(detectorModule, notebookCode) {
   const detector = (start, end) => exactCodeBlock(detectorModule, start, end);
   const notebook = (start, end) => exactCodeBlock(notebookCode, start, end);
   return {
-    "01": [notebook(/^def _payload_candidates\b/, /^def _image_paths\b/)].join("\n\n"),
+    // Stage 1 intentionally starts at line 1 of the same notebook shown in the source viewer.
+    // It ends immediately before the next UI helper so that it contains setup, payload loading,
+    // detector selection and startup — not a hand-written excerpt from the middle of the file.
+    "01": [exactCodeBlock(notebookCode, /^from __future__ import annotations\b/, /^def _image_paths\b/)].join("\n\n"),
     "02": [detector(/^    def _preprocess_pil\b/, /^    def load_references\b/)].join("\n\n"),
     "03": [detector(/^    def _ensure_torch\b/, /^    def _preprocess_pil\b/)].join("\n\n"),
     "04": [detector(/^    def load_references\b/, /^    def _decide\b/)].join("\n\n"),
@@ -2710,12 +2727,15 @@ async function ensureExactStageCode() {
 }
 
 function updateDetectorSourceUi() {
-  if (!loadFullDetectorSource || !fullSourceMeta || !fullDetectorSource) return;
-  loadFullDetectorSource.textContent = uiText(detectorSourceVisible ? "hideDetectorSource" : "openDetectorSource");
+  if (!fullSourceMeta || !fullDetectorSource) return;
+  if (loadFullNotebookSource) loadFullNotebookSource.textContent = uiText("openNotebookSource");
+  if (loadFullDetectorSource) loadFullDetectorSource.textContent = uiText("openDetectorSource");
   if (!detectorSourceVisible) {
     fullSourceMeta.textContent = uiText("sourceClosed");
-  } else if (detectorSourceLoaded) {
-    fullSourceMeta.textContent = uiText("sourceLoaded");
+  } else if (sourceViewerKind === "notebook" && colabNotebookLoaded) {
+    fullSourceMeta.textContent = uiText("sourceNotebookLoaded");
+  } else if (sourceViewerKind === "detector" && detectorSourceLoaded) {
+    fullSourceMeta.textContent = uiText("sourceDetectorLoaded");
   }
 }
 
@@ -2749,31 +2769,39 @@ function renderDetectorSource(source) {
   });
 }
 
-async function toggleDetectorSource() {
-  if (!loadFullDetectorSource || !fullSourceMeta || !fullDetectorSource) return;
-  detectorSourceVisible = !detectorSourceVisible;
-  fullDetectorSource.classList.toggle("hidden", !detectorSourceVisible);
-  updateDetectorSourceUi();
-  if (!detectorSourceVisible) return;
-  if (detectorSourceLoaded) {
-    renderDetectorSource(detectorSourceText);
-    fullSourceMeta.textContent = uiText("sourceLoaded");
-    return;
-  }
-  if (!detectorSourceLoaded) {
-    fullSourceMeta.textContent = uiText("sourceLoading");
-    try {
-      const response = await fetch("source/colab_ai_mips_bee_world.py", { cache: "no-store" });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      detectorSourceText = await response.text();
-      detectorSourceLoaded = true;
+function stageSourceKind(stage) {
+  return stage.level === "01" || stage.level === "06" ? "notebook" : "detector";
+}
+
+async function showExactSource(kind) {
+  if (!fullSourceMeta || !fullDetectorSource) return;
+  sourceViewerKind = kind;
+  detectorSourceVisible = true;
+  fullDetectorSource.classList.remove("hidden");
+  fullSourceMeta.textContent = uiText("sourceLoading");
+  try {
+    if (kind === "notebook") {
+      if (!colabNotebookLoaded) {
+        const response = await fetch("colab/colab_public_one_image_site.ipynb", { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        colabNotebookText = await response.text();
+        colabNotebookLoaded = true;
+      }
+      renderDetectorSource(notebookCodeCells(colabNotebookText));
+    } else {
+      if (!detectorSourceLoaded) {
+        const response = await fetch("source/colab_ai_mips_bee_world.py", { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        detectorSourceText = await response.text();
+        detectorSourceLoaded = true;
+      }
       renderDetectorSource(detectorSourceText);
-      fullSourceMeta.textContent = uiText("sourceLoaded");
-    } catch (error) {
-      fullSourceMeta.textContent = `${uiText("sourceError")} ${error.message || error}`;
-      detectorSourceVisible = false;
-      fullDetectorSource.classList.add("hidden");
     }
+    updateDetectorSourceUi();
+  } catch (error) {
+    fullSourceMeta.textContent = `${uiText("sourceError")} ${error.message || error}`;
+    detectorSourceVisible = false;
+    fullDetectorSource.classList.add("hidden");
   }
 }
 
@@ -2810,6 +2838,10 @@ function renderStageDetail(index, shouldScroll = true) {
   stageCudaShort.textContent = localized(data.cudaShort);
   stageCudaText.textContent = localized(data.cuda);
   renderStageCode(data);
+  // When the full-source viewer is open, keep it on the same real file as the selected stage.
+  if (detectorSourceVisible && sourceViewerKind !== stageSourceKind(data)) {
+    showExactSource(stageSourceKind(data));
+  }
   if (stageCodeMode === "full" && exactStageCodeState === "idle") {
     ensureExactStageCode().then(() => {
       if (currentStageIndex === index && stageCodeMode === "full") renderStageDetail(index, false);
@@ -2963,7 +2995,8 @@ stageCodeModeButton?.addEventListener("click", () => {
   stageCodeMode = stageCodeMode === "full" ? "short" : "full";
   if (currentStageIndex >= 0) renderStageDetail(currentStageIndex, false);
 });
-loadFullDetectorSource?.addEventListener("click", toggleDetectorSource);
+loadFullNotebookSource?.addEventListener("click", () => showExactSource("notebook"));
+loadFullDetectorSource?.addEventListener("click", () => showExactSource("detector"));
 stageReturnTop.addEventListener("click", () => {
   hideStageDetail();
   document.getElementById("howItWorksTitle").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -3000,7 +3033,11 @@ function applyDeepLink() {
   }
   if (params.get("source") === "detector") {
     showView("simple");
-    if (!detectorSourceVisible) toggleDetectorSource();
+    showExactSource("detector");
+  }
+  if (params.get("source") === "notebook") {
+    showView("simple");
+    showExactSource("notebook");
   }
 }
 
