@@ -461,15 +461,15 @@ const translations = {
 };
 
 Object.assign(translations.en, {
-  sourceKicker: "FULL DETECTOR SOURCE",
-  sourceTitle: "Complete neural detector implementation",
-  sourceIntro: "Open the full Colab detector module when you need to inspect the pieces that sit around the six computation stages: imports, weight loading, CUDA selection, the DeepID model, preprocessing, reference embeddings, batch recognition, decision rules, and JSON/API glue.",
-  openDetectorSource: "Open full detector source",
-  hideDetectorSource: "Hide full detector source",
-  openRawDetectorSource: "Open raw source file",
-  sourceClosed: "Closed. Use this when the stage snippets are not enough.",
-  sourceLoading: "Loading detector source from the repository...",
-  sourceLoaded: "Showing the exact neural detector source copied from the Colab module. The raw file link opens the full module.",
+  sourceKicker: "COLAB RUN ORDER + DETECTOR SOURCE",
+  sourceTitle: "From the Stage 1 startup cell to the detector module",
+  sourceIntro: "These are two source units in one run, not two versions of the detector. Stage 1 is a Colab notebook startup cell: it creates the work folder, checks PyTorch/CUDA, and uploads and unpacks the project. Only after that cell does Colab load the separate detector module, which therefore begins with its own imports. The view below repeats the Stage 1 cell first, marks the handoff, and then shows exact detector excerpts. The Raw link opens the complete detector-module file.",
+  openDetectorSource: "Open run order and detector excerpts",
+  hideDetectorSource: "Hide run order and detector excerpts",
+  openRawDetectorSource: "Open complete exact detector module",
+  sourceClosed: "Closed. Open this to see how the Stage 1 notebook cell hands control to the detector module.",
+  sourceLoading: "Loading the detector module from the repository...",
+  sourceLoaded: "Shown in execution order: 1) the same Stage 1 Colab cell, 2) the handoff to the module, 3) exact detector-source excerpts. The imports come after setup because they belong to the separate module file.",
   sourceError: "Could not load the detector source file from this site."
 });
 
@@ -1318,15 +1318,15 @@ const cleanRuTranslations = {
   downloadBeeBoard: "Установщик BeeBoard",
   downloadPhysical: "Установщик физической симуляции",
   back: "Назад",
-  sourceKicker: "ПОЛНЫЙ ИСХОДНЫЙ КОД ДЕТЕКТОРА",
-  sourceTitle: "Полная реализация нейросетевого распознавателя",
-  sourceIntro: "Откройте полный модуль Colab-детектора, если нужно увидеть части вокруг шести этапов вычислений: импорты, загрузку весов, выбор CUDA, модель DeepID, предварительную обработку, эталонные векторы, пакетное распознавание, правила решения и связь с JSON/API.",
-  openDetectorSource: "Открыть полный исходный код детектора",
-  hideDetectorSource: "Скрыть полный исходный код детектора",
-  openRawDetectorSource: "Открыть raw-файл исходника",
-  sourceClosed: "Закрыто. Используйте это, когда фрагментов этапов недостаточно.",
-  sourceLoading: "Загружаю исходный код детектора из репозитория…",
-  sourceLoaded: "Показан точный исходный код нейросетевого детектора из модуля Colab. Ссылка Raw открывает полный модуль.",
+  sourceKicker: "ПОРЯДОК ЗАПУСКА COLAB + ИСХОДНИК ДЕТЕКТОРА",
+  sourceTitle: "От стартовой ячейки этапа 1 к модулю детектора",
+  sourceIntro: "Это не две версии детектора, а два исходных блока одного запуска. Этап 1 — стартовая ячейка ноутбука Colab: она создаёт рабочую папку, проверяет PyTorch/CUDA, загружает и распаковывает проект. Только после неё Colab загружает отдельный файл модуля детектора, поэтому этот файл закономерно начинается со своих импортов. Ниже сначала повторяется код этапа 1, затем явно показан переход к модулю и его точные фрагменты. Ссылка Raw открывает весь точный файл модуля.",
+  openDetectorSource: "Открыть порядок запуска и фрагменты детектора",
+  hideDetectorSource: "Скрыть порядок запуска и фрагменты детектора",
+  openRawDetectorSource: "Открыть полный точный модуль детектора",
+  sourceClosed: "Закрыто. Откройте этот блок, чтобы увидеть, как ячейка этапа 1 передаёт управление модулю детектора.",
+  sourceLoading: "Загружаю модуль детектора из репозитория…",
+  sourceLoaded: "Показано в порядке выполнения: 1) та же стартовая ячейка Colab из этапа 1, 2) переход к модулю, 3) точные фрагменты исходника детектора. Импорты идут после подготовки, потому что принадлежат отдельному файлу модуля.",
   sourceError: "Не удалось загрузить исходный файл детектора с этого сайта.",
   stageLabel: "ЭТАП",
   unknown: "Неизвестно",
@@ -1407,15 +1407,15 @@ const cleanHeTranslations = {
   downloadBeeBoard: "מתקין BeeBoard",
   downloadPhysical: "מתקין סימולציה פיזיקלית",
   back: "חזרה",
-  sourceKicker: "קוד המקור המלא של הגלאי",
-  sourceTitle: "המימוש המלא של מזהה הפנים הנוירוני",
-  sourceIntro: "פתחו את מודול Colab המלא אם צריך לראות את כל החלקים סביב ששת שלבי החישוב: imports, טעינת משקלים, בחירת CUDA, מודל DeepID, preprocessing, embeddings ייחוס, batch recognition, כללי החלטה וחיבור JSON/API.",
-  openDetectorSource: "פתח קוד מקור מלא",
-  hideDetectorSource: "הסתר קוד מקור מלא",
-  openRawDetectorSource: "פתח קובץ raw של המקור",
-  sourceClosed: "סגור. השתמשו בזה כאשר קטעי השלבים אינם מספיקים.",
-  sourceLoading: "טוען את קוד המקור של הגלאי מהמאגר...",
-  sourceLoaded: "מוצג קוד המקור המדויק של הגלאי הנוירוני, שהועתק ממודול Colab. קישור raw פותח את המודול המלא.",
+  sourceKicker: "סדר ההרצה ב-COLAB + קוד מקור הגלאי",
+  sourceTitle: "מתא ההפעלה של שלב 1 אל מודול הגלאי",
+  sourceIntro: "אלה אינם שני מימושים של הגלאי אלא שני קובצי מקור של אותה הרצה. שלב 1 הוא תא הפעלה במחברת Colab: הוא יוצר תיקיית עבודה, בודק את PyTorch/CUDA, מעלה ופורס את הפרויקט. רק לאחר התא הזה Colab טוען את קובץ מודול הגלאי הנפרד, ולכן הקובץ מתחיל ב-imports משלו. בתצוגה למטה מופיע תחילה אותו קוד של שלב 1, אחריו מעבר מסומן למודול וקטעים מדויקים ממנו. קישור Raw פותח את קובץ המודול המדויק במלואו.",
+  openDetectorSource: "פתח סדר הרצה וקטעי גלאי",
+  hideDetectorSource: "הסתר סדר הרצה וקטעי גלאי",
+  openRawDetectorSource: "פתח את מודול הגלאי המדויק המלא",
+  sourceClosed: "סגור. פתחו בלוק זה כדי לראות כיצד תא שלב 1 מעביר את השליטה למודול הגלאי.",
+  sourceLoading: "טוען את מודול הגלאי מהמאגר...",
+  sourceLoaded: "מוצג לפי סדר הביצוע: 1) אותו תא הפעלה של Colab משלב 1, 2) המעבר למודול, 3) קטעי מקור מדויקים של הגלאי. ה-imports מופיעים אחרי ההכנה מפני שהם שייכים לקובץ מודול נפרד.",
   sourceError: "לא ניתן לטעון את קובץ המקור של הגלאי מהאתר הזה."
 };
 
@@ -2290,6 +2290,34 @@ function operationAnnotation(text, lang) {
     );
   }
   if (/^#/.test(text)) {
+    const runOrderComment = {
+      "# === 1. COLAB NOTEBOOK STARTUP CELL: THIS IS THE SAME CODE AS STAGE 01 ===": [
+        "Marks the first part of the execution path: this is exactly the Stage 1 Colab notebook cell, run before the detector module.",
+        "Обозначает первую часть пути выполнения: это в точности стартовая ячейка ноутбука Colab из этапа 1, которую запускают до модуля детектора.",
+        "מסמנת את החלק הראשון של סדר ההרצה: זהו בדיוק תא מחברת Colab של שלב 1, שמריצים לפני מודול הגלאי."
+      ],
+      "# === 2. HANDOFF: THE SEPARATE DETECTOR MODULE IS LOADED AFTER THE CELL ABOVE ===": [
+        "Marks the handoff: after the startup cell has prepared files and the runtime, Colab loads the separate detector-module file.",
+        "Обозначает переход: после того как стартовая ячейка подготовила файлы и среду, Colab загружает отдельный файл модуля детектора.",
+        "מסמנת את המעבר: לאחר שתא ההפעלה הכין קבצים וסביבה, Colab טוען את קובץ מודול הגלאי הנפרד."
+      ],
+      "# === 3. EXACT SELECTED EXCERPTS FROM source/colab_ai_mips_bee_world.py ===": [
+        "Marks the start of exact selected fragments from the detector-module file; its imports follow because this is a separate Python file.",
+        "Обозначает начало точных выбранных фрагментов из файла модуля детектора; далее идут его импорты, потому что это отдельный Python-файл.",
+        "מסמנת את תחילת הקטעים המדויקים שנבחרו מקובץ מודול הגלאי; ה-imports שלו מופיעים כעת מפני שזהו קובץ Python נפרד."
+      ],
+      "# The Raw link beside this panel opens the complete detector-module file.": [
+        "Explains that the Raw link opens the complete exact detector-module file, rather than only the excerpts shown in this panel.",
+        "Поясняет, что ссылка Raw открывает весь точный файл модуля детектора, а не только фрагменты, показанные в этой панели.",
+        "מסבירה שקישור Raw פותח את קובץ מודול הגלאי המדויק המלא, ולא רק את הקטעים שמוצגים בלוח הזה."
+      ],
+      "# Colab notebook: CUDA runtime and project payload setup": [
+        "Labels the Stage 1 notebook cell: it prepares the Colab runtime and the project archive before detector code is imported.",
+        "Озаглавливает ячейку ноутбука этапа 1: она подготавливает среду Colab и архив проекта до импорта кода детектора.",
+        "מכותרת את תא המחברת של שלב 1: הוא מכין את סביבת Colab ואת ארכיון הפרויקט לפני ייבוא קוד הגלאי."
+      ]
+    }[text];
+    if (runOrderComment) return say(runOrderComment[0], runOrderComment[1], runOrderComment[2]);
     const comment = text.replace(/^#\s*/, "");
     return say(
       "Non-executable comment: " + comment + ". It explains or labels the following code and does not change a value.",
@@ -2628,8 +2656,12 @@ function extractDetectorSource(source) {
   const helperBlock = helperStart >= 0 ? lines.slice(helperStart, helperEnd) : [];
   const classBlock = classStart >= 0 ? lines.slice(classStart, classEnd) : lines;
   return [
-    "# Exact neural detector source excerpt from source/colab_ai_mips_bee_world.py",
-    "# Raw link beside this panel opens the complete Colab module.",
+    "# === 1. COLAB NOTEBOOK STARTUP CELL: THIS IS THE SAME CODE AS STAGE 01 ===",
+    ...fullColabStageCode["01"].split("\n"),
+    "",
+    "# === 2. HANDOFF: THE SEPARATE DETECTOR MODULE IS LOADED AFTER THE CELL ABOVE ===",
+    "# === 3. EXACT SELECTED EXCERPTS FROM source/colab_ai_mips_bee_world.py ===",
+    "# The Raw link beside this panel opens the complete detector-module file.",
     "",
     ...importLines,
     "",
