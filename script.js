@@ -2201,6 +2201,14 @@ const sourceFunctionMeaning = {
   _draw_hex: { ru: "рисует шестиугольный элемент интерфейса", he: "מציירת רכיב ממשק משושה" },
   _paste_fit: { ru: "масштабирует изображение и размещает его в заданной области", he: "משנה את גודל התמונה וממקמת אותה באזור נתון" },
   _image_paths: { ru: "собирает список файлов изображений из папки", he: "אוספת רשימת קובצי תמונה מתיקייה" },
+  _ensure_torch: { ru: "загружает PyTorch и кэширует его модули, чтобы не импортировать их при каждом распознавании", he: "טוענת את PyTorch ושומרת את המודולים שלו במטמון, כדי לא לייבא אותם מחדש בכל זיהוי" },
+  _device_name: { ru: "выбирает точное имя вычислительного устройства: CUDA для доступной видеокарты или CPU в остальных случаях", he: "בוחרת את שם התקן החישוב המדויק: CUDA לכרטיס מסך זמין או CPU בכל מקרה אחר" },
+  _load_weights: { ru: "загружает обученные веса DeepID и кэширует их, чтобы повторно не читать файлы весов", he: "טוענת את משקלי DeepID המאומנים ושומרת אותם במטמון, כדי לא לקרוא שוב את קובצי המשקלים" },
+  _model: { ru: "создаёт или получает модель нейросети DeepID для выбранного устройства вычислений", he: "יוצרת או מחזירה את מודל רשת DeepID עבור התקן החישוב שנבחר" },
+  conv_weight: { ru: "преобразует сохранённый массив весов свёртки в порядок измерений, который ожидает PyTorch", he: "ממירה מערך משקלי קונבולוציה שמור לסדר הממדים ש-PyTorch מצפה לו" },
+  bias: { ru: "преобразует сохранённый массив смещений слоя в тензор PyTorch", he: "ממירה מערך היסטים שמור של שכבה לטנזור PyTorch" },
+  dense_weight: { ru: "преобразует сохранённый массив весов полносвязного слоя в порядок измерений PyTorch", he: "ממירה מערך משקלים שמור של שכבה צפופה לסדר הממדים של PyTorch" },
+  forward: { ru: "задаёт прямой проход сети: получает тензор лица и возвращает его вектор признаков", he: "מגדירה את המעבר הישיר ברשת: מקבלת טנזור פנים ומחזירה את וקטור התכונות שלו" },
   _angle_delta: { ru: "вычисляет кратчайшую разницу между углами", he: "מחשבת את ההפרש הקצר ביותר בין זוויות" },
   _now: { ru: "формирует текущее время для журнала", he: "יוצרת את הזמן הנוכחי ליומן" },
   _preprocess_pil: { ru: "приводит изображение к формату входного тензора", he: "ממירה תמונה לפורמט טנזור הקלט" },
@@ -2208,7 +2216,9 @@ const sourceFunctionMeaning = {
   _embed_variants: { ru: "собирает пакет вариантов и вычисляет их векторы признаков", he: "בונה אצווה של וריאציות ומחשבת את וקטורי התכונות שלהן" },
   load_references: { ru: "загружает эталонные лица и их векторы", he: "טוענת פנים לדוגמה ואת הווקטורים שלהן" },
   detect_image: { ru: "запускает полный цикл распознавания одного изображения", he: "מריצה את כל מחזור הזיהוי של תמונה אחת" },
+  detect_batch: { ru: "распознаёт каждое изображение из переданного пакета и возвращает список результатов", he: "מזהה כל תמונה באצווה שהתקבלה ומחזירה רשימת תוצאות" },
   _decide: { ru: "принимает решение по лучшему совпадению и запасу уверенности", he: "מקבלת החלטה לפי ההתאמה הטובה ביותר ופער הביטחון" },
+  short_text: { ru: "формирует короткую понятную строку по результату распознавания", he: "מייצרת שורת טקסט קצרה וברורה מתוצאת הזיהוי" },
   detect_file_ui: { ru: "обрабатывает файл, загруженный из веб-интерфейса", he: "מעבדת קובץ שהועלה מממשק האינטרנט" }
 };
 
@@ -2223,6 +2233,149 @@ const sourceCommentMeaning = {
   }
 };
 
+function operationAnnotation(text, lang) {
+  const say = (en, ru, he) => repairLocalizedText(lang === "ru" ? ru : lang === "he" ? he : en);
+  const value = text.replace(/^print\(/, "").replace(/\)\s*$/, "");
+  if (/^print\(/.test(text)) return say(
+    "Prints the value of " + value + " in Colab output. This is a diagnostic display; it does not start face recognition.",
+    "Выводит значение " + value + " в результатах Colab. Это диагностический вывод; распознавание лиц он не запускает.",
+    "מדפיסה את הערך של " + value + " בפלט Colab. זהו פלט אבחון; הוא אינו מפעיל זיהוי פנים."
+  );
+  if (/^WORK\s*=\s*Path\(/.test(text)) return say(
+    "Creates the Path variable WORK, which points to the project working folder used by later file commands.",
+    "Создаёт переменную пути WORK, указывающую на рабочую папку проекта, которую используют последующие файловые команды.",
+    "יוצרת את משתנה הנתיב WORK, שמצביע לתיקיית העבודה של הפרויקט שבה משתמשות פקודות הקבצים הבאות."
+  );
+  if (/^WORK\.mkdir\(/.test(text)) return say(
+    "Creates the working folder when it is absent; parents=True creates missing parent folders and exist_ok=True allows an existing folder.",
+    "Создаёт рабочую папку, если её нет; parents=True создаёт недостающие родительские папки, а exist_ok=True допускает уже существующую папку.",
+    "יוצרת את תיקיית העבודה אם היא חסרה; parents=True יוצר תיקיות־אב חסרות ו-exist_ok=True מאפשר תיקייה שכבר קיימת."
+  );
+  const actions = [
+    [/^files\.upload\(/, "Opens Colab's file picker and returns the selected files as in-memory bytes for the next save command.", "Открывает выбор файла Colab и возвращает выбранные файлы как байты в памяти для следующей команды сохранения.", "פותחת את בורר הקבצים של Colab ומחזירה את הקבצים שנבחרו כבייטים בזיכרון לפקודת השמירה הבאה."],
+    [/zipfile\.ZipFile\(/, "Opens the ZIP archive for reading; the surrounding context block closes it automatically.", "Открывает ZIP-архив для чтения; окружающий контекстный блок закроет его автоматически.", "פותחת את ארכיון ה-ZIP לקריאה; בלוק ההקשר שסביבו יסגור אותו אוטומטית."],
+    [/\.extractall\(/, "Extracts every file from the opened ZIP archive into the folder passed in the parentheses.", "Извлекает все файлы из открытого ZIP-архива в папку, переданную в скобках.", "מחלצת כל קובץ מארכיון ה-ZIP הפתוח אל התיקייה שמועברת בסוגריים."],
+    [/\.write_bytes\(/, "Writes the byte sequence in parentheses to the file path on the left, creating or replacing that local file.", "Записывает последовательность байтов в скобках в файл по пути слева, создавая или заменяя этот локальный файл.", "כותבת את רצף הבייטים שבסוגריים לקובץ בנתיב שמשמאל, ויוצרת או מחליפה את הקובץ המקומי."],
+    [/Image\.open\(/, "Loads the image file named in the parentheses into a Pillow image object so its pixels can be prepared for the detector.", "Загружает файл изображения из скобок в объект Pillow, чтобы подготовить его пиксели для детектора.", "טוענת את קובץ התמונה שבסוגריים לאובייקט Pillow כדי להכין את הפיקסלים שלו לגלאי."],
+    [/\.convert\(["']RGB["']\)/, "Converts the image to exactly three RGB channels, removing grayscale or alpha formats that would change the model input shape.", "Преобразует изображение ровно в три канала RGB, убирая серый формат или прозрачность, которые изменили бы форму входа модели.", "ממירה את התמונה לשלושה ערוצי RGB בדיוק, ומסירה גווני אפור או שקיפות שהיו משנים את צורת קלט המודל."],
+    [/\.resize\(/, "Resizes the image to the dimensions passed in the parentheses, producing the fixed pixel size needed by the next step.", "Меняет размер изображения до размеров из скобок, формируя фиксированное число пикселей для следующего шага.", "משנה את גודל התמונה לממדים שבסוגריים וכך יוצרת גודל פיקסלים קבוע הנדרש לשלב הבא."],
+    [/Image\.new\(/, "Creates a new blank Pillow image canvas with the requested color mode, size, and background.", "Создаёт новый пустой холст Pillow с указанными цветовым режимом, размером и фоном.", "יוצרת קנבס Pillow חדש וריק עם מצב הצבע, הגודל והרקע המבוקשים."],
+    [/\.paste\(/, "Pastes the source image into the destination canvas at the coordinates given in the parentheses.", "Вставляет исходное изображение в холст назначения по координатам из скобок.", "מדביקה את תמונת המקור לקנבס היעד בקואורדינטות שמועברות בסוגריים."],
+    [/np\.asarray\(/, "Converts image pixels into a NumPy array so the RGB values can be normalized and rearranged numerically.", "Преобразует пиксели изображения в массив NumPy, чтобы численно нормализовать и переставить значения RGB.", "ממירה את פיקסלי התמונה למערך NumPy כדי שאפשר יהיה לנרמל ולסדר מחדש את ערכי ה-RGB באופן מספרי."],
+    [/np\.transpose\(/, "Reorders array axes, normally from height-width-channels to PyTorch's channel-first image order.", "Меняет порядок осей массива: обычно из высота-ширина-каналы в требуемый PyTorch порядок канал первым.", "מסדרת מחדש את צירי המערך, בדרך כלל מגובה-רוחב-ערוצים לסדר התמונה של PyTorch שבו הערוץ ראשון."],
+    [/torch\.from_numpy\(/, "Wraps the NumPy array as a PyTorch tensor so it can be fed to the neural network; this command alone does not move it to GPU.", "Оборачивает массив NumPy в тензор PyTorch для передачи нейросети; сама эта команда не переносит его на GPU.", "עוטפת את מערך ה-NumPy כטנזור PyTorch כדי להזין אותו לרשת העצבית; הפקודה עצמה אינה מעבירה אותו ל-GPU."],
+    [/F\.conv2d\(/, "Applies learned 2D filters across the input feature maps, creating features that respond to local face patterns.", "Применяет обученные 2D-фильтры к картам признаков входа, создавая признаки, реагирующие на локальные черты лица.", "מפעילה מסננים דו־ממדיים מאומנים על מפות התכונות בקלט, ויוצרת תכונות שמגיבות לדפוסים מקומיים בפנים."],
+    [/F\.max_pool2d\(/, "Keeps the strongest value in each local window, reducing feature-map size while retaining the strongest response.", "Оставляет наибольшее значение в каждом локальном окне, уменьшая карту признаков и сохраняя самый сильный сигнал.", "שומרת את הערך החזק ביותר בכל חלון מקומי, מקטינה את מפת התכונות ושומרת את התגובה החזקה ביותר."],
+    [/F\.relu\(/, "Applies ReLU: negative feature values become zero, adding the non-linearity needed by the network.", "Применяет ReLU: отрицательные значения признаков становятся нулём, добавляя нелинейность, нужную сети.", "מפעילה ReLU: ערכי תכונות שליליים הופכים לאפס, וכך מתווספת אי־ליניאריות הנדרשת לרשת."],
+    [/\.flatten\(1\)/, "Flattens each image's feature map into one vector while preserving dimension 0 as the batch dimension.", "Разворачивает карту признаков каждого изображения в один вектор, сохраняя измерение 0 как размер пакета.", "משטחת את מפת התכונות של כל תמונה לווקטור אחד, תוך שמירת ממד 0 כממד האצווה."],
+    [/F\.normalize\(/, "Normalizes every embedding to length 1, so later dot products measure cosine similarity instead of raw vector size.", "Нормализует каждый вектор признаков до длины 1, чтобы последующие скалярные произведения измеряли косинусное сходство, а не размер вектора.", "מנרמלת כל וקטור הטמעה לאורך 1, כך שמכפלות סקלריות בהמשך מודדות דמיון קוסינוס ולא את גודל הווקטור."],
+    [/torch\.stack\(/, "Combines the listed tensors into one batch so several prepared face variants are processed in one model call.", "Объединяет перечисленные тензоры в один пакет, чтобы несколько подготовленных вариантов лица обработались одним вызовом модели.", "מאחדת את הטנזורים שברשימה לאצווה אחת, כך שכמה גרסאות פנים מוכנות יעובדו בקריאה אחת למודל."],
+    [/torch\.inference_mode\(/, "Enters inference mode: PyTorch skips gradient tracking because this code predicts an identity and does not train the model.", "Включает режим инференса: PyTorch не отслеживает градиенты, потому что код предсказывает личность, а не обучает модель.", "נכנסת למצב הסקה: PyTorch מדלג על מעקב גרדיאנטים כי הקוד מנבא זהות ואינו מאמן את המודל."],
+    [/model\(x\)\.detach\(/, "Runs batch tensor x through the model and detaches the resulting embeddings because they are only compared, not used for training.", "Пропускает пакетный тензор x через модель и отсоединяет полученные векторы, потому что их только сравнивают, а не используют для обучения.", "מעבירה את טנזור האצווה x דרך המודל ומנתקת את וקטורי ההטמעה שהתקבלו, כי רק משווים אותם ולא מאמנים באמצעותם."],
+    [/^sims\s*=.*@/, "Calculates dot products between query and reference embeddings. After normalization, each number is a cosine-similarity score.", "Вычисляет скалярные произведения между векторами запроса и эталонами. После нормализации каждое число — оценка косинусного сходства.", "מחשבת מכפלות סקלריות בין וקטורי השאילתה לווקטורי הייחוס. לאחר נרמול, כל מספר הוא ציון דמיון קוסינוס."],
+    [/time\.perf_counter\(/, "Reads a high-resolution timer; subtracting two such readings measures how long the detection operation took.", "Считывает высокоточный таймер; вычитание двух таких значений измеряет длительность операции распознавания.", "קוראת שעון ברזולוציה גבוהה; חיסור של שתי קריאות כאלה מודד כמה זמן נמשכה פעולת הזיהוי."],
+    [/^@app\.(get|post)\(/, "Registers the following function as an HTTP route; the path in parentheses is the URL that a client can call.", "Регистрирует следующую функцию как HTTP-маршрут; путь в скобках — URL, по которому может обратиться клиент.", "רושמת את הפונקציה הבאה כנתיב HTTP; הנתיב שבסוגריים הוא ה-URL שלקוח יכול לקרוא לו."],
+    [/JSONResponse\(/, "Builds an HTTP response whose body is JSON, returning the detection result in a form the web interface can read.", "Создаёт HTTP-ответ с телом JSON, возвращая результат распознавания в форме, которую читает веб-интерфейс.", "יוצרת תגובת HTTP שגופה JSON ומחזירה את תוצאת הזיהוי בצורה שממשק האינטרנט יכול לקרוא."],
+    [/NamedTemporaryFile\(/, "Creates a temporary local file for an uploaded image so the detector can receive a filename, then cleanup can remove it.", "Создаёт временный локальный файл для загруженного изображения, чтобы детектор получил имя файла, а очистка затем удалила его.", "יוצרת קובץ מקומי זמני לתמונה שהועלתה, כדי שהגלאי יקבל שם קובץ ולאחר מכן הניקוי יוכל למחוק אותו."],
+    [/\.unlink\(/, "Deletes this temporary file after it is no longer needed, preventing request files from accumulating on disk.", "Удаляет этот временный файл после того, как он больше не нужен, чтобы файлы запросов не накапливались на диске.", "מוחקת את הקובץ הזמני הזה לאחר שכבר אינו נחוץ, כדי שקבצי בקשות לא יצטברו בדיסק."]
+  ];
+  const found = actions.find(([pattern]) => pattern.test(text));
+  if (found) return say(found[1], found[2], found[3]);
+  if (/^\s*["']([A-Za-z_][A-Za-z0-9_]*)["']\s*:/.test(text)) {
+    const key = text.match(/^\s*["']([A-Za-z_][A-Za-z0-9_]*)["']\s*:/)?.[1] || "field";
+    return say(
+      "Adds the " + key + " field to the result dictionary. The expression after the colon is the value returned under that field name.",
+      "Добавляет поле " + key + " в словарь результата. Выражение после двоеточия — значение, возвращаемое под этим именем поля.",
+      "מוסיפה את השדה " + key + " למילון התוצאה. הביטוי שאחרי הנקודתיים הוא הערך שמוחזר תחת שם השדה הזה."
+    );
+  }
+  if (/^#/.test(text)) {
+    const comment = text.replace(/^#\s*/, "");
+    return say(
+      "Non-executable comment: " + comment + ". It explains or labels the following code and does not change a value.",
+      "Неисполняемый комментарий: " + comment + ". Он поясняет или озаглавливает следующий код и не изменяет значения.",
+      "הערה שאינה מבוצעת: " + comment + ". היא מסבירה או מתייגת את הקוד שאחריה ואינה משנה ערך."
+    );
+  }
+  const parameter = text.match(/^([A-Za-z_]\w*)\s*:\s*([^,=]+)(?:\s*=\s*(.+))?,?$/);
+  if (parameter) return say(
+    "Declares the function parameter " + parameter[1] + " with type " + parameter[2].trim() + (parameter[3] ? " and default value " + parameter[3].trim() : "") + ". The caller supplies this input when calling the function.",
+    "Объявляет параметр функции " + parameter[1] + " с типом " + parameter[2].trim() + (parameter[3] ? " и значением по умолчанию " + parameter[3].trim() : "") + ". Вызывающий код передаёт этот вход при вызове функции.",
+    "מכריזה על פרמטר הפונקציה " + parameter[1] + " עם טיפוס " + parameter[2].trim() + (parameter[3] ? " וערך ברירת מחדל " + parameter[3].trim() : "") + ". הקוד שקורא לפונקציה מעביר קלט זה בזמן הקריאה."
+  );
+  if (text === "self,") return say(
+    "Declares self, the current detector object. The following parameters and assignments belong to this particular object instance.",
+    "Объявляет self — текущий объект детектора. Следующие параметры и присваивания относятся к этому конкретному экземпляру объекта.",
+    "מכריזה על self, אובייקט הגלאי הנוכחי. הפרמטרים וההשמות הבאים שייכים למופע המסוים הזה של האובייקט."
+  );
+  if (/^\[.+\s+for\s+\w+\s+in\s+.+/.test(text)) return say(
+    "Builds a list by visiting every candidate path and keeping only items that satisfy the conditions written after if.",
+    "Строит список: проходит по каждому пути-кандидату и оставляет только элементы, удовлетворяющие условиям после if.",
+    "בונה רשימה: עוברת על כל נתיב מועמד ושומרת רק פריטים שמקיימים את התנאים שאחרי if."
+  );
+  if (/^key\s*=\s*lambda\b/.test(text)) return say(
+    "Defines the sorting key function. For each file it returns the tuple after the colon, so files are ordered first by modification time and then by name.",
+    "Задаёт функцию ключа сортировки. Для каждого файла она возвращает кортеж после двоеточия, поэтому файлы упорядочиваются сначала по времени изменения, затем по имени.",
+    "מגדירה את פונקציית מפתח המיון. עבור כל קובץ היא מחזירה את הטופל שאחרי הנקודתיים, ולכן הקבצים ממוינים תחילה לפי זמן שינוי ואז לפי שם."
+  );
+  if (/^return\s+sorted\($/.test(text)) return say(
+    "Starts returning a new sorted list. The following lines provide the list to sort and the key used to order it.",
+    "Начинает возврат нового отсортированного списка. Следующие строки задают список для сортировки и ключ порядка.",
+    "מתחילה להחזיר רשימה ממוינת חדשה. השורות הבאות מספקות את הרשימה למיון ואת המפתח הקובע את הסדר."
+  );
+  const shape = text.match(/^["']([^"']+)["']\s*:\s*(.+),?$/);
+  if (shape) return say(
+    "Adds the model-weight entry " + shape[1] + " to the shapes dictionary. The tuple on the right specifies that weight tensor's dimensions.",
+    "Добавляет запись весов модели " + shape[1] + " в словарь shapes. Кортеж справа задаёт размеры этого тензора весов.",
+    "מוסיפה את רשומת משקלי המודל " + shape[1] + " למילון shapes. הטופל מימין מציין את ממדי טנזור המשקלים הזה."
+  );
+  const typedMember = text.match(/^(self\.[A-Za-z_]\w*)\s*:\s*([^=]+)\s*=\s*(.+)$/);
+  if (typedMember) return say(
+    "Creates or resets the detector property " + typedMember[1] + " with declared type " + typedMember[2].trim() + " and initial value " + typedMember[3].trim() + ".",
+    "Создаёт или сбрасывает свойство детектора " + typedMember[1] + " с объявленным типом " + typedMember[2].trim() + " и начальным значением " + typedMember[3].trim() + ".",
+    "יוצרת או מאפסת את מאפיין הגלאי " + typedMember[1] + " עם טיפוס מוצהר " + typedMember[2].trim() + " וערך התחלתי " + typedMember[3].trim() + "."
+  );
+  const memberAssignment = text.match(/^(self\.[A-Za-z_]\w*)\s*=\s*(.+)$/);
+  if (memberAssignment) return say(
+    "Stores the result of " + memberAssignment[2] + " in the detector property " + memberAssignment[1] + ", so this object can use the value in later method calls.",
+    "Сохраняет результат " + memberAssignment[2] + " в свойство детектора " + memberAssignment[1] + ", чтобы объект мог использовать значение в следующих вызовах методов.",
+    "שומרת את תוצאת " + memberAssignment[2] + " במאפיין הגלאי " + memberAssignment[1] + ", כדי שהאובייקט יוכל להשתמש בערך בקריאות מתודה בהמשך."
+  );
+  const objectMemberAssignment = text.match(/^([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)+)\s*=\s*(.+)$/);
+  if (objectMemberAssignment) return say(
+    "Writes the value produced by " + objectMemberAssignment[2] + " into the property " + objectMemberAssignment[1] + ". This updates that existing object's setting before the following detector call.",
+    "Записывает значение, полученное из " + objectMemberAssignment[2] + ", в свойство " + objectMemberAssignment[1] + ". Так обновляется настройка уже существующего объекта перед следующим вызовом детектора.",
+    "כותבת את הערך שמתקבל מ-" + objectMemberAssignment[2] + " אל המאפיין " + objectMemberAssignment[1] + ". כך מתעדכנת הגדרה של אובייקט קיים לפני קריאת הגלאי הבאה."
+  );
+  const assignment = text.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/);
+  if (assignment) return say(
+    "Assigns the result of " + assignment[2] + " to " + assignment[1] + ". Later lines read this named value instead of repeating the expression.",
+    "Присваивает результат " + assignment[2] + " переменной " + assignment[1] + ". Следующие строки читают это именованное значение, а не повторяют выражение.",
+    "מקצה את תוצאת " + assignment[2] + " ל-" + assignment[1] + ". השורות הבאות קוראות ערך בעל שם זה במקום לחזור על הביטוי."
+  );
+  if (text === ")") return say(
+    "Closes the function call or grouped expression that began above; it performs no separate computation by itself.",
+    "Закрывает вызов функции или сгруппированное выражение, начатое выше; отдельного вычисления эта строка не выполняет.",
+    "סוגרת את קריאת הפונקציה או את הביטוי המקובץ שהתחיל למעלה; היא אינה מבצעת חישוב נפרד בעצמה."
+  );
+  if (text === "}") return say(
+    "Closes the dictionary literal begun above. The collected key-value entries now form one dictionary value.",
+    "Закрывает литерал словаря, начатый выше. Собранные пары «ключ–значение» теперь образуют одно значение-словарь.",
+    "סוגרת את מילון הערכים שהתחיל למעלה. צמדי המפתח-ערך שנאספו כעת יוצרים ערך מילון אחד."
+  );
+  if (text === "):") return say(
+    "Closes the multi-line function parameter list and begins that function's executable body.",
+    "Закрывает многострочный список параметров функции и начинает исполняемое тело этой функции.",
+    "סוגרת את רשימת הפרמטרים הרב־שורתית של הפונקציה ומתחילה את גוף הפונקציה שמבוצע."
+  );
+  if (/^[\]\),]$/.test(text)) return say(
+    "Closes the list, tuple, or argument group that began on earlier lines; it only completes the surrounding expression.",
+    "Закрывает список, кортеж или группу аргументов, начатую в предыдущих строках; она только завершает окружающее выражение.",
+    "סוגרת רשימה, טופל או קבוצת ארגומנטים שהחלו בשורות קודמות; היא רק משלימה את הביטוי שסביבה."
+  );
+  return "";
+}
+
 function englishSourceLineAnnotation(text) {
   const importFrom = text.match(/^from\s+([\w.]+)\s+import\s+(.+)$/);
   const importModule = text.match(/^import\s+(.+)$/);
@@ -2232,9 +2385,36 @@ function englishSourceLineAnnotation(text) {
   if (text === "from __future__ import annotations") return "Enables postponed Python type annotations so type references remain valid throughout the module.";
   if (importFrom) return `Imports ${importFrom[2]} from ${importFrom[1]} for this detector module.`;
   if (importModule) return `Imports the ${importModule[1]} module used by the detector runtime.`;
-  if (/^@dataclass\b/.test(text)) return "Marks the following class as a data container with generated fields and constructor.";
-  if (classMatch) return `Defines the ${classMatch[1]} class that groups related detector state and behavior.`;
-  if (functionMatch) return `Defines ${functionMatch[1]}, a helper function used by the detector or interface.`;
+ if (/^@dataclass\b/.test(text)) return "Marks the following class as a data container with generated fields and constructor.";
+  if (functionMatch && functionMatch[1] === "__init__") {
+    return "Defines the constructor. Python runs this method when a detector object is created, and its body initializes that object\'s state.";
+  }
+ if (classMatch) return `Defines the ${classMatch[1]} class that groups related detector state and behavior.`;
+  if (functionMatch) {
+    const functionPurpose = {
+      _image_paths: "collects usable image files from a folder",
+      _ensure_torch: "loads and caches the PyTorch modules used by the detector",
+      _device_name: "chooses the CPU or CUDA backend name for the requested mode",
+      _load_weights: "loads and caches the trained DeepID weight tensors",
+      _model: "creates or retrieves the DeepID neural-network model for the selected backend",
+      conv_weight: "converts one stored convolution weight array into the layout required by PyTorch",
+      bias: "converts one stored bias array into a PyTorch tensor",
+      dense_weight: "converts one stored dense-layer weight array into the layout required by PyTorch",
+      forward: "defines the network forward pass from an input face tensor to its embedding",
+      _preprocess_pil: "converts a Pillow face image into the normalized tensor expected by DeepID",
+      _variants: "creates face-image variants used to make recognition more stable",
+      load_references: "loads the known people and computes their reference embeddings",
+      _embed_variants: "batches image variants and computes their embedding vectors",
+      _decide: "selects the best identity and verifies score and margin thresholds",
+      detect_image: "runs complete recognition for one image",
+      detect_batch: "runs recognition for every image in a batch",
+      short_text: "formats a detector result as a short human-readable label",
+      detect_file_ui: "handles one image uploaded through the web interface"
+    }[functionMatch[1]];
+    return functionPurpose
+      ? "Defines " + functionMatch[1] + ": it " + functionPurpose + "."
+      : "Defines " + functionMatch[1] + ". Its indented body performs the operation named by this function.";
+  }
   if (/^#/.test(text)) return "Documentation comment for the following source fragment; Python does not execute it.";
   if (/^if\s+/.test(text)) return `Checks the condition \`${text.replace(/^if\s+/, "").replace(/:$/, "")}\` and selects the appropriate execution branch.`;
   if (/^(else|elif)\b/.test(text)) return "Defines the alternative branch for the preceding condition.";
@@ -2248,13 +2428,16 @@ function englishSourceLineAnnotation(text) {
     return result === "[]" ? "Returns an empty list because no matching files were found." : `Returns \`${result}\` to the caller.`;
   }
   if (assignment) return `Stores this expression in ${assignment[1]} for a later detector step.`;
-  if (/^pass\b/.test(text)) return "Leaves this branch intentionally empty; no action is required here.";
-  if (/^(break|continue)\b/.test(text)) return "Changes the current loop by ending it or moving to the next iteration.";
-  return "Executes the Python operation shown on the left as part of detector computation or data preparation.";
+ if (/^pass\b/.test(text)) return "Leaves this branch intentionally empty; no action is required here.";
+ if (/^(break|continue)\b/.test(text)) return "Changes the current loop by ending it or moving to the next iteration.";
+  if (text) return "Completes the surrounding multi-line Python expression with this exact fragment: " + text + ".";
+ return "Executes the Python operation shown on the left as part of detector computation or data preparation.";
 }
 
 function sourceLineAnnotation(line, lang) {
   const text = line.trim();
+  const operation = operationAnnotation(text, lang);
+  if (operation) return operation;
   if (lang === "en") return englishSourceLineAnnotation(text);
   const hebrew = lang === "he";
   const importFrom = text.match(/^from\s+([\w.]+)\s+import\s+(.+)$/);
@@ -2280,8 +2463,13 @@ function sourceLineAnnotation(line, lang) {
   }
   if (/^@dataclass\b/.test(text)) return hebrew ? "מסמנת שהמחלקה הבאה היא מבנה נתונים עם בנאי ושדות שנוצרים אוטומטית." : "Помечает следующий класс как структуру данных с автоматически создаваемыми полями и конструктором.";
   if (classMatch) return hebrew ? `מגדירה את המחלקה ${classMatch[1]}, שמאגדת מצב או לוגיקה של רכיב במערכת.` : `Объявляет класс ${classMatch[1]}, объединяющий состояние или логику компонента системы.`;
-  if (functionMatch) {
-    const meaning = sourceFunctionMeaning[functionMatch[1]];
+ if (functionMatch) {
+    if (functionMatch[1] === "__init__") {
+      return hebrew
+        ? "מגדירה את בנאי המחלקה. Python מפעיל אותו כאשר נוצר אובייקט גלאי, וגופו מאתחל את מצב האובייקט."
+        : "Объявляет конструктор класса. Python вызывает его при создании объекта детектора, а его тело инициализирует состояние объекта.";
+    }
+   const meaning = sourceFunctionMeaning[functionMatch[1]];
     return hebrew ? `מגדירה את הפונקציה ${functionMatch[1]}: ${meaning?.he || "הגוף שלה מבצע פעולה מוגדרת של הגלאי או הממשק"}.` : `Объявляет функцию ${functionMatch[1]}: ${meaning?.ru || "её тело выполняет определённую операцию детектора или интерфейса"}.`;
   }
   if (/^#/.test(text)) {
@@ -2316,9 +2504,14 @@ function sourceLineAnnotation(line, lang) {
     }[name];
     return special || (hebrew ? `שומרת את תוצאת הביטוי במשתנה ${name}, להמשך החישוב.` : `Сохраняет результат выражения в переменной ${name} для следующего шага вычислений.`);
   }
-  if (/^pass\b/.test(text)) return hebrew ? "משאירה ענף ריק במכוון; אין כאן פעולה לביצוע." : "Оставляет ветку намеренно пустой: действие на этом месте не требуется.";
-  if (/^(break|continue)\b/.test(text)) return hebrew ? "משנה את מהלך הלולאה: מפסיקה אותה או עוברת לאיטרציה הבאה." : "Изменяет ход цикла: прерывает его либо переходит к следующей итерации.";
-  return hebrew ? "מבצעת את פעולת Python המוצגת משמאל כחלק מהחישוב או מהכנת נתוני הגלאי." : "Выполняет показанную слева операцию Python как часть вычисления или подготовки данных детектора.";
+ if (/^pass\b/.test(text)) return hebrew ? "משאירה ענף ריק במכוון; אין כאן פעולה לביצוע." : "Оставляет ветку намеренно пустой: действие на этом месте не требуется.";
+ if (/^(break|continue)\b/.test(text)) return hebrew ? "משנה את מהלך הלולאה: מפסיקה אותה או עוברת לאיטרציה הבאה." : "Изменяет ход цикла: прерывает его либо переходит к следующей итерации.";
+  if (text) {
+    return hebrew
+      ? "משלימה את הביטוי הרב־שורי שסביבו באמצעות קטע הקוד המדויק: " + text + "."
+      : "Завершает окружающее многострочное выражение точным фрагментом кода: " + text + ".";
+  }
+ return hebrew ? "מבצעת את פעולת Python המוצגת משמאל כחלק מהחישוב או מהכנת נתוני הגלאי." : "Выполняет показанную слева операцию Python как часть вычисления или подготовки данных детектора.";
 }
 
 function patternCodeAnnotation(line) {
@@ -2326,15 +2519,6 @@ function patternCodeAnnotation(line) {
   const trimmed = line.trim();
   const exact = detailedCodeLineAnnotations[trimmed];
   if (exact) return repairLocalizedText(exact[lang] || exact.en);
-  const found = colabCodePatternAnnotations.find(([pattern]) => pattern.test(trimmed));
-  const genericNotes = new Set([
-    "Comment from the real Colab detector block; it names the stage or source file.",
-    "Python control-flow line that chooses a branch, repeats work, protects cleanup, or returns a value.",
-    "Project code line used by the connected Colab detector for this computation stage."
-  ]);
-  if (found && found[0].source !== "." && !genericNotes.has(found[1].en) && !found[1].en.startsWith("Comment from")) {
-    return repairLocalizedText(found[1][lang] || found[1].en);
-  }
   return sourceLineAnnotation(trimmed, lang);
 }
 
