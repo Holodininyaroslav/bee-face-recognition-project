@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Exact CPU, OpenCL and CUDA C++ implementation of Scaled Dot-Product Attention with line-by-line English, Russian and Hebrew explanations.">
+  <title>Scaled Dot-Product Attention — CPU / OpenCL / CUDA</title>
+  <link rel="icon" type="image/png" href="assets/project-avatar.png">
+  <link rel="stylesheet" href="course.css?v=20260801a">
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="index.html">← <span data-t="back">Bee Face project</span></a>
+    <nav aria-label="Language">
+      <button class="lang active" data-lang="en">EN</button>
+      <button class="lang" data-lang="ru">RU</button>
+      <button class="lang" data-lang="he">HE</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <p class="kicker" data-t="kicker">GPU COURSE PROJECT / EXACT EXECUTABLE SOURCE</p>
+      <h1 data-t="title">Scaled Dot-Product Attention</h1>
+      <p class="formula">Attention(Q,K,V) = softmax((Q × K<sup>T</sup>) / √d) × V</p>
+      <p class="lead" data-t="lead">The AMD version runs locally through OpenCL. The NVIDIA version is real CUDA C++ source and must be compiled on an NVIDIA GPU or CUDA-enabled Colab. OpenCL is never presented as CUDA.</p>
+      <div class="checks">
+        <span data-t="checkFormula">✓ exact formula</span>
+        <span data-t="checkKernels">✓ custom GPU kernels</span>
+        <span data-t="checkBounds">✓ boundary checks</span>
+        <span data-t="checkMemory">✓ host/device memory</span>
+        <span data-t="checkTiming">✓ CPU/GPU timing and error check</span>
+      </div>
+      <div class="results">
+        <strong data-t="verified">Verified on this computer</strong>
+        <span>Radeon RX 5500M / gfx1012</span>
+        <span>N=512, d=64</span>
+        <span>CPU 304.41 ms</span>
+        <span>OpenCL optimized kernels 0.040 ms</span>
+        <span>max error 0.0000 — PASS</span>
+      </div>
+    </section>
+
+    <section class="selector panel">
+      <div>
+        <p class="kicker" data-t="implementationKicker">SOURCE IMPLEMENTATION</p>
+        <h2 data-t="implementationTitle">Choose the code path to inspect</h2>
+        <p id="implementationDescription"></p>
+      </div>
+      <div class="selector-buttons" role="group" aria-label="Implementation">
+        <button class="implementation active" data-implementation="opencl" data-t="openclButton">AMD / OpenCL (locally verified)</button>
+        <button class="implementation" data-implementation="cuda" data-t="cudaButton">NVIDIA / CUDA C++</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="kicker" data-t="stagesKicker">SIX EXACT STAGES</p>
+          <h2 data-t="stagesTitle">From input matrices to the verified result</h2>
+          <p data-t="stagesLead">Every stage is a contiguous part of the selected real source. The six full stages concatenate to the complete listing below without omitted lines.</p>
+        </div>
+        <strong id="lineAudit" class="audit"></strong>
+      </div>
+      <div id="stageCards" class="stage-grid"></div>
+    </section>
+
+    <section id="stageDetail" class="panel hidden">
+      <div class="section-head">
+        <div>
+          <p id="stageKicker" class="kicker"></p>
+          <h2 id="stageTitle"></h2>
+          <p id="stageDescription"></p>
+        </div>
+        <button id="closeStage" class="ghost" data-t="closeStage">Close stage</button>
+      </div>
+      <div id="substeps" class="flow" aria-label="Stage substeps"></div>
+      <div class="code-toolbar">
+        <div>
+          <button class="code-mode active" data-code-mode="short" data-t="shortCode">Short essential version</button>
+          <button class="code-mode" data-code-mode="full" data-t="fullStageCode">Full exact stage</button>
+        </div>
+        <strong id="stageLineCount"></strong>
+      </div>
+      <div id="stageCode" class="code-table"></div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="kicker" data-t="fullKicker">COMPLETE SELECTED SOURCE</p>
+          <h2 data-t="fullTitle">All six stages as one continuous listing</h2>
+          <p data-t="fullLead">This is the same source used above. Each row has a line-specific explanation; executable code remains unchanged and in its original programming language.</p>
+        </div>
+        <div class="source-links">
+          <a id="rawSource" class="ghost" href="#" target="_blank" rel="noreferrer" data-t="rawSource">Open primary raw source</a>
+          <a class="download" href="https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/attention_course_project_cpu_opencl_cuda.zip" data-t="download">Download CPU/OpenCL/CUDA project</a>
+        </div>
+      </div>
+      <button id="toggleFull" class="primary" data-t="showFull">Show complete annotated source</button>
+      <p id="fullMeta" class="meta"></p>
+      <div id="fullCode" class="code-table hidden"></div>
+    </section>
+
+    <section class="panel sources">
+      <h2 data-t="runtimeTitle">Face-recognition runtime used by Hive</h2>
+      <p data-t="runtimeText">The local GPU path uses one persistent native OpenCL DeepID worker and a CPU YuNet/SFace accuracy verifier. CPU mode uses YuNet/SFace directly. Batch GPU input is submitted to OpenCL as one tensor batch; the backend names report both parts honestly.</p>
+      <div class="source-links wrap">
+        <a class="ghost" href="source/local_detector_v2/identity_cli.cpp" target="_blank">OpenCL batch CLI</a>
+        <a class="ghost" href="source/local_detector_v2/deepid_opencl.cpp" target="_blank">OpenCL DeepID kernels</a>
+        <a class="ghost" href="source/local_detector_v2/sface_identity_verifier.py" target="_blank">YuNet / SFace verifier</a>
+        <a class="ghost" href="source/local_detector_v2/identity_matcher.py" target="_blank">Identity matcher</a>
+      </div>
+    </section>
+  </main>
+  <script src="course.js?v=20260801a"></script>
+</body>
+</html>
