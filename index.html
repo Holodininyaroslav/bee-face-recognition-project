@@ -90,15 +90,15 @@
           </div>
 
           <label class="slider-row">
-            <span data-i18n="score">Minimum score</span>
-            <output id="scoreValue">0.89</output>
-            <input id="scoreInput" type="range" min="0.70" max="0.99" step="0.01" value="0.89">
+            <span data-i18n="score">Hive acceptance score (fixed)</span>
+            <output id="scoreValue">0.42</output>
+            <input id="scoreInput" type="range" min="0.00" max="1.00" step="0.01" value="0.42" disabled>
           </label>
 
           <label class="slider-row">
-            <span data-i18n="margin">Minimum margin</span>
-            <output id="marginValue">0.02</output>
-            <input id="marginInput" type="range" min="0.00" max="0.20" step="0.005" value="0.02">
+            <span data-i18n="margin">Hive identity margin (fixed)</span>
+            <output id="marginValue">0.12</output>
+            <input id="marginInput" type="range" min="0.00" max="1.00" step="0.01" value="0.12" disabled>
           </label>
 
           <button id="recognizeButton" class="primary wide" type="button" data-i18n="recognize">Recognize</button>
@@ -123,16 +123,16 @@
           <p class="kicker" data-i18n="howKicker">HOW THE DETECTOR WORKS</p>
           <h3 id="howItWorksTitle" data-i18n="howTitle">What happens to the image inside the neural network</h3>
           <p data-i18n="howIntro">
-            This inspector shows the detector-only CUDA module: one-time initialization, DeepID inference, reference comparison, and the final identity result. Hive and web-interface code are outside this source listing.
+            This inspector follows the current local runtime used by this page: native C++ DeepID, a real OpenCL GPU path, the CPU path, the SFace accuracy verifier, and the Hive API response.
           </p>
         </div>
         <div class="detector-variant-panel" aria-labelledby="detectorVariantTitle">
           <div>
-            <p class="kicker" data-i18n="variantKicker">CUDA SOURCE VARIANT</p>
+            <p class="kicker" data-i18n="variantKicker">CURRENT LOCAL RUNTIME</p>
             <h4 id="detectorVariantTitle" data-i18n="variantTitle">Choose the recognition path to inspect</h4>
             <p id="detectorVariantDescription"></p>
           </div>
-          <div class="detector-variant-switch" role="group" aria-label="CUDA detector source variant">
+          <div class="detector-variant-switch" role="group" aria-label="Recognition request variant">
             <button class="variant-button active" type="button" data-detector-variant="single" aria-pressed="true" data-i18n="variantSingle">
               Single-image recognition
             </button>
@@ -216,17 +216,17 @@
                   <dd id="stageTensor">55 x 47 x 3</dd>
                 </div>
                 <div>
-                  <dt data-i18n="cudaLabel">CUDA mapping</dt>
+                  <dt data-i18n="cudaLabel">Compute backend</dt>
                   <dd id="stageCudaShort">Host decode</dd>
                 </div>
               </dl>
             </section>
           </div>
           <section class="cuda-panel">
-            <h4 data-i18n="cudaTitle">CUDA implementation in this project</h4>
+            <h4 data-i18n="cudaTitle">Implementation in the current local project</h4>
             <p id="stageCudaText"></p>
             <div class="code-toolbar">
-              <button id="stageCodeMode" class="ghost" type="button" data-i18n="openFullCode">Open full Colab/CUDA code for this stage</button>
+              <button id="stageCodeMode" class="ghost" type="button" data-i18n="openFullCode">Open exact current source for this stage</button>
               <span id="stageCodeSource" class="code-source" data-i18n="codeSourceShort">Short stage sketch</span>
             </div>
             <pre id="stageCode"></pre>
@@ -248,7 +248,7 @@
             </div>
             <div class="source-actions">
               <button id="loadFullDetectorSource" class="ghost" type="button" data-i18n="openDetectorSource">Show the complete combined code</button>
-              <a class="ghost link" href="source/cuda_deepid_detector.py" target="_blank" rel="noreferrer" data-i18n="openRawDetectorSource">Open detector-only raw source</a>
+              <a class="ghost link" href="source/local_detector_v2/identity_cli.cpp" target="_blank" rel="noreferrer" data-i18n="openRawDetectorSource">Open current detector entry point</a>
             </div>
           </div>
           <p id="fullSourceMeta" class="source-meta" data-i18n="sourceClosed">Closed. Open it to verify the total against stages 1–6.</p>
@@ -282,6 +282,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=attention-course-20260801a"></script>
+  <script src="script.js?v=current-local-runtime-20260801b"></script>
 </body>
 </html>

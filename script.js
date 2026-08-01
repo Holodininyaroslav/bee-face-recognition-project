@@ -2110,6 +2110,219 @@ print(batch["results"], batch["total_ms"], batch["avg_ms_per_photo"])`
   }
 };
 
+// The simple demonstration and this inspector now describe the same local stack.
+// Each full stage below is loaded from the current detector sources under
+// source/local_detector_v2; the old standalone PyTorch/CUDA listing is not used.
+const currentRuntimeStageSources = [
+  { path: "source/local_detector_v2/deepid_engine.hpp", from: 0, to: null },
+  { path: "source/local_detector_v2/deepid_engine.cpp", from: 0, to: 442 },
+  { path: "source/local_detector_v2/deepid_engine.cpp", from: 442, to: null },
+  { path: "source/local_detector_v2/deepid_opencl.cpp", from: 0, to: null },
+  { path: "source/local_detector_v2/identity_cli.cpp", from: 0, to: null },
+  { path: "source/local_detector_v2/sface_identity_verifier.py", from: 0, to: null }
+];
+
+const currentRuntimeStages = [
+  {
+    level: "01",
+    title: { en: "Runtime contract and one-time initialization", ru: "Контракт среды и одноразовая инициализация", he: "חוזה סביבת הריצה ואתחול חד־פעמי" },
+    summary: {
+      en: "Defines the image, embedding, match-result, DeepID model, and reference-matcher interfaces shared by the real CPU and OpenCL implementations.",
+      ru: "Определяет структуры изображения, вектора признаков и результата, а также интерфейсы DeepID и сопоставления с эталонами, общие для реальных реализаций CPU и OpenCL.",
+      he: "מגדיר את מבני התמונה, וקטור המאפיינים ותוצאת ההתאמה, וכן את ממשקי DeepID והייחוסים המשותפים למימושי CPU ו‑OpenCL האמיתיים."
+    },
+    diagram: { en: ["Image contract", "DeepID model", "Reference bank", "Match result"], ru: ["Контракт изображения", "Модель DeepID", "Банк эталонов", "Результат"], he: ["חוזה תמונה", "מודל DeepID", "מאגר ייחוסים", "תוצאה"] },
+    diagramNotes: {
+      en: ["Image stores width, height and RGBA bytes.", "DeepIDModel exposes one-image and batch embedding methods and reports its actual backend.", "FaceMatcher owns the trained model and cached reference embeddings.", "MatchResult carries accepted identity, best score, runner-up, margin and timing."],
+      ru: ["Image хранит ширину, высоту и RGBA-байты.", "DeepIDModel предоставляет одиночное и пакетное получение векторов и сообщает фактический backend.", "FaceMatcher владеет обученной моделью и кэшированными векторами эталонов.", "MatchResult содержит принятое имя, лучший результат, второе место, отрыв и время."],
+      he: ["Image שומר רוחב, גובה ובתי RGBA.", "DeepIDModel מספק הפקת embedding יחידה ובאצווה ומדווח על ה‑backend בפועל.", "FaceMatcher מחזיק את המודל המאומן ואת embeddings הייחוס שבמטמון.", "MatchResult מכיל זהות שאושרה, ציון מיטבי, מקום שני, פער וזמן."]
+    },
+    layers: { en: "Interfaces only; no inference yet", ru: "Только интерфейсы; инференса ещё нет", he: "ממשקים בלבד; עדיין אין הסקה" },
+    connections: { en: "No MAC operations", ru: "Операций MAC нет", he: "אין פעולות MAC" },
+    tensor: "Image RGBA → embedding 160D → MatchResult",
+    cudaShort: { en: "Declares CPU/OpenCL backend-neutral interfaces", ru: "Объявляет общий интерфейс для CPU/OpenCL", he: "מגדיר ממשק משותף ל‑CPU/OpenCL" },
+    cuda: { en: "This header does not pretend to run GPU work. It defines the contract implemented by the CPU engine and the separate native OpenCL engine.", ru: "Этот заголовок не выдаёт CPU за GPU: он только задаёт контракт, который отдельно реализуют CPU-движок и нативный OpenCL-движок.", he: "קובץ הכותרת אינו מציג עבודת CPU כ‑GPU; הוא מגדיר חוזה שממומש בנפרד במנוע CPU ובמנוע OpenCL מקורי." },
+    code: "DeepIDModel model(weights);\nFaceMatcher matcher(weights, references, threshold);\nMatchResult result = matcher.match(image);"
+  },
+  {
+    level: "02",
+    title: { en: "Weights, image variants, and CPU DeepID primitives", ru: "Веса, варианты изображения и CPU-примитивы DeepID", he: "משקלים, וריאציות תמונה ופעולות DeepID ב‑CPU" },
+    summary: { en: "Loads the trained DIDW1 tensors, validates their shapes, prepares resized/cropped inputs, and defines the exact convolution, pooling, dense, ReLU, and normalization operations for the CPU path.", ru: "Загружает обученные тензоры DIDW1, проверяет их формы, готовит масштабированные и обрезанные входы и задаёт точные операции свёртки, pooling, dense, ReLU и нормализации для CPU-пути.", he: "טוען את טנזורי DIDW1 המאומנים, מאמת את הממדים, מכין קלטים חתוכים ומותאמים ומגדיר convolution, pooling, dense, ReLU ונרמול מדויקים למסלול CPU." },
+    diagram: { en: ["DIDW1 weights", "Crop / resize", "Conv + pool", "Dense + L2"], ru: ["Веса DIDW1", "Обрезка / размер", "Свёртка + pooling", "Dense + L2"], he: ["משקלי DIDW1", "חיתוך / שינוי גודל", "Conv + pooling", "Dense + L2"] },
+    diagramNotes: {
+      en: ["Reads every named float32 tensor only after checking the binary signature and dimensions.", "Converts RGBA input to the 55×47×3 layout expected by the trained network.", "Implements the four convolutional blocks and max-pooling used by DeepID.", "Combines the dense branches and L2-normalizes the final 160-value embedding."],
+      ru: ["Читает каждый именованный float32-тензор только после проверки сигнатуры и размеров бинарного файла.", "Преобразует RGBA-вход к компоновке 55×47×3, ожидаемой обученной сетью.", "Реализует четыре свёрточных блока и max-pooling сети DeepID.", "Объединяет полносвязные ветви и L2-нормализует итоговый вектор из 160 значений."],
+      he: ["קורא כל טנזור float32 בעל שם רק אחרי אימות חתימת הקובץ והממדים.", "ממיר קלט RGBA למבנה 55×47×3 שהרשת המאומנת מצפה לו.", "מממש ארבעה בלוקי convolution ו‑max-pooling של DeepID.", "משלב את הענפים הצפופים ומבצע נרמול L2 ל‑embedding בן 160 ערכים."]
+    },
+    layers: { en: "Conv1–Conv4, three max pools, FC11/FC12, ReLU, L2", ru: "Conv1–Conv4, три max-pooling, FC11/FC12, ReLU, L2", he: "Conv1–Conv4, שלושה max-pool, ‏FC11/FC12, ‏ReLU, ‏L2" },
+    connections: { en: "Exact trained DIDW1 convolution and dense parameters", ru: "Точные обученные параметры DIDW1 для conv и dense", he: "פרמטרי convolution ו‑dense מאומנים ומדויקים של DIDW1" },
+    tensor: "RGBA → 55×47×3 float → intermediate feature maps",
+    cudaShort: { en: "CPU implementation and shared preprocessing", ru: "CPU-реализация и общая предобработка", he: "מימוש CPU ועיבוד מקדים משותף" },
+    cuda: { en: "In CPU mode these loops perform the neural arithmetic on the processor. GPU mode uses the same weights and input layout but dispatches the corresponding operations through the OpenCL kernels in stage 4.", ru: "В режиме CPU эти циклы выполняют нейросетевую арифметику на процессоре. Режим GPU использует те же веса и формат входа, но запускает соответствующие операции через OpenCL-ядра этапа 4.", he: "במצב CPU הלולאות מבצעות את החשבון העצבי במעבד. מצב GPU משתמש באותם משקלים ובאותו מבנה קלט, אך משגר את הפעולות המקבילות דרך kernels של OpenCL בשלב 4." },
+    code: "auto weights = load_weights(weights_path);\nauto input = preprocess(image);\n// CPU primitives define the reference arithmetic."
+  },
+  {
+    level: "03",
+    title: { en: "Embeddings, cached references, and identity decision", ru: "Векторы, кэш эталонов и решение о личности", he: "Embeddings, מטמון ייחוסים והחלטת זהות" },
+    summary: { en: "Runs single or batched embedding, initializes reference vectors once, compares cosine scores per person, and applies the best-score and margin decision rules.", ru: "Выполняет одиночное или пакетное извлечение векторов, один раз инициализирует эталоны, сравнивает косинусные оценки по людям и применяет пороги лучшего результата и отрыва.", he: "מריץ embedding יחיד או באצווה, מאתחל פעם אחת את וקטורי הייחוס, משווה ציוני cosine לכל אדם ומחיל את ספי הציון והפער." },
+    diagram: { en: ["Input batch", "160D embeddings", "Cached references", "Score + margin"], ru: ["Пакет входов", "Векторы 160D", "Кэш эталонов", "Оценка + отрыв"], he: ["אצוות קלט", "Embeddings 160D", "ייחוסים במטמון", "ציון + פער"] },
+    diagramNotes: {
+      en: ["embed_batch keeps all requested images together when the backend supports a native batch.", "Each image becomes one normalized 160D DeepID vector.", "Reference photos are embedded at warm-up and reused instead of recomputed for every request.", "Cosine similarities are reduced per identity; acceptance requires both the configured score and margin."],
+      ru: ["embed_batch сохраняет все запрошенные изображения одним пакетом, если backend поддерживает нативную пачку.", "Каждое изображение превращается в один нормализованный вектор DeepID размером 160D.", "Эталонные фотографии векторизуются при прогреве и повторно используются без пересчёта на каждом запросе.", "Косинусные сходства сводятся по каждому человеку; для принятия нужны и заданная оценка, и отрыв."],
+      he: ["embed_batch שומר את כל התמונות המבוקשות באצווה אחת כאשר ה‑backend תומך באצווה מקורית.", "כל תמונה הופכת לוקטור DeepID מנורמל בגודל 160D.", "תמונות הייחוס עוברות embedding בחימום ונעשה בהן שימוש חוזר ללא חישוב מחדש בכל בקשה.", "ציוני cosine מצטמצמים לכל זהות; אישור דורש גם ציון וגם פער מעל הספים."]
+    },
+    layers: { en: "DeepID forward plus cosine reduction and decision logic", ru: "Проход DeepID, косинусная свёртка и логика решения", he: "מעבר DeepID, צמצום cosine ולוגיקת החלטה" },
+    connections: { en: "V×160 embeddings compared with N×160 references", ru: "Векторы V×160 сравниваются с эталонами N×160", he: "Embeddings ‏V×160 מושווים לייחוסים N×160" },
+    tensor: "B×55×47×3 → B×160 → B×N scores",
+    cudaShort: { en: "Shared decision logic; backend reports CPU or OpenCL", ru: "Общая логика решения; backend сообщает CPU или OpenCL", he: "לוגיקת החלטה משותפת; ה‑backend מדווח CPU או OpenCL" },
+    cuda: { en: "The selected backend returns embeddings; this stage performs identical identity scoring rules so CPU and OpenCL results are comparable. It does not relabel CPU work as GPU work.", ru: "Выбранный backend возвращает векторы; этап применяет одинаковые правила оценки личности, поэтому результаты CPU и OpenCL сопоставимы. CPU-работа здесь не выдаётся за GPU.", he: "ה‑backend שנבחר מחזיר embeddings; השלב מחיל כללי זיהוי זהים כדי שתוצאות CPU ו‑OpenCL יהיו בנות השוואה. עבודת CPU אינה מסומנת כ‑GPU." },
+    code: "auto embeddings = model_.embed_batch(images);\nreload_references();\nreturn best_score >= min_score && margin >= min_margin;"
+  },
+  {
+    level: "04",
+    title: { en: "Native OpenCL GPU kernels and true tensor batch", ru: "Нативные OpenCL-ядра GPU и настоящая тензорная пачка", he: "Kernels מקוריים של OpenCL ואצוות טנזורים אמיתית" },
+    summary: { en: "Selects a real GPU OpenCL device, creates device buffers, compiles custom kernels for convolution, pooling, dense, add/ReLU, and normalization, and processes the entire requested tensor batch in one OpenCL execution path.", ru: "Выбирает реальное GPU-устройство OpenCL, создаёт буферы видеокарты, компилирует собственные ядра свёртки, pooling, dense, add/ReLU и нормализации и обрабатывает всю запрошенную пачку тензоров одним OpenCL-путём.", he: "בוחר התקן GPU אמיתי של OpenCL, יוצר מאגרי התקן, מהדר kernels מותאמים ל‑convolution, pooling, dense, add/ReLU ונרמול ומעבד את כל אצוות הטנזורים במסלול OpenCL אחד." },
+    diagram: { en: ["Select GPU device", "Upload batch + weights", "Kernel chain", "Read B×160"], ru: ["Выбор GPU", "Загрузка пачки и весов", "Цепочка ядер", "Чтение B×160"], he: ["בחירת GPU", "העלאת אצווה ומשקלים", "שרשרת kernels", "קריאת B×160"] },
+    diagramNotes: {
+      en: ["Enumerates OpenCL platforms and accepts a GPU device; failure is reported instead of silently using CPU.", "Creates OpenCL buffers for all batch inputs and trained tensors.", "Dispatches the custom conv_relu, max_pool, dense, add_relu and normalization kernels over batch-aware global ranges.", "Waits for the command queue and copies the complete B×160 result back once."],
+      ru: ["Перебирает OpenCL-платформы и принимает GPU-устройство; при его отсутствии сообщает ошибку вместо скрытого CPU.", "Создаёт OpenCL-буферы для всей пачки входов и обученных тензоров.", "Запускает собственные ядра conv_relu, max_pool, dense, add_relu и нормализации с глобальными диапазонами, учитывающими размер пачки.", "Дожидается очереди команд и один раз копирует полный результат B×160 обратно."],
+      he: ["סורק פלטפורמות OpenCL ומקבל התקן GPU; בהיעדרו מדווחת שגיאה במקום מעבר נסתר ל‑CPU.", "יוצר מאגרי OpenCL לכל קלטי האצווה ולטנזורים המאומנים.", "משגר kernels מותאמים של conv_relu, max_pool, dense, add_relu ונרמול בטווחים הכוללים את ממד האצווה.", "ממתין לתור הפקודות ומעתיק פעם אחת את כל תוצאת B×160 חזרה."]
+    },
+    layers: { en: "Custom OpenCL conv, pool, dense, add/ReLU and L2 kernels", ru: "Собственные OpenCL-ядра conv, pool, dense, add/ReLU и L2", he: "Kernels מותאמים של OpenCL ל‑conv, pool, dense, add/ReLU ו‑L2" },
+    connections: { en: "Parallel work-items cover batch, channels, pixels and neurons", ru: "Параллельные work-item охватывают пачку, каналы, пиксели и нейроны", he: "Work-items מקבילים מכסים אצווה, ערוצים, פיקסלים ונוירונים" },
+    tensor: "B×3×55×47 on host → OpenCL buffers → B×160",
+    cudaShort: { en: "Actual GPU backend: OpenCL, not CUDA and not CPU", ru: "Фактический GPU-backend: OpenCL, не CUDA и не CPU", he: "ה‑backend בפועל של GPU הוא OpenCL, לא CUDA ולא CPU" },
+    cuda: { en: "On this AMD computer GPU means native OpenCL. The code explicitly requests CL_DEVICE_TYPE_GPU and reports the selected platform/device. CUDA is a separate NVIDIA build and is not claimed here.", ru: "На этом компьютере AMD режим GPU означает нативный OpenCL. Код явно запрашивает CL_DEVICE_TYPE_GPU и сообщает выбранную платформу и устройство. CUDA — отдельная сборка для NVIDIA и здесь не заявляется.", he: "במחשב AMD הזה מצב GPU פירושו OpenCL מקורי. הקוד מבקש במפורש CL_DEVICE_TYPE_GPU ומדווח את הפלטפורמה וההתקן. CUDA היא בנייה נפרדת ל‑NVIDIA ואינה נטענת כאן." },
+    code: "clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, ...);\nrun_deepid_opencl_forward_batch(inputs, batch_size, weights, ...);"
+  },
+  {
+    level: "05",
+    title: { en: "Persistent worker, references, single and batch requests", ru: "Постоянный worker, эталоны, одиночные и пакетные запросы", he: "Worker קבוע, ייחוסים, בקשות יחידות ואצווה" },
+    summary: { en: "Warms the model and all reference embeddings once, keeps the detector process alive, accepts distinct single or batch commands, and returns honest backend/timing fields as JSON.", ru: "Один раз прогревает модель и все векторы эталонов, сохраняет процесс детектора живым, принимает разные команды single и batch и возвращает честные поля backend и времени в JSON.", he: "מחמם פעם אחת את המודל ואת כל embeddings הייחוס, משאיר את תהליך הגלאי חי, מקבל פקודות נפרדות single ו‑batch ומחזיר שדות backend וזמן אמינים ב‑JSON." },
+    diagram: { en: ["Start worker", "Warm references", "single | batch", "JSON results"], ru: ["Запуск worker", "Прогрев эталонов", "single | batch", "JSON-результаты"], he: ["הפעלת worker", "חימום ייחוסים", "single | batch", "תוצאות JSON"] },
+    diagramNotes: {
+      en: ["Constructs IdentityDetector once instead of launching a new neural runtime per photo.", "Embeds every Adi, Faraj and Slava reference during initialization and caches the vectors.", "The line protocol preserves a single image as one request and a list as one real batch request.", "Returns each decision plus backend, initialization, recognition and per-photo timing."],
+      ru: ["Один раз создаёт IdentityDetector вместо запуска новой нейросетевой среды для каждой фотографии.", "При инициализации получает векторы всех эталонов Ади, Фараджа и Славы и сохраняет их в кэше.", "Строчный протокол оставляет одно изображение одиночным запросом, а список передаёт как один настоящий пакетный запрос.", "Возвращает каждое решение вместе с backend, временем инициализации, распознавания и временем на фото."],
+      he: ["יוצר IdentityDetector פעם אחת במקום להפעיל סביבת רשת חדשה לכל תמונה.", "באתחול מפיק embeddings לכל ייחוסי עדי, פראג' וסלאבה ושומר אותם במטמון.", "הפרוטוקול שומר תמונה יחידה כבקשה אחת ורשימה כבקשת אצווה אמיתית אחת.", "מחזיר כל החלטה יחד עם backend וזמני אתחול, זיהוי ותמונה."]
+    },
+    layers: { en: "Persistent orchestration around the DeepID model", ru: "Постоянная оркестрация вокруг модели DeepID", he: "תזמור קבוע סביב מודל DeepID" },
+    connections: { en: "One model batch for all images in a GPU batch request", ru: "Один пакетный проход модели для всех изображений GPU-запроса", he: "מעבר אצווה אחד של המודל לכל תמונות בקשת GPU" },
+    tensor: "single: V×input; batch: ΣV×input → per-image results",
+    cudaShort: { en: "Separate single and batch protocol paths", ru: "Раздельные протокольные пути single и batch", he: "מסלולי פרוטוקול נפרדים ל‑single ול‑batch" },
+    cuda: { en: "The batch command calls embed_batch once for the accumulated images. It is not a browser loop that merely labels serial CPU calls as a GPU batch.", ru: "Команда batch один раз вызывает embed_batch для накопленных изображений. Это не браузерный цикл, который выдаёт последовательные CPU-вызовы за GPU-пачку.", he: "פקודת batch קוראת ל‑embed_batch פעם אחת עבור התמונות שנאספו. זו אינה לולאת דפדפן שמסמנת קריאות CPU סדרתיות כאצוות GPU." },
+    code: "single<TAB>image<TAB>hint\nbatch<TAB>image1|image2|...<TAB>hint1|hint2|..."
+  },
+  {
+    level: "06",
+    title: { en: "YuNet/SFace accuracy verification and final Hive answer", ru: "Проверка точности YuNet/SFace и итоговый ответ Hive", he: "אימות דיוק YuNet/SFace ותשובת Hive סופית" },
+    summary: { en: "Detects and aligns a real face with YuNet landmarks, compares an SFace embedding with cached references, and supplies the accuracy decision used by Hive; the simple demo requests a separate verified identity for every file in a batch.", ru: "Находит и выравнивает реальное лицо по ориентирам YuNet, сравнивает SFace-вектор с кэшированными эталонами и выдаёт точное решение для Hive; простая демонстрация запрашивает отдельно проверенное имя для каждого файла пачки.", he: "מזהה ומיישר פנים אמיתיות לפי נקודות YuNet, משווה embedding של SFace לייחוסים שבמטמון ומספק את החלטת הדיוק ל‑Hive; ההדגמה הפשוטה מבקשת זהות מאומתת נפרדת לכל קובץ באצווה." },
+    diagram: { en: ["YuNet face + landmarks", "SFace alignment", "Cached references", "Hive accepted/Unknown"], ru: ["Лицо и ориентиры YuNet", "Выравнивание SFace", "Кэш эталонов", "Hive: имя/Unknown"], he: ["פנים ונקודות YuNet", "יישור SFace", "ייחוסים במטמון", "Hive: זהות/Unknown"] },
+    diagramNotes: {
+      en: ["YuNet returns the face box and five landmarks instead of relying on a center crop alone.", "SFace aligns the crop from those landmarks and produces a stable identity embedding.", "Reference embeddings are cached by file signature and reused across requests.", "Hive combines the real OpenCL DeepID batch with explicit per-image CPU verification for the simple demo and reports both parts in the backend string."],
+      ru: ["YuNet возвращает рамку лица и пять ориентиров вместо одной центральной обрезки.", "SFace выравнивает обрезку по этим ориентирам и создаёт устойчивый вектор личности.", "Векторы эталонов кэшируются по сигнатуре файлов и повторно используются между запросами.", "Для простой демонстрации Hive объединяет настоящую OpenCL-пачку DeepID с явной CPU-проверкой каждого изображения и указывает обе части в строке backend."],
+      he: ["YuNet מחזיר תיבת פנים וחמש נקודות ציון במקום להסתמך רק על חיתוך מרכזי.", "SFace מיישר את החיתוך לפי הנקודות ומפיק embedding יציב לזהות.", "Embeddings הייחוס נשמרים לפי חתימת הקבצים ונעשה בהם שימוש חוזר בין בקשות.", "בהדגמה הפשוטה Hive משלב את אצוות OpenCL DeepID האמיתית עם אימות CPU מפורש לכל תמונה ומדווח את שני החלקים במחרוזת ה‑backend."]
+    },
+    layers: { en: "YuNet detector + SFace embedding + threshold/consensus", ru: "Детектор YuNet + SFace-вектор + пороги/консенсус", he: "גלאי YuNet + ‏embedding של SFace + ספים/קונצנזוס" },
+    connections: { en: "CPU verifier is explicit; OpenCL DeepID remains a separate GPU result", ru: "CPU-проверка указана явно; OpenCL DeepID остаётся отдельным GPU-результатом", he: "מאמת ה‑CPU מפורש; OpenCL DeepID נשאר תוצאת GPU נפרדת" },
+    tensor: "face landmarks → aligned SFace embedding → score/margin → JSON",
+    cudaShort: { en: "GPU backend string names OpenCL + CPU verifier honestly", ru: "Строка GPU-backend честно указывает OpenCL и CPU-проверку", he: "מחרוזת ה‑backend מציינת ביושר OpenCL ומאמת CPU" },
+    cuda: { en: "The current AMD result is intentionally hybrid: OpenCL executes DeepID on the GPU, while the accuracy guard runs YuNet/SFace on CPU. CPU mode runs YuNet/SFace only. The JSON backend states this explicitly.", ru: "Текущий результат на AMD намеренно гибридный: OpenCL выполняет DeepID на GPU, а проверка точности YuNet/SFace работает на CPU. Режим CPU запускает только YuNet/SFace. Поле backend в JSON указывает это прямо.", he: "התוצאה הנוכחית ב‑AMD היברידית בכוונה: OpenCL מריץ DeepID ב‑GPU, בעוד בדיקת הדיוק YuNet/SFace רצה ב‑CPU. מצב CPU מריץ רק YuNet/SFace. שדה backend ב‑JSON מציין זאת במפורש." },
+    code: "face = yunet.detect(image)\naligned = sface.alignCrop(image, face)\nidentity = verifier.recognize(image_path)"
+  }
+];
+
+Object.assign(detectorVariantCatalog.single, {
+  label: { en: "single-image request", ru: "одиночный запрос", he: "בקשת תמונה יחידה" },
+  description: { en: "The page sends one image to /api/detect. Hive uses the current CPU path or the real OpenCL DeepID path plus the explicit CPU SFace verifier.", ru: "Страница отправляет одно изображение в /api/detect. Hive использует текущий CPU-путь либо реальный OpenCL DeepID вместе с явной CPU-проверкой SFace.", he: "הדף שולח תמונה אחת אל ‎/api/detect. ‏Hive משתמש במסלול CPU הנוכחי או ב‑OpenCL DeepID אמיתי יחד עם מאמת SFace מפורש ב‑CPU." },
+  source: { en: "Exact current local detector sources; the six stages concatenate to the complete displayed listing.", ru: "Точные актуальные исходники локального детектора; шесть этапов без пропусков образуют показанный общий листинг.", he: "קוד המקור המדויק והנוכחי של הגלאי המקומי; ששת השלבים מתחברים ללא דילוגים לרשימה המלאה המוצגת." },
+  stages: currentRuntimeStages
+});
+Object.assign(detectorVariantCatalog.batch, {
+  label: { en: "true batch request", ru: "настоящий пакетный запрос", he: "בקשת אצווה אמיתית" },
+  description: { en: "When several files are selected, the page sends one /api/detect-batch request with per-image verification. GPU mode performs one native OpenCL tensor batch, then the explicit CPU verifier assigns the correct identity to each file; CPU mode verifies every image on CPU.", ru: "При выборе нескольких файлов страница отправляет один запрос /api/detect-batch с проверкой каждого изображения. Режим GPU выполняет одну нативную тензорную пачку OpenCL, после чего явный CPU-проверяющий модуль присваивает правильное имя каждому файлу; режим CPU проверяет все изображения на CPU.", he: "כאשר נבחרים כמה קבצים, הדף שולח בקשת ‎/api/detect-batch אחת עם אימות לכל תמונה. מצב GPU מבצע אצוות טנזורים מקורית אחת ב‑OpenCL, ואז מאמת ה‑CPU המפורש משייך זהות נכונה לכל קובץ; מצב CPU בודק כל תמונה ב‑CPU." },
+  source: { en: "The same exact current runtime sources, viewed through the batch entry path in stage 5; no serial-browser-loop implementation is substituted.", ru: "Те же точные актуальные исходники, но с пакетной точкой входа этапа 5; последовательный браузерный цикл не подставляется вместо пачки.", he: "אותם מקורות עדכניים ומדויקים, דרך כניסת האצווה בשלב 5; לא מוחלפת בהם לולאת דפדפן סדרתית." },
+  stages: currentRuntimeStages
+});
+
+Object.assign(translations.en, {
+  score: "Hive acceptance score (fixed)",
+  margin: "Hive identity margin (fixed)",
+  howIntro: "This inspector follows the current local runtime used by this page: native C++ DeepID, a real OpenCL GPU path, the CPU path, the SFace accuracy verifier, and the Hive API response.",
+  variantKicker: "CURRENT LOCAL RUNTIME",
+  variantTitle: "Choose the request path to inspect",
+  variantSingle: "Single-image request",
+  variantBatch: "True batch request",
+  modeExplainText: "On this AMD computer, GPU mode is native OpenCL DeepID plus an explicitly reported CPU YuNet/SFace accuracy verifier. CPU mode runs YuNet/SFace on the processor. The backend field states the executed path; CUDA belongs to the separate NVIDIA build.",
+  sourceTitle: "Complete current local detector source shown by the six stages",
+  sourceIntro: "The listing is the exact concatenation of the current source blocks shown in stages 1–6. The page verifies that its line count and text order equal the six-stage sum.",
+  sourceLoading: "Loading the current C++/OpenCL/SFace detector sources…",
+  sourceError: "Could not load or verify the current local detector sources.",
+  openRawDetectorSource: "Open current detector entry point",
+  fullStageExact: "Exact block from the current local detector sources",
+  fullStageDetector: "Exact block from the current local detector sources",
+  fullStageNotebook: "Exact block from the current local detector sources",
+  sourceLoaded: "Verified: {total} lines in the complete {variant} listing = {sum} lines across stages 1–6; the text is identical."
+});
+Object.assign(translations.ru, {
+  score: "Порог принятия Hive (фиксированный)",
+  margin: "Отрыв личности Hive (фиксированный)",
+  howIntro: "Этот просмотр следует фактическому локальному пути, который использует страница: нативный C++ DeepID, настоящий GPU-путь OpenCL, CPU-путь, проверка точности SFace и ответ API Hive.",
+  variantKicker: "ТЕКУЩАЯ ЛОКАЛЬНАЯ СРЕДА",
+  variantTitle: "Выберите путь запроса для просмотра",
+  variantSingle: "Одиночный запрос",
+  variantBatch: "Настоящий пакетный запрос",
+  modeExplainText: "На этом компьютере AMD режим GPU — это нативный OpenCL DeepID плюс явно указанная CPU-проверка точности YuNet/SFace. Режим CPU выполняет YuNet/SFace на процессоре. Поле backend сообщает фактический путь; CUDA относится к отдельной сборке NVIDIA.",
+  sourceTitle: "Полный актуальный исходник локального детектора по шести этапам",
+  sourceIntro: "Листинг является точным объединением актуальных блоков исходника из этапов 1–6. Страница проверяет, что количество строк и порядок текста совпадают с суммой шести этапов.",
+  sourceLoading: "Загружаются актуальные исходники C++/OpenCL/SFace…",
+  sourceError: "Не удалось загрузить или проверить актуальные исходники локального детектора.",
+  openRawDetectorSource: "Открыть текущую точку входа детектора",
+  fullStageExact: "Точный блок из актуальных исходников локального детектора",
+  fullStageDetector: "Точный блок из актуальных исходников локального детектора",
+  fullStageNotebook: "Точный блок из актуальных исходников локального детектора",
+  sourceLoaded: "Проверено: {total} строк в полном листинге «{variant}» = {sum} строк на этапах 1–6; текст полностью совпадает."
+});
+Object.assign(translations.he, {
+  score: "סף קבלה של Hive (קבוע)",
+  margin: "פער זהות של Hive (קבוע)",
+  howIntro: "התצוגה עוקבת אחר מסלול הריצה המקומי שבו הדף משתמש בפועל: DeepID מקורי ב‑C++, מסלול GPU אמיתי ב‑OpenCL, מסלול CPU, מאמת דיוק SFace ותשובת API של Hive.",
+  variantKicker: "סביבת הריצה המקומית הנוכחית",
+  variantTitle: "בחרו מסלול בקשה לעיון",
+  variantSingle: "בקשת תמונה יחידה",
+  variantBatch: "בקשת אצווה אמיתית",
+  modeExplainText: "במחשב AMD הזה מצב GPU הוא OpenCL DeepID מקורי יחד עם מאמת דיוק YuNet/SFace ב‑CPU שמדווח במפורש. מצב CPU מריץ YuNet/SFace במעבד. שדה backend מציין את המסלול שבוצע; CUDA שייך לבנייה הנפרדת של NVIDIA.",
+  sourceTitle: "קוד המקור המקומי העדכני המלא לפי שישה שלבים",
+  sourceIntro: "הרשימה היא חיבור מדויק של בלוקי קוד המקור העדכניים המוצגים בשלבים 1–6. הדף מאמת שמספר השורות וסדר הטקסט שווים לסכום ששת השלבים.",
+  sourceLoading: "טוען את מקורות C++/OpenCL/SFace העדכניים…",
+  sourceError: "לא ניתן לטעון או לאמת את מקורות הגלאי המקומי העדכניים.",
+  openRawDetectorSource: "פתיחת נקודת הכניסה הנוכחית של הגלאי",
+  fullStageExact: "בלוק מדויק ממקורות הגלאי המקומי העדכניים",
+  fullStageDetector: "בלוק מדויק ממקורות הגלאי המקומי העדכניים",
+  fullStageNotebook: "בלוק מדויק ממקורות הגלאי המקומי העדכניים",
+  sourceLoaded: "אומת: {total} שורות ברשימת «{variant}» המלאה = {sum} שורות בשלבים 1–6; הטקסט זהה."
+});
+Object.assign(detailUi.en, {
+  cudaLabel: "Compute backend",
+  cudaTitle: "Implementation in the current local project",
+  openFullCode: "Open exact current source for this stage",
+  codeSourceShort: "Short current-runtime sketch",
+  codeSourceFull: "Exact current local source"
+});
+Object.assign(detailUi.ru, {
+  cudaLabel: "Вычислительный backend",
+  cudaTitle: "Реализация в текущем локальном проекте",
+  openFullCode: "Открыть точный актуальный исходник этапа",
+  codeSourceShort: "Короткая схема текущей среды",
+  codeSourceFull: "Точный актуальный локальный исходник"
+});
+Object.assign(detailUi.he, {
+  cudaLabel: "Backend חישובי",
+  cudaTitle: "המימוש בפרויקט המקומי הנוכחי",
+  openFullCode: "פתיחת קוד המקור המדויק והעדכני של השלב",
+  codeSourceShort: "תרשים קצר של סביבת הריצה הנוכחית",
+  codeSourceFull: "קוד המקור המקומי המדויק והעדכני"
+});
+
 function activeVariantDefinition() {
   return detectorVariantCatalog[activeDetectorVariant] || detectorVariantCatalog.single;
 }
@@ -3378,11 +3591,49 @@ function sourceLineAnnotation(line, lang) {
  return hebrew ? "מבצעת את פעולת Python המוצגת משמאל כחלק מהחישוב או מהכנת נתוני הגלאי." : "Выполняет показанную слева операцию Python как часть вычисления или подготовки данных детектора.";
 }
 
+function currentCppSourceAnnotation(text, lang) {
+  const say = (en, ru, he) => lang === "ru" ? ru : lang === "he" ? he : en;
+  if (/^#include\s+/.test(text)) return say(
+    `Includes ${text.replace(/^#include\s+/, "")} so its declarations are available while compiling this detector source.`,
+    `Подключает ${text.replace(/^#include\s+/, "")}, чтобы его объявления были доступны при компиляции этого исходника детектора.`,
+    `כולל את ${text.replace(/^#include\s+/, "")} כדי שההצהרות יהיו זמינות בזמן הידור מקור הגלאי.`
+  );
+  if (/^#(if|ifdef|ifndef|elif|else|endif|define)\b/.test(text)) return say(
+    "C/C++ preprocessor directive that selects or defines the compiled backend code.",
+    "Директива препроцессора C/C++, которая выбирает или определяет компилируемый код backend.",
+    "הנחיית קדם־מעבד של C/C++ שבוחרת או מגדירה את קוד ה‑backend שיודר."
+  );
+  if (/^(\/\/|\/\*|\*)/.test(text)) return say(
+    "Non-executable C++ documentation comment describing the adjacent detector code.",
+    "Неисполняемый комментарий C++, поясняющий соседний код детектора.",
+    "הערת תיעוד לא־מבוצעת של C++ המתארת את קוד הגלאי הסמוך."
+  );
+  if (/^namespace\b/.test(text)) return say("Opens or names the C++ namespace that groups these detector symbols.", "Открывает или называет пространство имён C++, объединяющее эти символы детектора.", "פותח או מציין מרחב שמות C++ שמאגד את סמלי הגלאי האלה.");
+  if (/^(struct|class)\s+/.test(text)) return say("Declares a C++ data type that groups the state and operations named on this line.", "Объявляет тип данных C++, объединяющий указанное состояние и операции.", "מצהיר על טיפוס נתונים ב‑C++ שמאגד את המצב והפעולות המצוינים.");
+  if (/clGetDeviceIDs\s*\(/.test(text)) return say("Queries OpenCL for a real device of the requested type; this project requests a GPU and does not silently substitute CPU.", "Запрашивает у OpenCL реальное устройство требуемого типа; проект просит GPU и не подставляет CPU скрытно.", "מבקש מ‑OpenCL התקן אמיתי מהסוג הנדרש; הפרויקט מבקש GPU ואינו מחליף אותו ב‑CPU בסתר.");
+  if (/clCreate(Buffer|Context|CommandQueue|Program|Kernel)/.test(text)) return say("Creates the named OpenCL resource used to hold data, compile kernels, or queue GPU work.", "Создаёт указанный ресурс OpenCL для хранения данных, компиляции ядер или постановки GPU-работы в очередь.", "יוצר את משאב OpenCL המצוין לאחסון נתונים, הידור kernels או תזמון עבודת GPU.");
+  if (/clEnqueueNDRangeKernel\s*\(/.test(text)) return say("Enqueues this OpenCL kernel over its global work range so independent outputs run in parallel on the GPU.", "Ставит это OpenCL-ядро в очередь с глобальным рабочим диапазоном, чтобы независимые выходы вычислялись параллельно на GPU.", "מכניס את kernel של OpenCL לתור על פני טווח העבודה הגלובלי כדי שפלטים בלתי תלויים ירוצו במקביל ב‑GPU.");
+  if (/clEnqueue(Read|Write)Buffer\s*\(/.test(text)) return say("Transfers the specified tensor buffer between host memory and OpenCL device memory.", "Переносит указанный тензорный буфер между памятью CPU и памятью устройства OpenCL.", "מעביר את מאגר הטנזור המצוין בין זיכרון המארח לזיכרון התקן OpenCL.");
+  if (/clFinish\s*\(/.test(text)) return say("Waits until all previously queued OpenCL commands have completed before timing or reading results.", "Ждёт завершения всех ранее поставленных команд OpenCL перед замером времени или чтением результата.", "ממתין לסיום כל פקודות OpenCL שבתור לפני מדידת זמן או קריאת תוצאות.");
+  if (/run_deepid_opencl_forward_batch\s*\(/.test(text)) return say("Calls the native OpenCL DeepID forward pass once for the complete tensor batch.", "Один раз вызывает нативный пакетный проход DeepID через OpenCL для всей тензорной пачки.", "קורא פעם אחת למעבר DeepID המקורי ב‑OpenCL עבור כל אצוות הטנזורים.");
+  if (/embed_batch\s*\(/.test(text)) return say("Computes embeddings for the supplied images as one batch through the selected backend.", "Получает векторы переданных изображений одним пакетом через выбранный backend.", "מחשב embeddings לתמונות שסופקו כאצווה אחת דרך ה‑backend שנבחר.");
+  if (/cosine|similarity/.test(text)) return say("Computes or stores cosine similarity used to rank the current face against known references.", "Вычисляет или сохраняет косинусное сходство для ранжирования текущего лица относительно известных эталонов.", "מחשב או שומר דמיון cosine לדירוג הפנים הנוכחיות מול הייחוסים המוכרים.");
+  if (/^if\s*\(/.test(text)) return say(`Evaluates the C++ condition ${text} and enters this branch only when it is true.`, `Проверяет условие C++ ${text} и входит в эту ветку только при истинном результате.`, `בודק את תנאי C++ ‏${text} ונכנס לענף רק כאשר הוא אמת.`);
+  if (/^(for|while)\s*\(/.test(text)) return say(`Starts the C++ loop ${text} to process the indicated elements or indices.`, `Запускает цикл C++ ${text} для обработки указанных элементов или индексов.`, `מתחיל את לולאת C++ ‏${text} לעיבוד האיברים או האינדקסים המצוינים.`);
+  if (/^return\b/.test(text)) return say(`Returns ${text.replace(/^return\s*/, "").replace(/;$/, "")} to the C++ caller.`, `Возвращает ${text.replace(/^return\s*/, "").replace(/;$/, "")} вызвавшему C++-коду.`, `מחזיר ${text.replace(/^return\s*/, "").replace(/;$/, "")} לקוד C++ שקרא לפונקציה.`);
+  if (/^[{}];?$/.test(text)) return say("Opens or closes the current C++ scope; it groups the statements controlled by the surrounding declaration or condition.", "Открывает или закрывает текущую область C++; она объединяет команды окружающего объявления или условия.", "פותח או סוגר את תחום C++ הנוכחי שמאגד את הפקודות של ההצהרה או התנאי הסובבים.");
+  return say(`Executes or completes this exact C++ detector statement: ${text}`, `Выполняет или завершает эту точную команду C++ детектора: ${text}`, `מבצע או משלים את פקודת C++ המדויקת של הגלאי: ${text}`);
+}
+
 function patternCodeAnnotation(line) {
   const lang = document.documentElement.lang || "en";
   const trimmed = line.trim();
   const exact = detailedCodeLineAnnotations[trimmed];
   if (exact) return repairLocalizedText(exact[lang] || exact.en);
+  const looksCpp = /^(#include|#if|#ifdef|#ifndef|#elif|#else|#endif|#define|namespace\b|struct\b|class\b|using\b|template\b|\/\/|\/\*|\*)/.test(trimmed)
+    || /[;{}]$/.test(trimmed)
+    || /\b(?:std::|cl[A-Z]\w*|CL_[A-Z_]+|DeepIDModel|FaceMatcher|MatchResult)\b/.test(trimmed);
+  if (looksCpp) return currentCppSourceAnnotation(trimmed, lang);
   return sourceLineAnnotation(trimmed, lang);
 }
 
@@ -3522,11 +3773,24 @@ async function ensureExactStageCode() {
   if (exactStageCodeState === "loading") return false;
   exactStageCodeState = "loading";
   try {
-    const detectorResponse = await fetch("source/cuda_deepid_detector.py", { cache: "no-store" });
-    if (!detectorResponse.ok) throw new Error("detector source HTTP " + detectorResponse.status);
-    detectorSourceText = await detectorResponse.text();
+    const sourceTexts = await Promise.all(currentRuntimeStageSources.map(async (source) => {
+      const paths = source.paths || [source.path];
+      return Promise.all(paths.map(async (path) => {
+        const response = await fetch(path, { cache: "no-store" });
+        if (!response.ok) throw new Error(`${path} HTTP ${response.status}`);
+        return response.text();
+      }));
+    }));
     detectorSourceLoaded = true;
-    const lineBlocks = detectorStageLineBlocks(detectorSourceText, activeDetectorVariant);
+    const normalizedFiles = sourceTexts.map((sources) => sources.flatMap((source) => {
+      const lines = source.replace(/\r\n/g, "\n").split("\n");
+      if (lines[lines.length - 1] === "") lines.pop();
+      return lines;
+    }));
+    const lineBlocks = currentRuntimeStageSources.map((source, index) => {
+      const lines = normalizedFiles[index];
+      return lines.slice(source.from || 0, source.to == null ? lines.length : source.to);
+    });
     if (lineBlocks.length !== stageDetails.length) {
       throw new Error(`expected ${stageDetails.length} stage blocks, found ${lineBlocks.length}`);
     }
@@ -3537,19 +3801,15 @@ async function ensureExactStageCode() {
     const combinedLines = lineBlocks.flat();
     stageRecognitionLineCount = lineBlocks.reduce((total, lines) => total + lines.length, 0);
     combinedRecognitionCode = combinedLines.join("\n");
+    detectorSourceText = combinedRecognitionCode;
     combinedRecognitionLineCount = codeLineCount(combinedRecognitionCode);
     if (combinedRecognitionLineCount !== stageRecognitionLineCount) {
       throw new Error(
         `combined recognition line count ${combinedRecognitionLineCount} does not equal stage sum ${stageRecognitionLineCount}`
       );
     }
-    const expectedLines = detectorSourceText.replace(/\r\n/g, "\n").split("\n");
-    if (expectedLines[expectedLines.length - 1] === "") expectedLines.pop();
-    const expected = activeDetectorVariant === "batch"
-      ? expectedLines
-      : expectedLines.slice(0, expectedLines.findIndex((line) => /^    def detect_batch\b/.test(line)));
-    if (combinedLines.join("\n") !== expected.join("\n")) {
-      throw new Error("the combined stage text is not identical to the selected detector source boundary");
+    if (combinedLines.join("\n") !== detectorSourceText) {
+      throw new Error("the combined stage text is not identical to the loaded current sources");
     }
     exactStageCodeState = "ready";
     return true;
@@ -3738,6 +3998,51 @@ async function runRecognition(file, mode, score, margin) {
   return { markdown: payload.identity || payload.best_label || uiText("unknown"), json: payload };
 }
 
+async function fileToBase64(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return btoa(binary);
+}
+
+async function runRecognitionBatch(files, mode, score, margin) {
+  if (!(await requireLocalBridge("send the selected image batch to the local face detector"))) {
+    throw new Error("Local bridge was not approved for this recognition request.");
+  }
+  const endpoint = withLocalToken(`${LOCAL_HIVE_BASE}/api/detect-batch?mode=${encodeURIComponent(mode)}&processor_id=0&source=github-pages-simple&verification=per-image`);
+  const images = await Promise.all(files.map(fileToBase64));
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json", "X-Bee-Local-Token": LOCAL_BRIDGE_TOKEN },
+    body: JSON.stringify({ images, scene_hints: files.map(() => ""), verification: "per-image" })
+  });
+  if (!response.ok) {
+    throw new Error(`Local Hive batch detector failed: HTTP ${response.status}. Start the approved current Hive service on 127.0.0.1:8876.`);
+  }
+  const payload = await response.json();
+  if (!Array.isArray(payload.results) || payload.results.length !== files.length) {
+    throw new Error(`Hive returned ${payload.results?.length ?? 0} batch results for ${files.length} images.`);
+  }
+  return payload.results.map((item, index) => ({
+    file: files[index].name,
+    markdown: item.identity || item.best_label || uiText("unknown"),
+    json: {
+      ...item,
+      mode: item.mode || payload.mode || mode,
+      backend: item.backend || payload.backend,
+      batch_backend: payload.backend,
+      gpu_batch_ms: payload.gpu_batch_ms,
+      batch_elapsed_ms: payload.elapsed_ms,
+      avg_ms_per_photo: payload.avg_ms_per_photo,
+      requested_min_score: score,
+      requested_min_margin: margin
+    }
+  }));
+}
+
 function renderResults(results) {
   resultList.innerHTML = "";
   const accepted = results.filter((item) => item.json?.accepted).length;
@@ -3778,13 +4083,17 @@ async function recognizeSelectedFiles() {
   resultList.innerHTML = "";
   jsonBox.textContent = "{}";
   try {
-    const results = [];
-    for (const file of files) {
-      summaryBox.textContent = `${uiText("processing")}: ${file.name} (${mode})…`;
-      const result = await runRecognition(file, mode, score, margin);
-      results.push({ file: file.name, ...result });
-      renderResults(results);
+    let results;
+    if (files.length > 1) {
+      selectDetectorVariant("batch");
+      summaryBox.textContent = `${uiText("processing")}: ${files.length} (${mode}, /api/detect-batch)…`;
+      results = await runRecognitionBatch(files, mode, score, margin);
+    } else {
+      selectDetectorVariant("single");
+      const result = await runRecognition(files[0], mode, score, margin);
+      results = [{ file: files[0].name, ...result }];
     }
+    renderResults(results);
     backendStatus.textContent = uiText("ready");
   } catch (error) {
     backendStatus.textContent = uiText("error");
