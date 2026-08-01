@@ -1683,6 +1683,26 @@ const commonDetectorStages = [
       ru: ["Импорты и константы", "Объект детектора", "Ленивый импорт PyTorch", "CPU или CUDA"],
       he: ["ייבואים וקבועים", "אובייקט הגלאי", "ייבוא PyTorch בעת הצורך", "CPU או CUDA"]
     },
+    diagramNotes: {
+      en: [
+        "Loads Path, typing, NumPy and Pillow, then defines the three known identities, supported image extensions, and acceptance thresholds.",
+        "Stores the working directory, identities and thresholds, and creates empty model, reference, PyTorch-module, and weight caches.",
+        "_ensure_torch imports torch, nn and F only on first use; later calls return the three cached modules immediately.",
+        "_device_name returns cuda only for an available CUDA runtime; an explicit CPU request returns cpu, and auto mode chooses the available backend."
+      ],
+      ru: [
+        "Загружает Path, типы, NumPy и Pillow, затем задаёт трёх известных людей, допустимые расширения изображений и пороги принятия ответа.",
+        "Сохраняет рабочую папку, список людей и пороги, а также создаёт пустые кэши моделей, эталонов, модулей PyTorch и весов.",
+        "_ensure_torch импортирует torch, nn и F только при первом обращении; следующие вызовы сразу возвращают три сохранённых модуля.",
+        "_device_name возвращает cuda только при рабочей CUDA; явный запрос CPU даёт cpu, а режим auto выбирает доступное устройство."
+      ],
+      he: [
+        "טוען את Path, טיפוסים, NumPy ו-Pillow, ואז מגדיר את שלוש הזהויות הידועות, סיומות התמונה המותרות וספי קבלת התשובה.",
+        "שומר את תיקיית העבודה, הזהויות והספים, ויוצר מטמונים ריקים למודלים, לייחוסים, למודולי PyTorch ולמשקלים.",
+        "_ensure_torch מייבאת את torch,‏ nn ו-F רק בשימוש הראשון; הקריאות הבאות מחזירות מיד את שלושת המודולים השמורים.",
+        "_device_name מחזירה cuda רק כאשר סביבת CUDA פעילה; בקשת CPU מפורשת מחזירה cpu ומצב auto בוחר את ההתקן הזמין."
+      ]
+    },
     layers: { en: "No neural layer; runtime initialization", ru: "Нейрослоя нет; инициализация среды", he: "אין שכבה עצבית; אתחול סביבת הריצה" },
     connections: { en: "No MACs; device and cache state only", ru: "MAC нет; только выбор устройства и состояние кэша", he: "אין MAC; רק בחירת התקן ומצב מטמון" },
     tensor: "No input tensor yet",
@@ -1712,6 +1732,26 @@ device = detector._device_name("gpu")
       en: ["deepid_weights.bin", "Validate and reshape", "Build DeepIDTorch", "model.to(device).eval()"],
       ru: ["deepid_weights.bin", "Проверка и изменение формы", "Создание DeepIDTorch", "model.to(device).eval()"],
       he: ["deepid_weights.bin", "אימות ושינוי צורה", "בניית DeepIDTorch", "model.to(device).eval()"]
+    },
+    diagramNotes: {
+      en: [
+        "Reads models/deepid_weights.bin as raw bytes; a cached weight dictionary is returned instead when it was already decoded.",
+        "Checks the DIDW1 file signature, reads every named float32 record, and reshapes it to the exact Conv1–Conv4 or FC11–FC12 tensor dimensions.",
+        "Registers all decoded tensors as model buffers and defines the real convolution, pooling, two dense branches, ReLU, and 160D L2-normalized forward pass.",
+        "Moves every registered buffer to the selected CPU/CUDA device, enables inference mode, and caches one ready model per device."
+      ],
+      ru: [
+        "Читает models/deepid_weights.bin как байты; если веса уже разобраны, вместо повторного чтения возвращается сохранённый словарь.",
+        "Проверяет сигнатуру DIDW1, читает каждую именованную запись float32 и придаёт ей точную форму тензора Conv1–Conv4 либо FC11–FC12.",
+        "Регистрирует все тензоры как буферы модели и задаёт реальные свёртки, pooling, две полносвязные ветви, ReLU и нормализованный вектор 160D.",
+        "Переносит все буферы на выбранное устройство CPU/CUDA, включает режим инференса и сохраняет отдельную готовую модель для каждого устройства."
+      ],
+      he: [
+        "קורא את models/deepid_weights.bin כבייטים; אם המשקלים כבר פוענחו, מוחזר מילון המשקלים השמור במקום לקרוא שוב.",
+        "מאמת את חתימת DIDW1, קורא כל רשומת float32 בעלת שם ומשנה אותה לממדי הטנזור המדויקים של Conv1–Conv4 או FC11–FC12.",
+        "רושם את כל הטנזורים כמאגרי המודל ומגדיר את הקונבולוציות, ה-pooling, שני הענפים הצפופים, ReLU והפלט המנורמל בגודל 160D.",
+        "מעביר את כל המאגרים להתקן CPU/CUDA שנבחר, מפעיל מצב הסקה ושומר במטמון מודל מוכן נפרד לכל התקן."
+      ]
     },
     layers: { en: "4 convolution layers, 2 dense branches, 3 max pools", ru: "4 свёрточных слоя, 2 полносвязные ветви, 3 max-pooling", he: "4 שכבות קונבולוציה, 2 ענפים צפופים ו-3 max-pooling" },
     connections: { en: "Learned Conv1–Conv4 and FC11–FC12 parameters", ru: "Обученные параметры Conv1–Conv4 и FC11–FC12", he: "פרמטרים מאומנים של Conv1–Conv4 ושל FC11–FC12" },
@@ -1743,6 +1783,26 @@ model, device = detector._model("gpu")
       ru: ["Путь к скриншоту", "Полный кадр и центральные обрезки", "Вписывание в 47×55", "CHW float-тензор на устройстве"],
       he: ["נתיב צילום המסך", "פריים מלא וחיתוכים מרכזיים", "התאמה ל-47×55", "טנזור float בסדר CHW על ההתקן"]
     },
+    diagramNotes: {
+      en: [
+        "Image.open reads the existing file and convert(\"RGB\") guarantees exactly three color channels.",
+        "Keeps the full frame and adds centered square crops at 86%, 74%, 62%, 50%, and 40% of the shorter side when each crop is at least 60 pixels.",
+        "Preserves aspect ratio while fitting the image inside 47×55 pixels, then centers it on a black 47×55 canvas.",
+        "Divides pixel values by 255, changes RGB to BGR, transposes HWC to CHW, creates a PyTorch tensor, and transfers it to the selected device."
+      ],
+      ru: [
+        "Image.open читает существующий файл, а convert(\"RGB\") гарантирует ровно три цветовых канала.",
+        "Сохраняет полный кадр и добавляет центральные квадратные обрезки 86%, 74%, 62%, 50% и 40% короткой стороны, если размер не меньше 60 пикселей.",
+        "Сохраняет пропорции при вписывании изображения в 47×55 и размещает его по центру чёрного холста размером 47×55.",
+        "Делит значения пикселей на 255, меняет RGB на BGR, переставляет HWC в CHW, создаёт тензор PyTorch и переносит его на выбранное устройство."
+      ],
+      he: [
+        "Image.open קוראת את הקובץ הקיים ו-convert(\"RGB\") מבטיחה בדיוק שלושה ערוצי צבע.",
+        "שומרת את הפריים המלא ומוסיפה חיתוכים ריבועיים מרכזיים בגודל 86%,‏ 74%,‏ 62%,‏ 50% ו-40% מן הצלע הקצרה, אם החיתוך הוא לפחות 60 פיקסלים.",
+        "שומרת על יחס הממדים בעת התאמת התמונה לתוך 47×55 פיקסלים וממרכזת אותה על קנבס שחור בגודל 47×55.",
+        "מחלקת את ערכי הפיקסלים ב-255, משנה RGB ל-BGR, מסדרת HWC כ-CHW, יוצרת טנזור PyTorch ומעבירה אותו להתקן שנבחר."
+      ]
+    },
     layers: { en: "Image preprocessing; no learned layer", ru: "Предобработка изображения; обучаемого слоя нет", he: "עיבוד מקדים של התמונה; אין שכבה נלמדת" },
     connections: { en: "7,755 float values per prepared variant", ru: "7 755 значений float на каждый подготовленный вариант", he: "7,755 ערכי float לכל גרסה מוכנה" },
     tensor: "Pillow RGB → NumPy 55×47×3 → PyTorch 3×55×47",
@@ -1772,6 +1832,26 @@ x = torch.stack(tensors, dim=0)`
       en: ["Reference folders", "Prepared tensors", "One model batch", "Cached reference matrix"],
       ru: ["Папки эталонов", "Подготовленные тензоры", "Один пакет модели", "Кэшированная матрица эталонов"],
       he: ["תיקיות ייחוס", "טנזורים מוכנים", "אצוות מודל אחת", "מטריצת ייחוס במטמון"]
+    },
+    diagramNotes: {
+      en: [
+        "For each known identity, searches both identity_references/<name> and Face_detector/references/<name>, filters supported images, and removes duplicate paths.",
+        "Opens every reference image and applies the same 47×55 BGR/CHW preprocessing used for incoming screenshots.",
+        "Stacks all reference tensors into one N-image batch and runs one DeepID inference call without gradient tracking.",
+        "Waits for CUDA completion when needed and stores the normalized N×160 reference matrix in self.ref_emb under the actual device name."
+      ],
+      ru: [
+        "Для каждого известного человека проверяет identity_references/<имя> и Face_detector/references/<имя>, оставляет допустимые изображения и удаляет повторяющиеся пути.",
+        "Открывает каждую эталонную фотографию и применяет ту же подготовку 47×55, BGR и CHW, что используется для входящих скриншотов.",
+        "Объединяет все эталонные тензоры в один пакет из N изображений и выполняет один вызов DeepID без расчёта градиентов.",
+        "При необходимости ждёт завершения CUDA и сохраняет нормализованную матрицу эталонов N×160 в self.ref_emb под именем фактического устройства."
+      ],
+      he: [
+        "לכל זהות ידועה בודק את identity_references/<name> ואת Face_detector/references/<name>, משאיר תמונות נתמכות ומסיר נתיבים כפולים.",
+        "פותח כל תמונת ייחוס ומפעיל עליה את אותו עיבוד 47×55,‏ BGR ו-CHW שמשמש לצילומי המסך הנכנסים.",
+        "מערים את כל טנזורי הייחוס לאצווה אחת של N תמונות ומבצע קריאת הסקה אחת של DeepID ללא חישוב גרדיאנטים.",
+        "ממתין להשלמת CUDA בעת הצורך ושומר את מטריצת הייחוס המנורמלת N×160 בתוך self.ref_emb תחת שם ההתקן בפועל."
+      ]
     },
     layers: { en: "Same DeepID forward pass, executed once per device", ru: "Тот же прямой проход DeepID, один раз для каждого устройства", he: "אותו מעבר קדמי של DeepID, פעם אחת לכל התקן" },
     connections: { en: "All reference images are embedded in one stacked tensor", ru: "Все эталонные изображения объединяются в один тензор", he: "כל תמונות הייחוס נערמות לטנזור אחד" },
@@ -1819,6 +1899,29 @@ const detectorVariantCatalog = {
           ru: ["Пакет вариантов", "Векторы 160D", "Матрица сходства", "Лучший и второй результат", "Имя или Unknown"],
           he: ["אצוות גרסאות", "וקטורי 160D", "מטריצת דמיון", "הטוב ביותר והשני", "זהות או Unknown"]
         },
+        diagramNotes: {
+          en: [
+            "Stacks every prepared crop of this screenshot into one tensor with shape V×3×55×47 and sends the whole set through DeepID together.",
+            "The model converts each of the V variants into one L2-normalized 160-value face embedding.",
+            "Multiplies the V×160 variant matrix by the transposed N×160 reference matrix, producing V×N cosine-similarity scores.",
+            "Keeps each identity's highest score across all variants and references, sorts identities, and calculates the margin between first and second place.",
+            "Returns the winning name only when its score and margin pass the thresholds; otherwise identity is Unknown. A valid scene hint is used only as a close-score tie-breaker."
+          ],
+          ru: [
+            "Объединяет все подготовленные обрезки одного скриншота в тензор V×3×55×47 и одновременно пропускает весь набор через DeepID.",
+            "Модель преобразует каждый из V вариантов в один L2-нормализованный вектор признаков лица из 160 значений.",
+            "Умножает матрицу вариантов V×160 на транспонированную матрицу N эталонов, получая V×N оценок косинусного сходства.",
+            "Для каждого человека сохраняет максимальную оценку среди всех вариантов и эталонов, сортирует людей и считает отрыв первого места от второго.",
+            "Возвращает имя победителя только при прохождении порогов оценки и отрыва; иначе identity равен Unknown. Допустимая подсказка сцены используется лишь при близких оценках."
+          ],
+          he: [
+            "מערים את כל החיתוכים המוכנים של צילום מסך אחד לטנזור V×3×55×47 ומעביר את כל הקבוצה יחד דרך DeepID.",
+            "המודל ממיר כל אחת מ-V הגרסאות לווקטור תווי פנים מנורמל L2 ובו 160 ערכים.",
+            "מכפיל את מטריצת הגרסאות V×160 במטריצת הייחוס המשוחלפת, ומפיק ציוני דמיון קוסינוס בגודל V×N.",
+            "שומר לכל זהות את הציון הגבוה ביותר מכל הגרסאות והייחוסים, ממיין את הזהויות ומחשב את הפער בין המקום הראשון לשני.",
+            "מחזיר את שם המנצח רק אם הציון והפער עוברים את הספים; אחרת identity הוא Unknown. רמז סצנה תקף משמש רק לשבירת שוויון בין ציונים קרובים."
+          ]
+        },
         layers: { en: "One batched DeepID forward plus score reduction", ru: "Один пакетный проход DeepID и свёртка результатов", he: "מעבר DeepID אחד באצווה וצמצום ציונים" },
         connections: { en: "variant embeddings @ reference_embeddings.T", ru: "variant_embeddings @ reference_embeddings.T", he: "variant_embeddings @ reference_embeddings.T" },
         tensor: "V×160 @ 160×N → V×N similarity matrix",
@@ -1844,6 +1947,29 @@ result = detector._decide(variants, sims, device, screenshot_path, elapsed_ms, N
           en: ["detect_image(path)", "Variants", "CUDA embeddings", "Similarity", "_decide result"],
           ru: ["detect_image(path)", "Варианты", "CUDA-векторы", "Сходство", "Результат _decide"],
           he: ["detect_image(path)", "גרסאות", "וקטורי CUDA", "דמיון", "תוצאת _decide"]
+        },
+        diagramNotes: {
+          en: [
+            "Receives one existing image path, the requested backend mode, and an optional scene hint.",
+            "Creates the full-frame and centered crop variants before starting the measured recognition section.",
+            "Starts the timer, prepares all tensors, ensures references are initialized, and computes every normalized embedding in one model batch.",
+            "Multiplies the embeddings by cached references and waits for queued CUDA work before calculating elapsed milliseconds.",
+            "Passes variants, scores, device, timing, path, and hint to _decide, which returns the complete result dictionary."
+          ],
+          ru: [
+            "Получает путь к одному существующему изображению, запрошенный режим устройства и необязательную подсказку сцены.",
+            "Создаёт вариант полного кадра и центральные обрезки до начала измеряемой части распознавания.",
+            "Запускает таймер, готовит все тензоры, проверяет инициализацию эталонов и получает все нормализованные векторы одним пакетом модели.",
+            "Умножает векторы на кэшированные эталоны и ждёт завершения очереди CUDA перед вычислением времени в миллисекундах.",
+            "Передаёт варианты, оценки, устройство, время, путь и подсказку в _decide, который возвращает полный словарь результата."
+          ],
+          he: [
+            "מקבלת נתיב לתמונה קיימת אחת, את מצב ההתקן המבוקש ורמז סצנה אופציונלי.",
+            "יוצרת את גרסת הפריים המלא ואת החיתוכים המרכזיים לפני תחילת קטע הזיהוי הנמדד.",
+            "מפעילה את השעון, מכינה את כל הטנזורים, מוודאת שהייחוסים אותחלו ומחשבת את כל הווקטורים המנורמלים באצוות מודל אחת.",
+            "מכפילה את הווקטורים בייחוסים שבמטמון וממתינה לעבודת CUDA שבתור לפני חישוב הזמן במילישניות.",
+            "מעבירה את הגרסאות, הציונים, ההתקן, הזמן, הנתיב והרמז אל _decide, שמחזירה את מילון התוצאה המלא."
+          ]
         },
         layers: { en: "Orchestration of the preceding detector stages", ru: "Оркестрация предыдущих этапов детектора", he: "תזמור של שלבי הגלאי הקודמים" },
         connections: { en: "One screenshot result dictionary", ru: "Один словарь результата скриншота", he: "מילון תוצאה אחד לצילום המסך" },
@@ -1890,6 +2016,26 @@ print(result["identity"], result["best_score"], result["elapsed_ms"])`
           ru: ["Общая подготовка", "Общая матрица сходства", "_decide для каждого файла", "CPU fallback через detect_image"],
           he: ["עיבוד מקדים משותף", "מטריצת דמיון משותפת", "_decide לכל תמונה", "מסלול CPU דרך detect_image"]
         },
+        diagramNotes: {
+          en: [
+            "The batch path reuses the same crop creation and 47×55 BGR/CHW tensor preparation as single-image recognition.",
+            "Normalized embeddings are compared with the same cached N×160 reference matrix; the GPU branch computes one combined matrix for all variants.",
+            "Each image receives only its own consecutive score rows, and _decide independently applies identity, score, margin, and hint rules to that slice.",
+            "When mode is cpu, detect_batch explicitly calls detect_image once per path in sequence; this branch is not presented as parallel GPU work."
+          ],
+          ru: [
+            "Пакетный путь повторно использует создание обрезок и подготовку тензора 47×55, BGR и CHW из одиночного распознавания.",
+            "Нормализованные векторы сравниваются с той же кэшированной матрицей эталонов N×160; GPU-ветвь сразу вычисляет одну общую матрицу для всех вариантов.",
+            "Каждое изображение получает только собственные последовательные строки оценок, а _decide независимо применяет к этому срезу правила имени, порогов, отрыва и подсказки.",
+            "При mode=cpu detect_batch последовательно вызывает detect_image для каждого пути; эта ветвь не выдаётся за параллельную работу GPU."
+          ],
+          he: [
+            "מסלול האצווה משתמש שוב ביצירת החיתוכים ובהכנת טנזור 47×55,‏ BGR ו-CHW של זיהוי תמונה בודדת.",
+            "הווקטורים המנורמלים מושווים לאותה מטריצת ייחוס N×160 שבמטמון; ענף ה-GPU מחשב מטריצה משולבת אחת לכל הגרסאות.",
+            "כל תמונה מקבלת רק את שורות הציונים הרציפות שלה, ו-_decide מפעילה בנפרד על הפרוסה את כללי הזהות, הציון, הפער והרמז.",
+            "כאשר mode=cpu,‏ detect_batch קוראת ל-detect_image ברצף פעם אחת לכל נתיב; ענף זה אינו מוצג כעבודת GPU מקבילית."
+          ]
+        },
         layers: { en: "Shared DeepID and decision code", ru: "Общий код DeepID и принятия решения", he: "קוד DeepID והחלטה משותף" },
         connections: { en: "Normalized embeddings and per-identity score reduction", ru: "Нормализованные векторы и свёртка результатов по людям", he: "וקטורים מנורמלים וצמצום ציונים לפי זהות" },
         tensor: "Per-image variant score matrices",
@@ -1914,6 +2060,32 @@ result = detector._decide(local_variants, local_scores, device, path, per_image_
           en: ["Many image paths", "All variants flattened", "One CUDA tensor", "One model call", "Split scores", "Batch result"],
           ru: ["Много путей", "Все варианты объединены", "Один CUDA-тензор", "Один вызов модели", "Разделение результатов", "Пакетный итог"],
           he: ["נתיבי תמונות רבים", "כל הגרסאות אוחדו", "טנזור CUDA אחד", "קריאת מודל אחת", "פיצול ציונים", "תוצאת אצווה"]
+        },
+        diagramNotes: {
+          en: [
+            "Converts every supplied path to Path and aligns one optional scene hint with each image.",
+            "Creates all variants for every image and stores image_index with each variant so results can later return to the correct source file.",
+            "Preprocesses every flattened variant and stacks them into one ΣV×3×55×47 tensor on the selected CUDA device.",
+            "Runs model(x) once for the entire tensor and multiplies all ΣV embeddings by the cached reference matrix in one operation.",
+            "Uses each image's variant count to slice its consecutive rows from sims_all, then calls _decide separately for that image.",
+            "Aggregates accepted identities, counts and mean scores, chooses the batch identity, and returns per-image results plus total and average timing."
+          ],
+          ru: [
+            "Преобразует каждый переданный путь в Path и сопоставляет каждому изображению одну необязательную подсказку сцены.",
+            "Создаёт все варианты всех изображений и сохраняет image_index возле каждого варианта, чтобы позднее вернуть результат нужному исходному файлу.",
+            "Подготавливает все объединённые варианты и складывает их в один тензор ΣV×3×55×47 на выбранном устройстве CUDA.",
+            "Один раз вызывает model(x) для всего тензора и одной операцией умножает все ΣV векторов на кэшированную матрицу эталонов.",
+            "По числу вариантов каждого изображения вырезает его последовательные строки из sims_all и отдельно вызывает _decide для этого изображения.",
+            "Объединяет принятые имена, количества и средние оценки, выбирает итоговое имя пакета и возвращает результаты каждого файла с общим и средним временем."
+          ],
+          he: [
+            "ממירה כל נתיב שהתקבל ל-Path ומתאימה לכל תמונה רמז סצנה אופציונלי אחד.",
+            "יוצרת את כל הגרסאות של כל התמונות ושומרת image_index ליד כל גרסה, כדי להחזיר אחר כך את התוצאה לקובץ המקור הנכון.",
+            "מעבדת את כל הגרסאות המאוחדות ומערימה אותן לטנזור אחד ΣV×3×55×47 על התקן CUDA שנבחר.",
+            "קוראת ל-model(x) פעם אחת עבור הטנזור כולו ומכפילה בפעולה אחת את כל וקטורי ΣV במטריצת הייחוס שבמטמון.",
+            "משתמשת במספר הגרסאות של כל תמונה כדי לחתוך את השורות הרציפות שלה מתוך sims_all, ואז קוראת ל-_decide בנפרד עבור אותה תמונה.",
+            "מאחדת זהויות שהתקבלו, ספירות וציונים ממוצעים, בוחרת את זהות האצווה ומחזירה תוצאות לכל תמונה יחד עם זמן כולל וממוצע."
+          ]
         },
         layers: { en: "One neural forward pass for the complete GPU batch", ru: "Один проход нейросети для всего GPU-пакета", he: "מעבר עצבי אחד לכל אצוות ה-GPU" },
         connections: { en: "Batched embedding matrix @ cached reference matrix", ru: "Матрица пакетных векторов @ кэшированная матрица эталонов", he: "מטריצת וקטורי האצווה @ מטריצת הייחוס שבמטמון" },
@@ -3461,19 +3633,17 @@ function buildStageDiagram(labels, notes) {
     if (index < labels.length - 1) {
       const arrow = document.createElement("div");
       arrow.className = "diagram-arrow";
-      arrow.textContent = ">";
+      arrow.textContent = "↓";
       stageDiagram.appendChild(arrow);
     }
   });
 }
 
-function detectorDiagramNotes(labels) {
-  const lang = document.documentElement.lang || "en";
-  return labels.map((label, index) => {
-    if (lang === "ru") return `Шаг ${index + 1}: «${label}» — следующий конкретный объект или операция в этом этапе исходного кода.`;
-    if (lang === "he") return `צעד ${index + 1}: „${label}” הוא האובייקט או הפעולה הממשיים הבאים בשלב זה של קוד המקור.`;
-    return `Step ${index + 1}: “${label}” is the next concrete object or operation in this source-code stage.`;
-  });
+function detectorDiagramNotes(data, labels) {
+  const notes = localized(data.diagramNotes);
+  if (Array.isArray(notes) && notes.length === labels.length) return notes;
+  console.error(`Diagram notes mismatch for detector section ${data.level}`);
+  return labels.map((label) => label);
 }
 
 function renderStageDetail(index, shouldScroll = true) {
@@ -3495,7 +3665,7 @@ function renderStageDetail(index, shouldScroll = true) {
     });
   }
   const diagramLabels = localized(data.diagram);
-  buildStageDiagram(diagramLabels, detectorDiagramNotes(diagramLabels));
+  buildStageDiagram(diagramLabels, detectorDiagramNotes(data, diagramLabels));
   stageDetail.classList.remove("hidden");
   document.querySelectorAll(".pipeline-step").forEach((step) => {
     step.classList.toggle("active", Number(step.dataset.stage) === currentStageIndex);
