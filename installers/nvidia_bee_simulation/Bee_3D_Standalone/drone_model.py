@@ -45,8 +45,9 @@ class DroneModel:
     ) -> None:
         self.parent = parent
         self.model_path = Path(model_path)
-        self.load_model_path = self._ensure_pbr_model_cache()
-        self.load_model_path = self._ensure_loader_safe_model_path(self.load_model_path)
+        # Load the installer's original PBR GLB verbatim.  Generated copies
+        # must never replace the source geometry used by the simulator.
+        self.load_model_path = self.model_path
         self.load_model_name = self._model_name_for_loader(self.load_model_path)
         self.root = Entity(parent=self.parent, name="drone_root")
         self.visual_root = Entity(parent=self.root, name="drone_visual")
@@ -166,8 +167,7 @@ class DroneModel:
     def _restore_bee_color(self, entity) -> None:
         try:
             for node in [entity, *entity.findAllMatches("**/+GeomNode")]:
-                node.setColorScale(1, 1, 1, 1)
-                node.setLightOff(1)
+                node.clearColorScale()
         except Exception as e:
             print(f"Could not restore bee colors: {e}")
 
@@ -534,8 +534,6 @@ class DroneModel:
         self.actor.stop()
         self.actor.loop(animation_name)
         self.current_animation = animation_name
-        self._anchor_to_root()
-        self._remember_base_scale()
 
     def toggle_character(self) -> str:
         if not BEE_CHARACTER_ENABLED:
@@ -633,7 +631,7 @@ class DroneModel:
     def set_boundary_contact(self, touching_boundary: bool) -> None:
         if self.active_character != "bee":
             return
-        self.play_animation_key("7" if touching_boundary else "8")
+        self.play_animation_key("8")
 
     def _anchor_to_root(self) -> None:
         self._anchor_entity_to_root(self.visual_root, DRONE_MODEL_TARGET_SIZE)

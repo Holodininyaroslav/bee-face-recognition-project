@@ -1,6 +1,6 @@
 ﻿Bee Linked Simulation
 Final Submission Version
-Date: 2026-06-19
+Date: 2026-08-05
 
 This folder contains the complete final game version:
 - 2D Pygame control map
@@ -9,6 +9,9 @@ This folder contains the complete final game version:
 - reference face data
 - sound effects, with background music disabled for the published build
 - launch script
+- original textured PBR bee model with stable hover animation
+- physical keyboard controls for non-Latin Windows layouts
+- centered rear/top chase camera and unobstructed first-person view
 - Russian documentation and submission text
 
 Start with:

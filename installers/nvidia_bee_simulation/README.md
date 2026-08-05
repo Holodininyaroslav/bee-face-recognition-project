@@ -11,6 +11,12 @@ Included:
 - a CUDA-only local face matcher implemented with PyTorch;
 - launch scripts that keep the NVIDIA path separate from the existing game.
 
+The standalone scene loads the bundled original PBR asset, `model_pbr.glb`,
+directly. Its texture and skeletal hover animation are preserved without a
+generated geometry cache. Physical Windows key polling keeps `WASD`, `Q/E`,
+`Space`, `Shift`, and `F` working with non-Latin keyboard layouts. Returning
+from first-person mode resets the chase camera behind and above the bee.
+
 ## Requirements
 
 - Windows 10/11
@@ -25,7 +31,9 @@ the selected Python environment has only a CPU build of PyTorch.
 
 ## Run
 
-Start `Start NVIDIA Bee Simulation.bat`. The game opens the 3D bee space with
+Start `Start NVIDIA Bee Simulation.bat`. The launcher reuses the suite Python
+environment when installed under `BeeFaceLocalSuite/AI_MIPS_Hive_Service`, or
+uses the standalone environment. The game opens the 3D bee space with
 the mini-map. Select a difficulty, then use the existing face-scan controls.
 The local result is written to:
 

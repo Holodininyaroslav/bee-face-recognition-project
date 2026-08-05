@@ -10,7 +10,7 @@ set "AI_MIPS_SWARM_DEMO=1"
 
 set "BGAME_ROOT=%~dp0"
 set "URSINA_ROOT=%BGAME_ROOT%Bee_3D_Standalone"
-set "PYTHON_EXE=%BGAME_ROOT%..\Nano-zionist\.venv\Scripts\python.exe"
+set "PYTHON_EXE=%USERPROFILE%\BeeFaceLocalSuite\AI_MIPS_Hive_Service\.venv\Scripts\python.exe"
 if not exist "%PYTHON_EXE%" set "PYTHON_EXE=python"
 
 cd /d "%URSINA_ROOT%"

@@ -16,7 +16,7 @@ GAME_2D = DESKTOP / "bee_face_patrol.py"
 URSINA_ROOT = PACKAGE_ROOT / "Bee_3D_Standalone"
 URSINA_LAUNCHER = URSINA_ROOT / "Start Bee 3D Standalone.ps1"
 URSINA_MAIN = URSINA_ROOT / "main.py"
-KNOWN_URSINA_PYTHON = Path(r"C:\Users\79090\Desktop\Bee simulator  with AI MIPS\Nano-zionist\.venv\Scripts\python.exe")
+SUITE_URSINA_PYTHON = Path.home() / "BeeFaceLocalSuite" / "AI_MIPS_Hive_Service" / ".venv" / "Scripts" / "python.exe"
 CONTROL_PATH = URSINA_ROOT / "bee_space_control.json"
 LOG_PATH = DESKTOP / "linked_bee_launcher.log"
 GAME_2D_STDOUT = DESKTOP / "linked_bee_2d_stdout.log"
@@ -144,7 +144,7 @@ def seed_control_file(difficulty: str):
 
 
 def resolve_ursina_python() -> str:
-    for candidate in (URSINA_ROOT / ".venv" / "Scripts" / "python.exe", KNOWN_URSINA_PYTHON, Path(sys.executable)):
+    for candidate in (URSINA_ROOT / ".venv" / "Scripts" / "python.exe", SUITE_URSINA_PYTHON, Path(sys.executable)):
         if candidate.exists():
             pythonw = candidate.with_name("pythonw.exe")
             return str(pythonw if pythonw.exists() else candidate)

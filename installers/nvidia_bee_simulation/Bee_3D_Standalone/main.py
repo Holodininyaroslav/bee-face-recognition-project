@@ -47,6 +47,8 @@ from config import (
     BACKGROUND_MUSIC_VOLUME,
     BORDERLESS,
     CAMERA_DISTANCE,
+    CAMERA_DEFAULT_PITCH,
+    CAMERA_DEFAULT_YAW,
     CAMERA_HEIGHT_OFFSET,
     CAMERA_TARGET_HEIGHT,
     CPU_BATCH_FACE_DETECTED_DIR,
@@ -112,7 +114,7 @@ from config import (
 )
 from drone import Drone
 from drone_model import DroneModel
-from input_controller import InputController
+from input_controller import InputController, was_key_pressed
 from screenshot_manager import ScreenshotManager
 from world import World
 from bee_swarm import BRIDGE_PATH, BeeSwarm
@@ -453,8 +455,8 @@ class QuadSimController:
         camera.position = Vec3(0, 7, -12)
 
         self.camera_distance = CAMERA_DISTANCE
-        self.camera_yaw = 0.0
-        self.camera_pitch = 8.0
+        self.camera_yaw = CAMERA_DEFAULT_YAW
+        self.camera_pitch = CAMERA_DEFAULT_PITCH
         self.camera_sensitivity = 180.0
         self.camera_key_speed = 90.0
         self.camera_pitch_min = -8.0
@@ -753,13 +755,7 @@ class QuadSimController:
         if LINKED_2D_CONTROL_MODE and key in ("g", "r", "g up", "r up"):
             return
 
-        if key == "f":
-            if LINKED_2D_CONTROL_MODE:
-                self.first_person = True
-                return
-            self.first_person = not self.first_person
-
-        elif key in DRONE_ANIMATION_KEYS:
+        if key in DRONE_ANIMATION_KEYS:
             self.drone_model.play_animation_key(key)
 
         elif key == "c":
@@ -802,8 +798,16 @@ class QuadSimController:
 
     def update(self) -> None:
         dt = time.dt
+        if not LINKED_2D_CONTROL_MODE and was_key_pressed("f"):
+            self.first_person = not self.first_person
+            self.drone_model.visual_root.enabled = not self.first_person
+            if not self.first_person:
+                self.camera_distance = CAMERA_DISTANCE
+                self.camera_yaw = CAMERA_DEFAULT_YAW
+                self.camera_pitch = CAMERA_DEFAULT_PITCH
         if LINKED_2D_CONTROL_MODE:
             self.first_person = True
+            self.drone_model.visual_root.enabled = False
 
         map_controlled = self._apply_map_control() if LINKED_2D_CONTROL_MODE else False
         if not LINKED_2D_CONTROL_MODE:
@@ -2447,7 +2451,7 @@ class QuadSimController:
         self.drone.velocity[:] = 0.0
         self.drone.target_velocity[:] = 0.0
         self.drone_model._activate_character("bee")
-        self.drone_model.play_animation_key("9")
+        self.drone_model.play_animation_key("8")
         self.status.text = f"Bee control captured from hex map: P{node_id}"
         self._write_bridge_positions()
         if not LINKED_2D_CONTROL_MODE:
