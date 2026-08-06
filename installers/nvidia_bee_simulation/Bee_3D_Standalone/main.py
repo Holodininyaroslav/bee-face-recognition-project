@@ -117,7 +117,7 @@ from config import (
 )
 from drone import Drone
 from drone_model import DroneModel
-from input_controller import InputController, was_key_pressed
+from input_controller import InputController, is_key_down, was_key_pressed
 from screenshot_manager import ScreenshotManager
 from world import World
 from bee_swarm import BRIDGE_PATH, BeeSwarm
@@ -143,6 +143,8 @@ class SatelliteSpaceSky(Sky):
 IMAGE_EXTENSIONS = {".bmp", ".jpg", ".jpeg", ".png"}
 BATCH_HOLD_INTERVAL = 0.02
 BATCH_TARGET_COUNT = 50
+TURBO_BATCH_INTERVAL = 0.01
+TURBO_BATCH_TARGET_COUNT = 500
 DETECTOR_HOLD_THRESHOLD = 0.35
 DETECTOR_POLL_INTERVAL_MS = 100
 SCREENSHOT_CLEANUP_INTERVAL = 5.0
@@ -594,6 +596,10 @@ class QuadSimController:
                 "pending": False,
                 "files": [],
                 "scene_hint": "",
+                "target_count": BATCH_TARGET_COUNT,
+                "capture_interval": BATCH_HOLD_INTERVAL,
+                "silent_progress": False,
+                "auto_capture": False,
                 "summary_path": CPU_BATCH_SUMMARY_PATH,
                 "last_seen_mtime": self._summary_mtime(CPU_BATCH_SUMMARY_PATH),
             },
@@ -602,6 +608,10 @@ class QuadSimController:
                 "pending": False,
                 "files": [],
                 "scene_hint": "",
+                "target_count": BATCH_TARGET_COUNT,
+                "capture_interval": BATCH_HOLD_INTERVAL,
+                "silent_progress": False,
+                "auto_capture": False,
                 "summary_path": GPU_BATCH_SUMMARY_PATH,
                 "last_seen_mtime": self._summary_mtime(GPU_BATCH_SUMMARY_PATH),
             },
@@ -1419,14 +1429,19 @@ class QuadSimController:
         state["held"] = False
         state["single_pending"] = False
 
+        batch_state = self.batch_checks[mode]
+        if batch_state.get("auto_capture", False):
+            return
+
         if was_single_pending and not batch_started:
             directory = CPU_SCREENSHOT_DIR if mode == "CPU" else GPU_FACE_INCOMING_DIR
             self._reset_batch_count(mode)
             self._capture_identity_screenshot(mode, directory)
         elif batch_started and not self.batch_checks[mode]["pending"]:
             count = int(self.batch_checks[mode]["count"])
-            if count < BATCH_TARGET_COUNT:
-                self._show_face_alert(f"{mode} batch stopped at {count}/{BATCH_TARGET_COUNT}; hold longer")
+            target_count = int(self.batch_checks[mode].get("target_count", BATCH_TARGET_COUNT))
+            if count < target_count:
+                self._show_face_alert(f"{mode} batch stopped at {count}/{target_count}; hold longer")
 
     def _request_auto_identity(self, mode: str = "GPU", delay: float = 0.45) -> None:
         if not self._face_detectors_enabled_for_key():
@@ -1448,17 +1463,34 @@ class QuadSimController:
     def _update_detector_key_holds(self, dt: float) -> None:
         for mode, directory in (("CPU", CPU_BATCH_SCREENSHOT_DIR), ("GPU", GPU_BATCH_SCREENSHOT_DIR)):
             key_state = self.detector_key_state[mode]
+            batch_state = self.batch_checks[mode]
+            if batch_state.get("auto_capture", False):
+                self._continue_batch_capture(mode, directory, dt)
+                continue
+
             if not key_state["held"]:
                 self.batch_hold_timers[mode] = BATCH_HOLD_INTERVAL
                 continue
 
             key_state["elapsed"] = float(key_state["elapsed"]) + dt
             if not key_state["batch_started"]:
-                if key_state["elapsed"] < DETECTOR_HOLD_THRESHOLD:
+                turbo_requested = is_key_down("h")
+                if not turbo_requested and key_state["elapsed"] < DETECTOR_HOLD_THRESHOLD:
+                    continue
+                if turbo_requested:
+                    started = self._start_batch_capture(
+                        mode,
+                        target_count=TURBO_BATCH_TARGET_COUNT,
+                        capture_interval=TURBO_BATCH_INTERVAL,
+                        silent_progress=True,
+                        auto_capture=True,
+                    )
+                else:
+                    started = self._start_batch_capture(mode)
+                if not started:
                     continue
                 key_state["batch_started"] = True
                 key_state["single_pending"] = False
-                self._start_batch_capture(mode)
 
             self._continue_batch_capture(mode, directory, dt)
 
@@ -1482,30 +1514,50 @@ class QuadSimController:
         self._show_face_alert(f"{mode}: photo sent to warmed face-detector")
         print(f"{mode} detector screenshot saved: {path}")
 
-    def _start_batch_capture(self, mode: str) -> None:
+    def _start_batch_capture(
+        self,
+        mode: str,
+        target_count: int = BATCH_TARGET_COUNT,
+        capture_interval: float = BATCH_HOLD_INTERVAL,
+        silent_progress: bool = False,
+        auto_capture: bool = False,
+    ) -> bool:
         state = self.batch_checks[mode]
         if state["pending"]:
-            self._show_face_alert(f"{mode} batch already waiting")
-            return
+            if not silent_progress:
+                self._show_face_alert(f"{mode} batch already waiting")
+            return False
 
         self._reset_batch_count(mode)
         state["count"] = 0
         state["files"] = []
         state["scene_hint"] = self._scene_identity_hint()
+        state["target_count"] = max(1, int(target_count))
+        state["capture_interval"] = max(0.001, float(capture_interval))
+        state["silent_progress"] = bool(silent_progress)
+        state["auto_capture"] = bool(auto_capture)
         self.batch_hold_timers[mode] = 0.0
-        self._show_face_alert(f"{mode} batch started: hold for {BATCH_TARGET_COUNT} photos")
+        if not state["silent_progress"]:
+            self._show_face_alert(f"{mode} batch started: hold for {state['target_count']} photos")
+        return True
 
     def _continue_batch_capture(self, mode: str, directory: Path, dt: float) -> None:
         state = self.batch_checks[mode]
-        if state["pending"] or state["count"] >= BATCH_TARGET_COUNT:
+        target_count = int(state.get("target_count", BATCH_TARGET_COUNT))
+        if state["pending"] or state["count"] >= target_count:
             return
 
         self.batch_hold_timers[mode] -= dt
         if self.batch_hold_timers[mode] > 0:
             return
 
-        self._capture_batch_screenshot(mode, directory)
-        self.batch_hold_timers[mode] = BATCH_HOLD_INTERVAL
+        capture_interval = max(0.001, float(state.get("capture_interval", BATCH_HOLD_INTERVAL)))
+        captures_due = min(10, max(1, int((-self.batch_hold_timers[mode]) / capture_interval) + 1))
+        for _ in range(captures_due):
+            if state["pending"] or state["count"] >= target_count:
+                break
+            self._capture_batch_screenshot(mode, directory)
+            self.batch_hold_timers[mode] += capture_interval
 
     def _capture_identity_screenshot(self, mode: str, directory: Path) -> None:
         try:
@@ -2098,8 +2150,11 @@ class QuadSimController:
 
     def _capture_batch_screenshot(self, mode: str, directory: Path) -> None:
         state = self.batch_checks[mode]
+        target_count = int(state.get("target_count", BATCH_TARGET_COUNT))
+        silent_progress = bool(state.get("silent_progress", False))
         if state["pending"]:
-            self._show_face_alert(f"{mode} batch waiting for result")
+            if not silent_progress:
+                self._show_face_alert(f"{mode} batch waiting for result")
             return
 
         summary_mtime_before_capture = self._summary_mtime(state["summary_path"])
@@ -2108,18 +2163,22 @@ class QuadSimController:
             path = self._prepare_identity_detector_image(path)
             state["files"].append(Path(path))
             state["count"] += 1
-            print(f"{mode} batch screenshot {state['count']}/{BATCH_TARGET_COUNT} saved: {path}")
+            if not silent_progress:
+                print(f"{mode} batch screenshot {state['count']}/{target_count} saved: {path}")
         except Exception as e:
             print(f"Could not save {mode} batch screenshot: {e}")
             return
 
-        if state["count"] < BATCH_TARGET_COUNT:
-            self._show_face_alert(f"{mode} batch {state['count']}/{BATCH_TARGET_COUNT}")
+        if state["count"] < target_count:
+            if not silent_progress:
+                self._show_face_alert(f"{mode} batch {state['count']}/{target_count}")
             return
 
         state["pending"] = True
+        state["auto_capture"] = False
         state["last_seen_mtime"] = summary_mtime_before_capture
-        self._show_face_alert(f"{mode} batch {BATCH_TARGET_COUNT}/{BATCH_TARGET_COUNT} uploading to Hive")
+        if not silent_progress:
+            self._show_face_alert(f"{mode} batch {target_count}/{target_count} uploading to Hive")
         self._start_hive_batch_detection(mode)
 
     def _reset_batch_count(self, mode: str) -> None:
@@ -2133,10 +2192,12 @@ class QuadSimController:
             except OSError as e:
                 print(f"Could not remove {mode} batch screenshot {path}: {e}")
 
-        print(f"{mode} batch count reset from {state['count']}/{BATCH_TARGET_COUNT}")
+        target_count = int(state.get("target_count", BATCH_TARGET_COUNT))
+        print(f"{mode} batch count reset from {state['count']}/{target_count}")
         state["count"] = 0
         state["files"] = []
         state["scene_hint"] = ""
+        state["auto_capture"] = False
 
     def _update_screenshot_cleanup(self, dt: float) -> None:
         self.screenshot_cleanup_timer -= dt
