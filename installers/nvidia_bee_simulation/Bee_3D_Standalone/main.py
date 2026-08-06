@@ -2,14 +2,13 @@
 import re
 import subprocess
 import ctypes
+import base64
 import os
 import json
 import atexit
-import io
 import sys
 import threading
 import shutil
-import zipfile
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -1673,8 +1672,9 @@ class QuadSimController:
         thread.start()
 
     def _post_image_to_hive(self, image_path: Path, bee_id: int, mode: str, source: str, scene_hint: str = "") -> dict:
+        hive_mode = "CUDA" if mode == "GPU" else mode
         params = {
-            "mode": mode,
+            "mode": hive_mode,
             "processor_id": int(bee_id),
             "source": source,
         }
@@ -1712,8 +1712,9 @@ class QuadSimController:
         scene_hint: str = "",
         repeat_each: int = 1,
     ) -> dict:
+        hive_mode = "CUDA" if mode == "GPU" else mode
         params = {
-            "mode": mode,
+            "mode": hive_mode,
             "processor_id": int(bee_id),
             "source": source,
             "repeat_each": max(1, int(repeat_each)),
@@ -1724,18 +1725,21 @@ class QuadSimController:
         local_token = os.environ.get("BEE_LOCAL_BRIDGE_TOKEN", "").strip()
         if local_token:
             params["local_token"] = local_token
-        archive = io.BytesIO()
-        with zipfile.ZipFile(archive, mode="w", compression=zipfile.ZIP_DEFLATED) as bundle:
-            for index, image_path in enumerate(image_paths, start=1):
-                suffix = image_path.suffix.lower() or ".png"
-                bundle.write(image_path, f"{index:03d}{suffix}")
+        body = json.dumps(
+            {
+                "images": [base64.b64encode(image_path.read_bytes()).decode("ascii") for image_path in image_paths],
+                "scene_hints": [scene_hint] * len(image_paths),
+                "repeat_each": max(1, int(repeat_each)),
+                "parallel_group_size": 10 if mode == "GPU" and repeat_each > 1 else 1,
+            }
+        ).encode("utf-8")
         query = urlencode(params)
         url = f"{self.hive_api_url}/api/detect-batch?{query}"
         request = Request(
             url,
-            data=archive.getvalue(),
+            data=body,
             headers={
-                "Content-Type": "application/zip",
+                "Content-Type": "application/json",
                 "Accept": "application/json",
             },
             method="POST",
@@ -1783,7 +1787,7 @@ class QuadSimController:
         repeat_each = max(1, int(state.get("repeat_each", 1)))
         bee_id = max(0, int(self.bee_swarm.controlled_id))
         with self.identity_result_lock:
-            self.identity_jobs_running += len(files) * repeat_each
+            self.identity_jobs_running += len(files)
         threading.Thread(
             target=self._run_hive_batch_detector,
             args=(mode, files, bee_id, scene_hint, repeat_each),
@@ -1798,7 +1802,7 @@ class QuadSimController:
         scene_hint: str = "",
         repeat_each: int = 1,
     ) -> None:
-        total = len(files) * max(1, int(repeat_each))
+        total = len(files)
         started_batch = wall_time()
         usage_sampler = ResourceUsageSampler().start()
         try:
