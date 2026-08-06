@@ -29,6 +29,7 @@ from ursina import (
     Button,
     DirectionalLight,
     Entity,
+    Sky,
     Text,
     Ursina,
     Vec3,
@@ -36,6 +37,7 @@ from ursina import (
     camera,
     color,
     held_keys,
+    load_texture,
     mouse,
     time,
     window,
@@ -103,6 +105,7 @@ from config import (
     MIN_HEIGHT,
     MIN_ZOOM,
     SCREENSHOT_DIR,
+    SPACE_BACKGROUND_TEXTURE_PATH,
     VSYNC,
     WINDOW_ICON_PATH,
     WINDOW_H,
@@ -129,6 +132,12 @@ except Exception:
 
 def clamp(value: float, min_value: float, max_value: float) -> float:
     return max(min_value, min(max_value, value))
+
+
+class SatelliteSpaceSky(Sky):
+    def update(self) -> None:
+        self.world_rotation = Vec3(90, 0, 0)
+        self.scale = camera.clip_plane_far * 0.8
 
 
 IMAGE_EXTENSIONS = {".bmp", ".jpg", ".jpeg", ".png"}
@@ -605,6 +614,7 @@ class QuadSimController:
         self.statue_detection_state: dict[str, dict] = {}
 
         self.scene_root = Entity(name="scene_root")
+        self.space_background = self._create_space_background()
         self.world = World(self.scene_root)
         self.statue_detection_labels = self._create_statue_detection_labels()
         self.drone_model = DroneModel(self.scene_root)
@@ -667,6 +677,29 @@ class QuadSimController:
         self.map_hud = None if LINKED_2D_CONTROL_MODE else EmbeddedMapHud()
         self.detection_hud = DetectionHud(DETECTION_LOG_PATH)
         self._update_status()
+
+    def _create_space_background(self):
+        if SPACE_BACKGROUND_TEXTURE_PATH is None:
+            print("Satellite simulation space background was not found.")
+            return None
+        try:
+            texture = load_texture(
+                SPACE_BACKGROUND_TEXTURE_PATH.name,
+                folder=SPACE_BACKGROUND_TEXTURE_PATH.parent,
+                use_cache=True,
+                filtering="bilinear",
+            )
+            if texture is None:
+                raise RuntimeError(f"texture loader returned no texture for {SPACE_BACKGROUND_TEXTURE_PATH}")
+            background = SatelliteSpaceSky(
+                texture=texture,
+                color=color.white,
+            )
+            print(f"Loaded satellite simulation space background: {SPACE_BACKGROUND_TEXTURE_PATH}")
+            return background
+        except Exception as exc:
+            print(f"Could not load satellite simulation space background: {exc}")
+            return None
 
     def _create_statue_detection_labels(self) -> dict[str, Text]:
         labels: dict[str, Text] = {}

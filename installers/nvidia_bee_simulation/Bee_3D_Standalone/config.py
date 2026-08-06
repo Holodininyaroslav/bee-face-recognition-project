@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -32,6 +33,19 @@ IDENTITY_LABELS = ("Adi", "Faraj", "Slava")
 IDENTITY_MATCH_MIN_SCORE = 0.40
 IDENTITY_MATCH_MIN_MARGIN = 0.0
 DETECTION_LOG_PATH = PROJECT_ROOT / "hive_detections.json"
+
+_space_background_override = os.environ.get("AI_MIPS_SPACE_BACKGROUND", "").strip()
+_space_background_candidates = [
+    BASE_DIR / "assets" / "textures" / "milky_way_eso0932a.jpg",
+    BASE_DIR.parents[1] / "python_ai_mips_sim" / "web" / "satellite-communication" / "assets" / "textures" / "milky_way_eso0932a.jpg",
+    BASE_DIR.parents[2] / "source" / "satellite" / "Satellite_Communication" / "assets" / "textures" / "milky_way_eso0932a.jpg",
+]
+if _space_background_override:
+    _space_background_candidates.insert(0, Path(_space_background_override).expanduser())
+SPACE_BACKGROUND_TEXTURE_PATH = next(
+    (path.resolve() for path in _space_background_candidates if path.is_file()),
+    None,
+)
 
 WINDOW_TITLE = "Standalone 3D Bee Space - NVIDIA CUDA"
 WINDOW_W = 960

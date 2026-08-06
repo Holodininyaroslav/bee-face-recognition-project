@@ -21,6 +21,9 @@ recognition results include total Windows CPU utilization and total NVIDIA GPU
 utilization sampled throughout the job, with the final and peak percentages
 shown in the 3D scene. GPU utilization comes directly from the NVIDIA driver
 through NVML.
+The sky around the three face statues uses the same Milky Way texture as the
+project's Network satellite-communication simulation. The scene reuses the
+existing installed asset instead of changing the statue or bee materials.
 
 ## Requirements
 
