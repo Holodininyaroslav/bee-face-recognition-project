@@ -144,7 +144,7 @@ IMAGE_EXTENSIONS = {".bmp", ".jpg", ".jpeg", ".png"}
 BATCH_HOLD_INTERVAL = 0.02
 BATCH_TARGET_COUNT = 50
 TURBO_BATCH_INTERVAL = 0.01
-TURBO_BATCH_TARGET_COUNT = 500
+TURBO_BATCH_REPEAT_COUNT = 10
 DETECTOR_HOLD_THRESHOLD = 0.35
 DETECTOR_POLL_INTERVAL_MS = 100
 SCREENSHOT_CLEANUP_INTERVAL = 5.0
@@ -600,6 +600,7 @@ class QuadSimController:
                 "capture_interval": BATCH_HOLD_INTERVAL,
                 "silent_progress": False,
                 "auto_capture": False,
+                "repeat_each": 1,
                 "summary_path": CPU_BATCH_SUMMARY_PATH,
                 "last_seen_mtime": self._summary_mtime(CPU_BATCH_SUMMARY_PATH),
             },
@@ -612,6 +613,7 @@ class QuadSimController:
                 "capture_interval": BATCH_HOLD_INTERVAL,
                 "silent_progress": False,
                 "auto_capture": False,
+                "repeat_each": 1,
                 "summary_path": GPU_BATCH_SUMMARY_PATH,
                 "last_seen_mtime": self._summary_mtime(GPU_BATCH_SUMMARY_PATH),
             },
@@ -1480,10 +1482,11 @@ class QuadSimController:
                 if turbo_requested:
                     started = self._start_batch_capture(
                         mode,
-                        target_count=TURBO_BATCH_TARGET_COUNT,
+                        target_count=BATCH_TARGET_COUNT,
                         capture_interval=TURBO_BATCH_INTERVAL,
                         silent_progress=True,
                         auto_capture=True,
+                        repeat_each=TURBO_BATCH_REPEAT_COUNT,
                     )
                 else:
                     started = self._start_batch_capture(mode)
@@ -1521,6 +1524,7 @@ class QuadSimController:
         capture_interval: float = BATCH_HOLD_INTERVAL,
         silent_progress: bool = False,
         auto_capture: bool = False,
+        repeat_each: int = 1,
     ) -> bool:
         state = self.batch_checks[mode]
         if state["pending"]:
@@ -1536,6 +1540,7 @@ class QuadSimController:
         state["capture_interval"] = max(0.001, float(capture_interval))
         state["silent_progress"] = bool(silent_progress)
         state["auto_capture"] = bool(auto_capture)
+        state["repeat_each"] = max(1, int(repeat_each))
         self.batch_hold_timers[mode] = 0.0
         if not state["silent_progress"]:
             self._show_face_alert(f"{mode} batch started: hold for {state['target_count']} photos")
@@ -1698,11 +1703,21 @@ class QuadSimController:
         result["published_by_hive"] = True
         return result
 
-    def _post_batch_to_hive(self, image_paths: list[Path], bee_id: int, mode: str, source: str, scene_hint: str = "") -> dict:
+    def _post_batch_to_hive(
+        self,
+        image_paths: list[Path],
+        bee_id: int,
+        mode: str,
+        source: str,
+        scene_hint: str = "",
+        repeat_each: int = 1,
+    ) -> dict:
         params = {
             "mode": mode,
             "processor_id": int(bee_id),
             "source": source,
+            "repeat_each": max(1, int(repeat_each)),
+            "parallel_group_size": 10 if mode == "GPU" and repeat_each > 1 else 1,
         }
         if scene_hint in IDENTITY_LABELS:
             params["scene_hint"] = scene_hint
@@ -1765,21 +1780,36 @@ class QuadSimController:
         state = self.batch_checks[mode]
         files = [Path(path) for path in state["files"]]
         scene_hint = str(state.get("scene_hint", ""))
+        repeat_each = max(1, int(state.get("repeat_each", 1)))
         bee_id = max(0, int(self.bee_swarm.controlled_id))
         with self.identity_result_lock:
-            self.identity_jobs_running += len(files)
+            self.identity_jobs_running += len(files) * repeat_each
         threading.Thread(
             target=self._run_hive_batch_detector,
-            args=(mode, files, bee_id, scene_hint),
+            args=(mode, files, bee_id, scene_hint, repeat_each),
             daemon=True,
         ).start()
 
-    def _run_hive_batch_detector(self, mode: str, files: list[Path], bee_id: int, scene_hint: str = "") -> None:
-        total = len(files)
+    def _run_hive_batch_detector(
+        self,
+        mode: str,
+        files: list[Path],
+        bee_id: int,
+        scene_hint: str = "",
+        repeat_each: int = 1,
+    ) -> None:
+        total = len(files) * max(1, int(repeat_each))
         started_batch = wall_time()
         usage_sampler = ResourceUsageSampler().start()
         try:
-            summary = self._post_batch_to_hive(files, bee_id, mode, "local-ursina-batch", scene_hint)
+            summary = self._post_batch_to_hive(
+                files,
+                bee_id,
+                mode,
+                "local-ursina-batch",
+                scene_hint,
+                repeat_each,
+            )
         except Exception as exc:
             summary = {
                 "event_type": "face_batch",
@@ -1797,7 +1827,7 @@ class QuadSimController:
                 "batch_completed": 0,
                 "batch_errors": total,
                 "batch_parallel": True,
-                "batch_workers": total,
+                "batch_workers": min(10, total) if mode == "GPU" else 1,
                 "accepted_count": 0,
                 "identity_counts": {},
                 "best_label_counts": {},
@@ -1827,6 +1857,7 @@ class QuadSimController:
         state["count"] = 0
         state["files"] = []
         state["scene_hint"] = ""
+        state["repeat_each"] = 1
 
     def _run_identity_detector(self, image_path: Path, bee_id: int, mode: str, scene_hint: str = "") -> None:
         command = [
@@ -2198,6 +2229,7 @@ class QuadSimController:
         state["files"] = []
         state["scene_hint"] = ""
         state["auto_capture"] = False
+        state["repeat_each"] = 1
 
     def _update_screenshot_cleanup(self, dt: float) -> None:
         self.screenshot_cleanup_timer -= dt
@@ -2416,6 +2448,7 @@ class QuadSimController:
             state["files"] = []
             scene_hint = str(state.get("scene_hint", ""))
             state["scene_hint"] = ""
+            state["repeat_each"] = 1
             if scene_hint:
                 summary["scene_hint"] = scene_hint
             self._publish_batch_result(mode, summary)
