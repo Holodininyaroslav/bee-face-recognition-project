@@ -16,6 +16,11 @@ directly. Its texture and skeletal hover animation are preserved without a
 generated geometry cache. Physical Windows key polling keeps `WASD`, `Q/E`,
 `Space`, `Shift`, and `F` working with non-Latin keyboard layouts. Returning
 from first-person mode resets the chase camera behind and above the bee.
+The lower-right Detections panel mirrors the local Hive detection log. New
+recognition results include total Windows CPU utilization and total NVIDIA GPU
+utilization sampled throughout the job, with the final and peak percentages
+shown in the 3D scene. GPU utilization comes directly from the NVIDIA driver
+through NVML.
 
 ## Requirements
 

@@ -118,7 +118,8 @@ from input_controller import InputController, was_key_pressed
 from screenshot_manager import ScreenshotManager
 from world import World
 from bee_swarm import BRIDGE_PATH, BeeSwarm
-from detection_events import append_detection_event
+from detection_events import append_detection_event, read_detection_events
+from system_usage import ResourceUsageSampler
 try:
     from word_detector import recognize_words, warm_word_detector
 except Exception:
@@ -362,6 +363,177 @@ class EmbeddedMapHud:
         self.status.text = ""
 
 
+class DetectionHud:
+    def __init__(self, log_path: Path) -> None:
+        self.log_path = log_path
+        self.width = 0.42
+        self.height = 0.38
+        self.poll_timer = 0.0
+        self.last_mtime = -1.0
+        self.live_events: list[dict] = []
+        self.file_events: list[dict] = []
+        self.root = Entity(parent=camera.ui)
+        self.panel = Entity(
+            parent=self.root,
+            model="quad",
+            scale=(self.width, self.height),
+            color=color.rgba32(7, 15, 27, 226),
+            z=0.02,
+        )
+        border_color = color.rgba32(75, 115, 160, 255)
+        Entity(parent=self.root, model="quad", scale=(self.width + 0.006, 0.006), y=self.height / 2, color=border_color)
+        Entity(parent=self.root, model="quad", scale=(self.width + 0.006, 0.006), y=-self.height / 2, color=border_color)
+        Entity(parent=self.root, model="quad", scale=(0.006, self.height + 0.006), x=-self.width / 2, color=border_color)
+        Entity(parent=self.root, model="quad", scale=(0.006, self.height + 0.006), x=self.width / 2, color=border_color)
+        self.title = Text(
+            parent=self.root,
+            text="DETECTIONS | TOTAL SYSTEM LOAD",
+            origin=(-0.5, 0.5),
+            x=-self.width / 2 + 0.014,
+            y=self.height / 2 - 0.015,
+            scale=0.58,
+            color=color.rgb32(255, 205, 64),
+            z=-0.05,
+        )
+        self.cards = []
+        top = self.height / 2 - 0.055
+        for index in range(4):
+            holder = Entity(parent=self.root, y=top - index * 0.081 - 0.035)
+            card = Entity(
+                parent=holder,
+                model="quad",
+                scale=(self.width - 0.024, 0.070),
+                x=0,
+                color=color.rgba32(14, 28, 47, 235),
+                z=0.01,
+            )
+            accent = Entity(
+                parent=holder,
+                model="quad",
+                scale=(0.005, 0.070),
+                x=-self.width / 2 + 0.014,
+                color=color.rgb32(58, 185, 255),
+                z=-0.02,
+            )
+            text_node = Text(
+                parent=holder,
+                text="",
+                origin=(-0.5, 0.5),
+                x=-self.width / 2 + 0.024,
+                y=0.028,
+                scale=0.49,
+                color=color.white,
+                z=-0.04,
+            )
+            self.cards.append((holder, accent, text_node))
+        self._layout()
+        self._refresh_file(force=True)
+
+    def _layout(self) -> None:
+        self.root.x = window.aspect_ratio * 0.5 - self.width / 2 - 0.025
+        self.root.y = -0.5 + self.height / 2 + 0.025
+
+    @staticmethod
+    def _event_key(event: dict) -> str:
+        image = str(event.get("image", event.get("input_image", ""))).strip()
+        if image:
+            return "image|" + image.lower()
+        event_id = str(event.get("event_id", "")).strip()
+        if event_id:
+            return event_id
+        return "|".join(
+            str(event.get(key, ""))
+            for key in ("timestamp_iso", "bee_id", "processor_id", "mode", "identity", "best_label", "elapsed_ms")
+        )
+
+    @staticmethod
+    def _number(value) -> float | None:
+        try:
+            return float(value) if value is not None else None
+        except (TypeError, ValueError):
+            return None
+
+    def _usage_text(self, event: dict, device: str) -> str:
+        usage = event.get("system_usage", {})
+        if not isinstance(usage, dict):
+            usage = {}
+        prefix = device.lower()
+        current = self._number(usage.get(f"{prefix}_percent"))
+        average = self._number(usage.get(f"{prefix}_average_percent"))
+        peak = self._number(usage.get(f"{prefix}_peak_percent"))
+        if current is None and average is None and peak is None:
+            return f"{device} --"
+        shown = current if current is not None else (average if average is not None else peak)
+        suffix = f" / max {peak:.0f}%" if peak is not None else ""
+        return f"{device} {shown:.0f}%{suffix}"
+
+    def _format_event(self, event: dict) -> str:
+        bee_id = event.get("bee_id", event.get("processor_id", "?"))
+        accepted = bool(event.get("accepted"))
+        identity = str(event.get("identity", "Unknown") if accepted else event.get("best_label", "Unknown"))
+        identity = identity or "Unknown"
+        mode = str(event.get("mode", "?"))
+        backend = str(event.get("backend", event.get("detector_exe", ""))).lower()
+        if "cuda" in backend or (NVIDIA_CUDA_MODE and mode.upper() == "GPU"):
+            mode = "CUDA"
+        elapsed = self._number(event.get("batch_elapsed_ms", event.get("elapsed_ms")))
+        elapsed_text = f"{elapsed:.0f} ms" if elapsed is not None else "-- ms"
+        stamp = str(event.get("timestamp_iso", ""))
+        clock = stamp[11:19] if len(stamp) >= 19 else ""
+        heading = f"P{bee_id}  {identity}  |  {mode}  |  {elapsed_text}"
+        if clock:
+            heading += f"  {clock}"
+        return f"{heading}\n{self._usage_text(event, 'CPU')}   {self._usage_text(event, 'GPU')}"
+
+    def _merged_events(self) -> list[dict]:
+        merged: list[dict] = []
+        seen: set[str] = set()
+        for event in self.live_events + self.file_events:
+            key = self._event_key(event)
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(event)
+        return merged
+
+    def _render(self) -> None:
+        events = self._merged_events()
+        self.title.text = f"DETECTIONS {len(events)} | TOTAL SYSTEM LOAD"
+        for index, (holder, accent, text_node) in enumerate(self.cards):
+            visible = index < len(events)
+            holder.enabled = visible
+            if not visible:
+                continue
+            event = events[index]
+            text_node.text = self._format_event(event)
+            accent.color = color.rgb32(62, 214, 126) if event.get("accepted") else color.rgb32(255, 183, 54)
+
+    def _refresh_file(self, force: bool = False) -> None:
+        try:
+            mtime = self.log_path.stat().st_mtime
+        except OSError:
+            mtime = 0.0
+        if not force and mtime == self.last_mtime:
+            return
+        self.last_mtime = mtime
+        self.file_events = read_detection_events(self.log_path)
+        self._render()
+
+    def add_result(self, result: dict) -> None:
+        event = dict(result)
+        event.setdefault("event_id", f"ursina_{wall_time():.6f}_{event.get('bee_id', 'x')}")
+        self.live_events.insert(0, event)
+        self.live_events = self.live_events[:8]
+        self._render()
+
+    def update(self, dt: float) -> None:
+        self._layout()
+        self.poll_timer -= dt
+        if self.poll_timer <= 0:
+            self.poll_timer = 0.5
+            self._refresh_file()
+
+
 class QuadSimController:
     def __init__(self) -> None:
         self.drone = Drone()
@@ -493,6 +665,7 @@ class QuadSimController:
             enabled=False,
         )
         self.map_hud = None if LINKED_2D_CONTROL_MODE else EmbeddedMapHud()
+        self.detection_hud = DetectionHud(DETECTION_LOG_PATH)
         self._update_status()
 
     def _create_statue_detection_labels(self) -> dict[str, Text]:
@@ -846,6 +1019,7 @@ class QuadSimController:
             map_payload = self.map_control_data if self.map_control_active else self._scene_map_payload()
             map_payload = self._map_payload_with_swarm(map_payload)
             self.map_hud.update(map_payload, True)
+        self.detection_hud.update(dt)
         self._update_status()
 
     def _map_payload_with_swarm(self, data: dict | None) -> dict | None:
@@ -1476,6 +1650,7 @@ class QuadSimController:
 
     def _run_hive_identity_detector(self, image_path: Path, bee_id: int, mode: str, scene_hint: str = "") -> None:
         started = wall_time()
+        usage_sampler = ResourceUsageSampler().start()
         try:
             result = self._post_image_to_hive(image_path, bee_id, mode, "local-ursina", scene_hint)
         except Exception as exc:
@@ -1487,6 +1662,7 @@ class QuadSimController:
                 "error": str(exc),
                 "published_by_hive": False,
             }
+        result["system_usage"] = usage_sampler.stop()
 
         result["bee_id"] = bee_id
         result["processor_id"] = bee_id
@@ -1516,6 +1692,7 @@ class QuadSimController:
     def _run_hive_batch_detector(self, mode: str, files: list[Path], bee_id: int, scene_hint: str = "") -> None:
         total = len(files)
         started_batch = wall_time()
+        usage_sampler = ResourceUsageSampler().start()
         try:
             summary = self._post_batch_to_hive(files, bee_id, mode, "local-ursina-batch", scene_hint)
         except Exception as exc:
@@ -1544,6 +1721,7 @@ class QuadSimController:
                 "error": str(exc),
                 "timestamp_iso": "",
             }
+        summary["system_usage"] = usage_sampler.stop()
         summary["event_type"] = "face_batch"
         summary["batch_summary"] = True
         summary["bee_id"] = bee_id
@@ -1591,6 +1769,7 @@ class QuadSimController:
 
         result: dict
         started = wall_time()
+        usage_sampler = ResourceUsageSampler().start()
         try:
             process = subprocess.run(
                 command,
@@ -1610,6 +1789,7 @@ class QuadSimController:
                 "best_score": -1.0,
                 "error": str(exc),
             }
+        result["system_usage"] = usage_sampler.stop()
 
         result["bee_id"] = bee_id
         result["mode"] = mode
@@ -1658,6 +1838,7 @@ class QuadSimController:
 
     def _run_word_detector(self, image_path: Path, bee_id: int, mode: str) -> None:
         started = wall_time()
+        usage_sampler = ResourceUsageSampler().start()
         try:
             process = subprocess.run(
                 [
@@ -1683,6 +1864,7 @@ class QuadSimController:
                 "best_score": -1.0,
                 "error": str(exc),
             }
+        result["system_usage"] = usage_sampler.stop()
         result["bee_id"] = bee_id
         result["mode"] = f"{mode}-OCR"
         result["input_image"] = str(image_path)
@@ -1701,6 +1883,7 @@ class QuadSimController:
         for result in ready:
             if not result.get("published_by_hive"):
                 self._publish_identity_result(result)
+            self.detection_hud.add_result(result)
             self._record_identity_result_on_statue(result)
             self._show_face_alert(self._format_identity_result(result))
 
@@ -1750,6 +1933,7 @@ class QuadSimController:
 
         for result in ready:
             self._publish_word_result(result)
+            self.detection_hud.add_result(result)
             if result.get("accepted"):
                 self._show_face_alert(self._format_word_result(result))
 
@@ -1774,6 +1958,7 @@ class QuadSimController:
                 "identity_counts": result.get("identity_counts", {}),
                 "best_label_counts": result.get("best_label_counts", {}),
                 "scene_hint": result.get("scene_hint", ""),
+                "system_usage": result.get("system_usage", {}),
             }
             append_detection_event(DETECTION_LOG_PATH, event)
             return
@@ -1798,6 +1983,7 @@ class QuadSimController:
             "identity_source": result.get("identity_source", ""),
             "backend": result.get("backend", result.get("detector_exe", "")),
             "error": result.get("error", ""),
+            "system_usage": result.get("system_usage", {}),
         }
         append_detection_event(DETECTION_LOG_PATH, event)
 
@@ -1818,6 +2004,7 @@ class QuadSimController:
             "image": result.get("input_image", ""),
             "engine": result.get("engine", "rapidocr-onnxruntime"),
             "error": result.get("error", ""),
+            "system_usage": result.get("system_usage", {}),
         }
         append_detection_event(DETECTION_LOG_PATH, event)
 
