@@ -1835,27 +1835,27 @@ x = torch.stack(tensors, dim=0)`
       he: "מאתר תמונות ייחוס של Adi, Faraj ו-Slava, מעבד אותן, מחשב את כל וקטורי הייחוס בקריאת מודל אחת, מסנכרן את CUDA עד להשלמת האתחול ושומר את המטריצה במטמון לפי התקן."
     },
     diagram: {
-      en: ["Reference folders", "Prepared tensors", "One model batch", "Cached reference matrix"],
-      ru: ["Папки эталонов", "Подготовленные тензоры", "Один пакет модели", "Кэшированная матрица эталонов"],
-      he: ["תיקיות ייחוס", "טנזורים מוכנים", "אצוות מודל אחת", "מטריצת ייחוס במטמון"]
+      en: ["Reference folders", "Prepared tensors", "One stacked model call", "Cached reference matrix"],
+      ru: ["Папки эталонов", "Подготовленные тензоры", "Один вызов со сложенным тензором", "Кэшированная матрица эталонов"],
+      he: ["תיקיות ייחוס", "טנזורים מוכנים", "קריאת מודל אחת עם טנזור מוערם", "מטריצת ייחוס במטמון"]
     },
     diagramNotes: {
       en: [
         "For each known identity, searches both identity_references/<name> and Face_detector/references/<name>, filters supported images, and removes duplicate paths.",
         "Opens every reference image and applies the same 47×55 BGR/CHW preprocessing used for incoming screenshots.",
-        "Stacks all reference tensors into one N-image batch and runs one DeepID inference call without gradient tracking.",
+        "Stacks all one-time reference tensors into one N×3×55×47 tensor and runs one DeepID inference call without gradient tracking.",
         "Waits for CUDA completion when needed and stores the normalized N×160 reference matrix in self.ref_emb under the actual device name."
       ],
       ru: [
         "Для каждого известного человека проверяет identity_references/<имя> и Face_detector/references/<имя>, оставляет допустимые изображения и удаляет повторяющиеся пути.",
         "Открывает каждую эталонную фотографию и применяет ту же подготовку 47×55, BGR и CHW, что используется для входящих скриншотов.",
-        "Объединяет все эталонные тензоры в один пакет из N изображений и выполняет один вызов DeepID без расчёта градиентов.",
+        "Складывает все одноразовые эталонные тензоры в один тензор N×3×55×47 и выполняет один вызов DeepID без расчёта градиентов.",
         "При необходимости ждёт завершения CUDA и сохраняет нормализованную матрицу эталонов N×160 в self.ref_emb под именем фактического устройства."
       ],
       he: [
         "לכל זהות ידועה בודק את identity_references/<name> ואת Face_detector/references/<name>, משאיר תמונות נתמכות ומסיר נתיבים כפולים.",
         "פותח כל תמונת ייחוס ומפעיל עליה את אותו עיבוד 47×55,‏ BGR ו-CHW שמשמש לצילומי המסך הנכנסים.",
-        "מערים את כל טנזורי הייחוס לאצווה אחת של N תמונות ומבצע קריאת הסקה אחת של DeepID ללא חישוב גרדיאנטים.",
+        "מערים את כל טנזורי הייחוס החד־פעמיים לטנזור אחד בגודל N×3×55×47 ומבצע קריאת DeepID אחת ללא חישוב גרדיאנטים.",
         "ממתין להשלמת CUDA בעת הצורך ושומר את מטריצת הייחוס המנורמלת N×160 בתוך self.ref_emb תחת שם ההתקן בפועל."
       ]
     },
@@ -1901,9 +1901,9 @@ const detectorVariantCatalog = {
           he: "מעביר את כל הגרסאות דרך DeepID, מכפיל את הווקטורים המנורמלים במטריצת הייחוס שבמטמון, שומר את הציון הטוב ביותר לכל אדם, בודק ספי ציון ופער ומחזיר Unknown כאשר הביטחון אינו מספיק."
         },
         diagram: {
-          en: ["Variant batch", "160D embeddings", "Cosine-score matrix", "Best and runner-up", "Identity or Unknown"],
-          ru: ["Пакет вариантов", "Векторы 160D", "Матрица сходства", "Лучший и второй результат", "Имя или Unknown"],
-          he: ["אצוות גרסאות", "וקטורי 160D", "מטריצת דמיון", "הטוב ביותר והשני", "זהות או Unknown"]
+          en: ["Crops of one screenshot", "160D embeddings", "Cosine-score matrix", "Best and runner-up", "Identity or Unknown"],
+          ru: ["Обрезки одного скриншота", "Векторы 160D", "Матрица сходства", "Лучший и второй результат", "Имя или Unknown"],
+          he: ["חיתוכים של צילום מסך אחד", "וקטורי 160D", "מטריצת דמיון", "הטוב ביותר והשני", "זהות או Unknown"]
         },
         diagramNotes: {
           en: [
@@ -1928,7 +1928,7 @@ const detectorVariantCatalog = {
             "מחזיר את שם המנצח רק אם הציון והפער עוברים את הספים; אחרת identity הוא Unknown. רמז סצנה תקף משמש רק לשבירת שוויון בין ציונים קרובים."
           ]
         },
-        layers: { en: "One batched DeepID forward plus score reduction", ru: "Один пакетный проход DeepID и свёртка результатов", he: "מעבר DeepID אחד באצווה וצמצום ציונים" },
+        layers: { en: "One DeepID forward for the crops plus score reduction", ru: "Один проход DeepID для обрезок и свёртка результатов", he: "מעבר DeepID אחד לחיתוכים וצמצום ציונים" },
         connections: { en: "variant embeddings @ reference_embeddings.T", ru: "variant_embeddings @ reference_embeddings.T", he: "variant_embeddings @ reference_embeddings.T" },
         tensor: "V×160 @ 160×N → V×N similarity matrix",
         cudaShort: { en: "One CUDA model call for every crop of the screenshot", ru: "Один вызов CUDA-модели для всех обрезок скриншота", he: "קריאת מודל CUDA אחת לכל חיתוכי צילום המסך" },
@@ -1958,21 +1958,21 @@ result = detector._decide(variants, sims, device, screenshot_path, elapsed_ms, N
           en: [
             "Receives one existing image path, the requested backend mode, and an optional scene hint.",
             "Creates the full-frame and centered crop variants before starting the measured recognition section.",
-            "Starts the timer, prepares all tensors, ensures references are initialized, and computes every normalized embedding in one model batch.",
+            "Starts the timer, prepares the crops from this one screenshot, ensures references are initialized, and computes every normalized embedding in one model call.",
             "Multiplies the embeddings by cached references and waits for queued CUDA work before calculating elapsed milliseconds.",
             "Passes variants, scores, device, timing, path, and hint to _decide, which returns the complete result dictionary."
           ],
           ru: [
             "Получает путь к одному существующему изображению, запрошенный режим устройства и необязательную подсказку сцены.",
             "Создаёт вариант полного кадра и центральные обрезки до начала измеряемой части распознавания.",
-            "Запускает таймер, готовит все тензоры, проверяет инициализацию эталонов и получает все нормализованные векторы одним пакетом модели.",
+            "Запускает таймер, готовит обрезки одного скриншота, проверяет инициализацию эталонов и получает все нормализованные векторы одним вызовом модели.",
             "Умножает векторы на кэшированные эталоны и ждёт завершения очереди CUDA перед вычислением времени в миллисекундах.",
             "Передаёт варианты, оценки, устройство, время, путь и подсказку в _decide, который возвращает полный словарь результата."
           ],
           he: [
             "מקבלת נתיב לתמונה קיימת אחת, את מצב ההתקן המבוקש ורמז סצנה אופציונלי.",
             "יוצרת את גרסת הפריים המלא ואת החיתוכים המרכזיים לפני תחילת קטע הזיהוי הנמדד.",
-            "מפעילה את השעון, מכינה את כל הטנזורים, מוודאת שהייחוסים אותחלו ומחשבת את כל הווקטורים המנורמלים באצוות מודל אחת.",
+            "מפעילה את השעון, מכינה את חיתוכי צילום המסך היחיד, מוודאת שהייחוסים אותחלו ומחשבת את כל הווקטורים המנורמלים בקריאת מודל אחת.",
             "מכפילה את הווקטורים בייחוסים שבמטמון וממתינה לעבודת CUDA שבתור לפני חישוב הזמן במילישניות.",
             "מעבירה את הגרסאות, הציונים, ההתקן, הזמן, הנתיב והרמז אל _decide, שמחזירה את מילון התוצאה המלא."
           ]
@@ -2232,95 +2232,100 @@ const currentRuntimeStages = [
 ];
 
 Object.assign(detectorVariantCatalog.single, {
-  label: { en: "single-image request", ru: "одиночный запрос", he: "בקשת תמונה יחידה" },
-  description: { en: "The page sends one image to /api/detect. Hive uses the current CPU path or the real OpenCL DeepID path plus the explicit CPU SFace verifier.", ru: "Страница отправляет одно изображение в /api/detect. Hive использует текущий CPU-путь либо реальный OpenCL DeepID вместе с явной CPU-проверкой SFace.", he: "הדף שולח תמונה אחת אל ‎/api/detect. ‏Hive משתמש במסלול CPU הנוכחי או ב‑OpenCL DeepID אמיתי יחד עם מאמת SFace מפורש ב‑CPU." },
-  source: { en: "Exact current local detector sources; the six stages concatenate to the complete displayed listing.", ru: "Точные актуальные исходники локального детектора; шесть этапов без пропусков образуют показанный общий листинг.", he: "קוד המקור המדויק והנוכחי של הגלאי המקומי; ששת השלבים מתחברים ללא דילוגים לרשימה המלאה המוצגת." },
-  stages: currentRuntimeStages
+  label: { en: "single-image CUDA recognition", ru: "одиночное распознавание CUDA", he: "זיהוי CUDA של תמונה יחידה" },
+  description: {
+    en: "One screenshot enters the CUDA DeepID detector. The full frame and several centered crops of that same screenshot provide robust recognition attempts that are reduced to one identity.",
+    ru: "В CUDA-детектор DeepID поступает один скриншот. Полный кадр и несколько центральных обрезок того же скриншота дают устойчивые попытки, которые сводятся к одному имени.",
+    he: "צילום מסך יחיד נכנס לגלאי DeepID של CUDA. הפריים המלא וכמה חיתוכים מרכזיים של אותו צילום מסך מספקים ניסיונות זיהוי עמידים שמצטמצמים לזהות אחת."
+  },
+  source: {
+    en: "Exact source/cuda_deepid_detector.py from the first import through the end of detect_image: the complete single-screenshot detector boundary.",
+    ru: "Точный source/cuda_deepid_detector.py от первого импорта до конца detect_image: полная граница детектора одного скриншота.",
+    he: "הקובץ המדויק source/cuda_deepid_detector.py מן הייבוא הראשון ועד סוף detect_image: הגבול המלא של גלאי צילום מסך יחיד."
+  }
 });
-Object.assign(detectorVariantCatalog.batch, {
-  label: { en: "true batch request", ru: "настоящий пакетный запрос", he: "בקשת אצווה אמיתית" },
-  description: { en: "When several files are selected, the page sends one /api/detect-batch request with per-image verification. GPU mode performs one native OpenCL tensor batch, then the explicit CPU verifier assigns the correct identity to each file; CPU mode verifies every image on CPU.", ru: "При выборе нескольких файлов страница отправляет один запрос /api/detect-batch с проверкой каждого изображения. Режим GPU выполняет одну нативную тензорную пачку OpenCL, после чего явный CPU-проверяющий модуль присваивает правильное имя каждому файлу; режим CPU проверяет все изображения на CPU.", he: "כאשר נבחרים כמה קבצים, הדף שולח בקשת ‎/api/detect-batch אחת עם אימות לכל תמונה. מצב GPU מבצע אצוות טנזורים מקורית אחת ב‑OpenCL, ואז מאמת ה‑CPU המפורש משייך זהות נכונה לכל קובץ; מצב CPU בודק כל תמונה ב‑CPU." },
-  source: { en: "The same exact current runtime sources, viewed through the batch entry path in stage 5; no serial-browser-loop implementation is substituted.", ru: "Те же точные актуальные исходники, но с пакетной точкой входа этапа 5; последовательный браузерный цикл не подставляется вместо пачки.", he: "אותם מקורות עדכניים ומדויקים, דרך כניסת האצווה בשלב 5; לא מוחלפת בהם לולאת דפדפן סדרתית." },
-  stages: currentRuntimeStages
-});
+delete detectorVariantCatalog.batch;
 
 Object.assign(translations.en, {
-  score: "Hive acceptance score (fixed)",
-  margin: "Hive identity margin (fixed)",
-  howIntro: "This inspector follows the current local runtime used by this page: native C++ DeepID, a real OpenCL GPU path, the CPU path, the SFace accuracy verifier, and the Hive API response.",
-  variantKicker: "CURRENT LOCAL RUNTIME",
-  variantTitle: "Choose the request path to inspect",
-  variantSingle: "Single-image request",
-  variantBatch: "True batch request",
-  modeExplainText: "On this AMD computer, GPU mode is native OpenCL DeepID plus an explicitly reported CPU YuNet/SFace accuracy verifier. CPU mode runs YuNet/SFace on the processor. The backend field states the executed path; CUDA belongs to the separate NVIDIA build.",
-  sourceTitle: "Complete current local detector source shown by the six stages",
-  sourceIntro: "The listing is the exact concatenation of the current source blocks shown in stages 1–6. The page verifies that its line count and text order equal the six-stage sum.",
-  sourceLoading: "Loading the current C++/OpenCL/SFace detector sources…",
-  sourceError: "Could not load or verify the current local detector sources.",
-  openRawDetectorSource: "Open current detector entry point",
-  fullStageExact: "Exact block from the current local detector sources",
-  fullStageDetector: "Exact block from the current local detector sources",
-  fullStageNotebook: "Exact block from the current local detector sources",
+  simpleNote: "Upload one screenshot, choose CUDA GPU or CPU, and press Recognize.",
+  dropHint: "Choose one screenshot for CUDA GPU/CPU analysis.",
+  score: "Minimum similarity score",
+  margin: "Minimum lead over second place",
+  howIntro: "This inspector follows the exact single-image CUDA DeepID module, including one-time model/reference initialization and the complete path from one screenshot to one identity.",
+  variantKicker: "CUDA SINGLE-IMAGE SOURCE",
+  variantTitle: "Architecture being inspected",
+  variantSingle: "Single-image CUDA recognition",
+  modeExplainText: "GPU mode is real PyTorch CUDA when torch.cuda.is_available() is true; CPU mode executes the same DeepID operations on the processor. This explanation covers only the single-image CUDA detector source.",
+  sourceTitle: "Complete single-image CUDA detector source shown by six stages",
+  sourceIntro: "The listing is the exact source/cuda_deepid_detector.py text from its first import through the end of detect_image. It equals the six stage blocks in the same order, without gaps or rewritten lines.",
+  sourceLoading: "Loading source/cuda_deepid_detector.py…",
+  sourceError: "Could not load or verify the single-image CUDA detector source.",
+  openRawDetectorSource: "Open raw CUDA detector source",
+  fullStageExact: "Exact block from source/cuda_deepid_detector.py",
+  fullStageDetector: "Exact block from source/cuda_deepid_detector.py",
+  fullStageNotebook: "Exact block from source/cuda_deepid_detector.py",
   sourceLoaded: "Verified: {total} lines in the complete {variant} listing = {sum} lines across stages 1–6; the text is identical."
 });
 Object.assign(translations.ru, {
-  score: "Порог принятия Hive (фиксированный)",
-  margin: "Отрыв личности Hive (фиксированный)",
-  howIntro: "Этот просмотр следует фактическому локальному пути, который использует страница: нативный C++ DeepID, настоящий GPU-путь OpenCL, CPU-путь, проверка точности SFace и ответ API Hive.",
-  variantKicker: "ТЕКУЩАЯ ЛОКАЛЬНАЯ СРЕДА",
-  variantTitle: "Выберите путь запроса для просмотра",
-  variantSingle: "Одиночный запрос",
-  variantBatch: "Настоящий пакетный запрос",
-  modeExplainText: "На этом компьютере AMD режим GPU — это нативный OpenCL DeepID плюс явно указанная CPU-проверка точности YuNet/SFace. Режим CPU выполняет YuNet/SFace на процессоре. Поле backend сообщает фактический путь; CUDA относится к отдельной сборке NVIDIA.",
-  sourceTitle: "Полный актуальный исходник локального детектора по шести этапам",
-  sourceIntro: "Листинг является точным объединением актуальных блоков исходника из этапов 1–6. Страница проверяет, что количество строк и порядок текста совпадают с суммой шести этапов.",
-  sourceLoading: "Загружаются актуальные исходники C++/OpenCL/SFace…",
-  sourceError: "Не удалось загрузить или проверить актуальные исходники локального детектора.",
-  openRawDetectorSource: "Открыть текущую точку входа детектора",
-  fullStageExact: "Точный блок из актуальных исходников локального детектора",
-  fullStageDetector: "Точный блок из актуальных исходников локального детектора",
-  fullStageNotebook: "Точный блок из актуальных исходников локального детектора",
+  simpleNote: "Загрузите один скриншот, выберите CUDA GPU или CPU и нажмите «Распознать».",
+  dropHint: "Выберите один скриншот для анализа на CUDA GPU/CPU.",
+  score: "Минимальная оценка сходства",
+  margin: "Минимальный отрыв от второго места",
+  howIntro: "Этот просмотр следует точному одиночному CUDA-модулю DeepID: включая одноразовую инициализацию модели и эталонов и полный путь от одного скриншота до одного имени.",
+  variantKicker: "ИСХОДНИК CUDA ДЛЯ ОДНОГО ИЗОБРАЖЕНИЯ",
+  variantTitle: "Разбираемая архитектура",
+  variantSingle: "Одиночное распознавание CUDA",
+  modeExplainText: "GPU-режим действительно использует PyTorch CUDA, когда torch.cuda.is_available() возвращает true; CPU-режим выполняет те же операции DeepID на процессоре. Здесь разобран только одиночный CUDA-детектор.",
+  sourceTitle: "Полный исходник одиночного CUDA-детектора по шести этапам",
+  sourceIntro: "Листинг — точный текст source/cuda_deepid_detector.py от первого импорта до конца detect_image. Он равен шести этапам в том же порядке, без пропусков и переписанных строк.",
+  sourceLoading: "Загружается source/cuda_deepid_detector.py…",
+  sourceError: "Не удалось загрузить или проверить исходник одиночного CUDA-детектора.",
+  openRawDetectorSource: "Открыть исходник CUDA-детектора",
+  fullStageExact: "Точный блок из source/cuda_deepid_detector.py",
+  fullStageDetector: "Точный блок из source/cuda_deepid_detector.py",
+  fullStageNotebook: "Точный блок из source/cuda_deepid_detector.py",
   sourceLoaded: "Проверено: {total} строк в полном листинге «{variant}» = {sum} строк на этапах 1–6; текст полностью совпадает."
 });
 Object.assign(translations.he, {
-  score: "סף קבלה של Hive (קבוע)",
-  margin: "פער זהות של Hive (קבוע)",
-  howIntro: "התצוגה עוקבת אחר מסלול הריצה המקומי שבו הדף משתמש בפועל: DeepID מקורי ב‑C++, מסלול GPU אמיתי ב‑OpenCL, מסלול CPU, מאמת דיוק SFace ותשובת API של Hive.",
-  variantKicker: "סביבת הריצה המקומית הנוכחית",
-  variantTitle: "בחרו מסלול בקשה לעיון",
-  variantSingle: "בקשת תמונה יחידה",
-  variantBatch: "בקשת אצווה אמיתית",
-  modeExplainText: "במחשב AMD הזה מצב GPU הוא OpenCL DeepID מקורי יחד עם מאמת דיוק YuNet/SFace ב‑CPU שמדווח במפורש. מצב CPU מריץ YuNet/SFace במעבד. שדה backend מציין את המסלול שבוצע; CUDA שייך לבנייה הנפרדת של NVIDIA.",
-  sourceTitle: "קוד המקור המקומי העדכני המלא לפי שישה שלבים",
-  sourceIntro: "הרשימה היא חיבור מדויק של בלוקי קוד המקור העדכניים המוצגים בשלבים 1–6. הדף מאמת שמספר השורות וסדר הטקסט שווים לסכום ששת השלבים.",
-  sourceLoading: "טוען את מקורות C++/OpenCL/SFace העדכניים…",
-  sourceError: "לא ניתן לטעון או לאמת את מקורות הגלאי המקומי העדכניים.",
-  openRawDetectorSource: "פתיחת נקודת הכניסה הנוכחית של הגלאי",
-  fullStageExact: "בלוק מדויק ממקורות הגלאי המקומי העדכניים",
-  fullStageDetector: "בלוק מדויק ממקורות הגלאי המקומי העדכניים",
-  fullStageNotebook: "בלוק מדויק ממקורות הגלאי המקומי העדכניים",
+  simpleNote: "העלו צילום מסך אחד, בחרו CUDA GPU או CPU ולחצו על זיהוי.",
+  dropHint: "בחרו צילום מסך אחד לניתוח CUDA GPU/CPU.",
+  score: "ציון הדמיון המזערי",
+  margin: "הפער המזערי מן המקום השני",
+  howIntro: "תצוגה זו עוקבת אחר מודול DeepID המדויק של CUDA לתמונה יחידה, כולל אתחול חד־פעמי של המודל והייחוסים והמסלול המלא מצילום מסך אחד לזהות אחת.",
+  variantKicker: "קוד CUDA לתמונה יחידה",
+  variantTitle: "הארכיטקטורה הנבדקת",
+  variantSingle: "זיהוי CUDA של תמונה יחידה",
+  modeExplainText: "מצב GPU משתמש באמת ב‑PyTorch CUDA כאשר torch.cuda.is_available() מחזירה true; מצב CPU מבצע אותן פעולות DeepID במעבד. כאן מוסבר רק גלאי CUDA לתמונה יחידה.",
+  sourceTitle: "קוד המקור המלא של גלאי CUDA לתמונה יחידה בשישה שלבים",
+  sourceIntro: "הרשימה היא הטקסט המדויק של source/cuda_deepid_detector.py מן הייבוא הראשון עד סוף detect_image. היא שווה לששת השלבים באותו סדר, ללא דילוגים או שורות שנכתבו מחדש.",
+  sourceLoading: "טוען את source/cuda_deepid_detector.py…",
+  sourceError: "לא ניתן לטעון או לאמת את מקור גלאי CUDA לתמונה יחידה.",
+  openRawDetectorSource: "פתיחת מקור גלאי CUDA",
+  fullStageExact: "בלוק מדויק מתוך source/cuda_deepid_detector.py",
+  fullStageDetector: "בלוק מדויק מתוך source/cuda_deepid_detector.py",
+  fullStageNotebook: "בלוק מדויק מתוך source/cuda_deepid_detector.py",
   sourceLoaded: "אומת: {total} שורות ברשימת «{variant}» המלאה = {sum} שורות בשלבים 1–6; הטקסט זהה."
 });
 Object.assign(detailUi.en, {
-  cudaLabel: "Compute backend",
-  cudaTitle: "Implementation in the current local project",
-  openFullCode: "Open exact current source for this stage",
-  codeSourceShort: "Short current-runtime sketch",
-  codeSourceFull: "Exact current local source"
+  cudaLabel: "CUDA role",
+  cudaTitle: "How the single-image CUDA detector implements this stage",
+  openFullCode: "Open exact CUDA source for this stage",
+  codeSourceShort: "Short single-image CUDA sketch",
+  codeSourceFull: "Exact CUDA detector source"
 });
 Object.assign(detailUi.ru, {
-  cudaLabel: "Вычислительный backend",
-  cudaTitle: "Реализация в текущем локальном проекте",
-  openFullCode: "Открыть точный актуальный исходник этапа",
-  codeSourceShort: "Короткая схема текущей среды",
-  codeSourceFull: "Точный актуальный локальный исходник"
+  cudaLabel: "Роль CUDA",
+  cudaTitle: "Как этот этап реализован в одиночном CUDA-детекторе",
+  openFullCode: "Открыть точный CUDA-исходник этапа",
+  codeSourceShort: "Короткая схема одиночного CUDA-пути",
+  codeSourceFull: "Точный исходник CUDA-детектора"
 });
 Object.assign(detailUi.he, {
-  cudaLabel: "Backend חישובי",
-  cudaTitle: "המימוש בפרויקט המקומי הנוכחי",
-  openFullCode: "פתיחת קוד המקור המדויק והעדכני של השלב",
-  codeSourceShort: "תרשים קצר של סביבת הריצה הנוכחית",
-  codeSourceFull: "קוד המקור המקומי המדויק והעדכני"
+  cudaLabel: "תפקיד CUDA",
+  cudaTitle: "כיצד שלב זה ממומש בגלאי CUDA לתמונה יחידה",
+  openFullCode: "פתיחת מקור CUDA המדויק של השלב",
+  codeSourceShort: "תרשים קצר של מסלול CUDA לתמונה יחידה",
+  codeSourceFull: "מקור גלאי CUDA המדויק"
 });
 
 function activeVariantDefinition() {
@@ -2388,6 +2393,7 @@ function setLanguage(lang) {
     button.classList.toggle("active", button.dataset.lang === lang);
   });
   renderDetectorVariantUi();
+  if (!imageInput.files?.length) renderPreviews([]);
   if (currentStageIndex >= 0 && !stageDetail.classList.contains("hidden")) {
     renderStageDetail(currentStageIndex, false);
   }
@@ -3294,9 +3300,9 @@ function structuralSourceAnnotation(text, lang) {
       "קוראת את רשומת הייחוס באינדקס ref_index ומפרקת ממנה את תווית האדם הידוע ואת נתיב תמונת המקור."
     ],
     "emb, device = self._embed_variants(variants, mode)": [
-      "Embeds every prepared variant in one model batch and stores both the resulting embedding matrix and the actual CPU/CUDA device used.",
-      "Вычисляет признаки всех подготовленных вариантов одним пакетом модели и сохраняет матрицу эмбеддингов вместе с фактически использованным устройством CPU/CUDA.",
-      "מחשבת הטמעות לכל הגרסאות המוכנות באצוות מודל אחת ושומרת גם את מטריצת ההטמעות וגם את התקן ה-CPU/CUDA שבו נעשה שימוש בפועל."
+      "Embeds every crop derived from this one screenshot in one model call and stores both the [V,160] matrix and the actual CPU/CUDA device used.",
+      "Одним вызовом модели получает признаки всех обрезок одного скриншота и сохраняет матрицу [V,160] вместе с фактически использованным CPU/CUDA-устройством.",
+      "מחשבת בקריאת מודל אחת embeddings לכל החיתוכים של צילום המסך היחיד ושומרת את מטריצת [V,160] ואת התקן CPU/CUDA שבו נעשה שימוש בפועל."
     ],
     "counts[label] = counts.get(label, 0) + 1": [
       "Increments the number of batch images accepted as this label, starting from zero when the label has not appeared before.",
@@ -3502,8 +3508,158 @@ function englishSourceLineAnnotation(text) {
  return "Executes the Python operation shown on the left as part of detector computation or data preparation.";
 }
 
+function cudaSingleSourceAnnotation(text, lang) {
+  const say = (en, ru, he) => lang === "ru" ? ru : lang === "he" ? he : en;
+  const exact = {
+    "x = F.relu(F.conv2d(x, self.conv1_w, self.conv1_b))": [
+      "Conv1 slides 20 learned 4×4×3 filters over [V,3,55,47]. Each output value is 48 multiply-adds plus one bias; ReLU replaces negative values with zero. Result: [V,20,52,44]. V means crops of this one screenshot, not several faces.",
+      "Conv1 проводит 20 обученных фильтров 4×4×3 по тензору [V,3,55,47]. Каждый выход — сумма 48 произведений плюс bias; ReLU заменяет отрицательные значения нулём. Результат: [V,20,52,44]. V — обрезки одного скриншота, не несколько лиц.",
+      "Conv1 מעבירה 20 מסננים מאומנים בגודל 4×4×3 על [V,3,55,47]. כל ערך פלט הוא סכום של 48 מכפלות ועוד bias;‏ ReLU מאפסת ערכים שליליים. התוצאה: [V,20,52,44]. ‏V הוא חיתוכים של אותו צילום מסך, לא כמה פנים."
+    ],
+    "x = F.max_pool2d(x, 2, 2)": [
+      "Max-pooling examines every non-overlapping 2×2 window separately and keeps its largest activation. It halves height and width; after Conv1 this gives [V,20,26,22], and after Conv2 [V,40,12,10]. It does not choose one maximum for the whole image.",
+      "Max-pooling отдельно рассматривает каждое неперекрывающееся окно 2×2 и сохраняет его максимум. Высота и ширина уменьшаются вдвое: после Conv1 получается [V,20,26,22], после Conv2 — [V,40,12,10]. Это не один максимум для всего изображения.",
+      "Max-pooling בוחרת את המקסימום בכל חלון נפרד ולא־חופף של 2×2. הגובה והרוחב נחצים: אחרי Conv1 מתקבל [V,20,26,22], ואחרי Conv2 ‏[V,40,12,10]. זה אינו מקסימום יחיד לכל התמונה."
+    ],
+    "x = F.relu(F.conv2d(x, self.conv2_w, self.conv2_b))": [
+      "Conv2 applies 40 learned 3×3×20 filters to [V,20,26,22], adds 40 biases and applies ReLU. Result: [V,40,24,20].",
+      "Conv2 применяет 40 обученных фильтров 3×3×20 к [V,20,26,22], добавляет 40 bias и выполняет ReLU. Результат: [V,40,24,20].",
+      "Conv2 מפעילה 40 מסננים מאומנים בגודל 3×3×20 על [V,20,26,22], מוסיפה 40 ערכי bias ומפעילה ReLU. התוצאה: [V,40,24,20]."
+    ],
+    "x = F.relu(F.conv2d(x, self.conv3_w, self.conv3_b))": [
+      "Conv3 applies 60 learned 3×3×40 filters to [V,40,12,10], adds biases and applies ReLU. Result: [V,60,10,8].",
+      "Conv3 применяет 60 обученных фильтров 3×3×40 к [V,40,12,10], добавляет bias и выполняет ReLU. Результат: [V,60,10,8].",
+      "Conv3 מפעילה 60 מסננים מאומנים בגודל 3×3×40 על [V,40,12,10], מוסיפה bias ומפעילה ReLU. התוצאה: [V,60,10,8]."
+    ],
+    "pool3 = F.max_pool2d(x, 2, 2)": [
+      "The third 2×2 max-pool reduces [V,60,10,8] to [V,60,5,4]. Each of the 60 feature maps keeps one maximum per local 2×2 window.",
+      "Третий max-pooling 2×2 уменьшает [V,60,10,8] до [V,60,5,4]. В каждой из 60 карт признаков сохраняется максимум каждого локального окна 2×2.",
+      "ה־max-pool השלישי בגודל 2×2 מקטין [V,60,10,8] ל־[V,60,5,4]. בכל אחת מ־60 מפות התכונות נשמר המקסימום של כל חלון מקומי 2×2."
+    ],
+    "fc11 = pool3.flatten(1) @ self.fc11_w + self.fc11_b": [
+      "Flattens [V,60,5,4] to [V,1200], multiplies it by learned weights [1200,160], and adds a 160-value bias. The first dense branch produces [V,160].",
+      "Разворачивает [V,60,5,4] в [V,1200], умножает на обученную матрицу [1200,160] и добавляет bias из 160 значений. Первая полносвязная ветвь выдаёт [V,160].",
+      "משטחת [V,60,5,4] ל־[V,1200], מכפילה במטריצת משקלים מאומנת [1200,160] ומוסיפה bias בן 160 ערכים. הענף הצפוף הראשון מפיק [V,160]."
+    ],
+    "conv4 = F.relu(F.conv2d(pool3, self.conv4_w, self.conv4_b))": [
+      "Conv4 applies 80 learned 2×2×60 filters to pool3 [V,60,5,4], adds biases and applies ReLU. Result: [V,80,4,3].",
+      "Conv4 применяет 80 обученных фильтров 2×2×60 к pool3 [V,60,5,4], добавляет bias и выполняет ReLU. Результат: [V,80,4,3].",
+      "Conv4 מפעילה 80 מסננים מאומנים בגודל 2×2×60 על pool3 ‏[V,60,5,4], מוסיפה bias ומפעילה ReLU. התוצאה: [V,80,4,3]."
+    ],
+    "fc12 = conv4.flatten(1) @ self.fc12_w + self.fc12_b": [
+      "Flattens [V,80,4,3] to [V,960], multiplies by [960,160], and adds the 160-value bias. The second dense branch produces [V,160].",
+      "Разворачивает [V,80,4,3] в [V,960], умножает на [960,160] и добавляет bias из 160 значений. Вторая полносвязная ветвь выдаёт [V,160].",
+      "משטחת [V,80,4,3] ל־[V,960], מכפילה ב־[960,160] ומוסיפה bias בן 160 ערכים. הענף הצפוף השני מפיק [V,160]."
+    ],
+    "emb = F.relu(fc11 + fc12)": [
+      "Adds the two [V,160] dense branches element by element and applies ReLU. The result is one non-negative 160-value identity vector for each crop of the same screenshot.",
+      "Поэлементно складывает две ветви [V,160] и применяет ReLU. Получается один неотрицательный вектор личности из 160 значений для каждой обрезки того же скриншота.",
+      "מחברת איבר־איבר את שני הענפים [V,160] ומפעילה ReLU. מתקבל וקטור זהות לא־שלילי בן 160 ערכים לכל חיתוך של אותו צילום מסך."
+    ],
+    "return F.normalize(emb, p=2, dim=1)": [
+      "L2-normalizes each 160D row so its Euclidean length is 1. This makes the later dot product equal cosine similarity and returns [V,160].",
+      "L2-нормализует каждую строку 160D до евклидовой длины 1. Поэтому последующее скалярное произведение равно косинусному сходству. Возвращается [V,160].",
+      "מבצעת נרמול L2 לכל שורת 160D כך שאורכה האוקלידי יהיה 1. לכן המכפלה הסקלרית בהמשך שווה לדמיון cosine. מוחזר [V,160]."
+    ],
+    "sims = emb @ self.ref_emb[device].T": [
+      "Multiplies screenshot embeddings [V,160] by the transposed cached reference matrix [160,N]. CUDA computes the matrix product and returns [V,N], one cosine-similarity score for every crop/reference pair.",
+      "Умножает векторы скриншота [V,160] на транспонированную кэшированную матрицу эталонов [160,N]. CUDA вычисляет [V,N]: одно косинусное сходство для каждой пары обрезка/эталон.",
+      "מכפילה את embeddings של צילום המסך [V,160] במטריצת הייחוסים ההפוכה [160,N]. ‏CUDA מחשבת [V,N]: ציון דמיון cosine אחד לכל זוג חיתוך/ייחוס."
+    ]
+  };
+  if (exact[text]) return exact[text][lang === "ru" ? 1 : lang === "he" ? 2 : 0];
+  if (/^x = torch\.stack\(tensors, dim=0\)$/.test(text)) return say(
+    "Stacks all one-time reference tensors along dimension 0 into [N,3,55,47], where N is the number of reference photographs prepared during initialization.",
+    "Складывает все одноразово подготовленные эталоны по оси 0 в [N,3,55,47], где N — число эталонных фотографий, подготовленных при инициализации.",
+    "עורמת את כל טנזורי הייחוס החד־פעמיים בציר 0 למבנה [N,3,55,47], כאשר N הוא מספר תמונות הייחוס שהוכנו באתחול."
+  );
+  if (/^x = torch\.stack\(\[self\._preprocess_pil\(img, device\).*variants\], dim=0\)$/.test(text)) return say(
+    "Preprocesses every center crop derived from the one screenshot and stacks them as [V,3,55,47] for one CUDA model call; V is not a count of different faces or files.",
+    "Подготавливает все центральные обрезки одного скриншота и складывает их в [V,3,55,47] для одного CUDA-вызова модели; V не означает разные лица или файлы.",
+    "מעבדת את כל החיתוכים המרכזיים שנגזרו מצילום מסך יחיד ועורמת אותם כ־[V,3,55,47] לקריאת CUDA אחת של המודל; ‏V אינו מספר פנים או קבצים שונים."
+  );
+  if (/^emb = model\(x\)\.detach\(\)$/.test(text)) return say(
+    "Runs the complete DeepID forward pass on x using its actual device and detaches the output because recognition does not train or backpropagate.",
+    "Выполняет полный прямой проход DeepID для x на фактическом устройстве и отсоединяет результат, потому что распознавание не обучает сеть и не считает обратное распространение.",
+    "מריצה את המעבר הקדמי המלא של DeepID על x בהתקן בפועל ומנתקת את הפלט, משום שהזיהוי אינו מאמן את הרשת ואינו מבצע backpropagation."
+  );
+  if (/^with torch\.inference_mode\(\):$/.test(text)) return say(
+    "Disables gradient recording inside this block, reducing memory and overhead because the pretrained detector is only performing inference.",
+    "Отключает запись градиентов внутри блока, уменьшая память и накладные расходы: обученная модель здесь только распознаёт.",
+    "מבטלת רישום גרדיאנטים בתוך הבלוק, כדי לחסוך זיכרון ותקורה משום שהמודל המאומן מבצע הסקה בלבד."
+  );
+  const imports = {
+    "import struct": ["Imports struct to decode little-endian integer fields from deepid_weights.bin.", "Импортирует struct для чтения little-endian целых полей из deepid_weights.bin.", "מייבאת את struct כדי לפענח שדות שלמים בסדר little-endian מתוך deepid_weights.bin."],
+    "import time": ["Imports the high-resolution timer used to measure completed recognition work in milliseconds.", "Импортирует высокоточный таймер для измерения завершённого распознавания в миллисекундах.", "מייבאת שעון ברזולוציה גבוהה למדידת עבודת הזיהוי שהושלמה במילישניות."],
+    "from pathlib import Path": ["Imports Path for platform-safe construction, inspection, and normalization of model, screenshot, and reference-file paths.", "Импортирует Path для безопасного построения, проверки и нормализации путей к модели, скриншоту и эталонам.", "מייבאת את Path לבנייה, בדיקה ונרמול בטוחים של נתיבי המודל, צילום המסך וקובצי הייחוס."],
+    "from typing import Any, Iterable": ["Imports Any and Iterable for type annotations of cached tensors and caller-supplied identity/path sequences; they do not execute recognition.", "Импортирует Any и Iterable для аннотаций кэшированных тензоров и передаваемых последовательностей имён/путей; сами типы распознавание не выполняют.", "מייבאת Any ו־Iterable להערות טיפוסים של טנזורים במטמון ורצפי זהויות/נתיבים; הטיפוסים עצמם אינם מבצעים זיהוי."],
+    "import numpy as np": ["Imports NumPy as np to decode float32 weights, normalize image arrays, reorder axes, and inspect CUDA scores on CPU.", "Импортирует NumPy как np для декодирования весов float32, нормализации изображений, перестановки осей и чтения CUDA-оценок на CPU.", "מייבאת NumPy בשם np לפענוח משקלי float32, נרמול מערכי תמונה, שינוי סדר צירים וקריאת ציוני CUDA ב־CPU."],
+    "from PIL import Image": ["Imports Pillow Image to open the screenshot/reference files, create center crops, resize them, and place them on a 47×55 canvas.", "Импортирует Pillow Image для открытия скриншота и эталонов, центральных обрезок, масштабирования и размещения на холсте 47×55.", "מייבאת את Image של Pillow לפתיחת צילום המסך והייחוסים, יצירת חיתוכים מרכזיים, שינוי גודל והצבה על קנבס 47×55."],
+    "import torch": ["Lazily imports PyTorch only when the detector first needs tensors, a CPU backend, or CUDA.", "Лениво импортирует PyTorch только при первом запросе тензоров, CPU-backend или CUDA.", "מייבאת את PyTorch באופן עצל רק כאשר הגלאי זקוק לראשונה לטנזורים, ל־CPU או ל־CUDA."],
+    "import torch.nn as nn": ["Lazily imports torch.nn as nn so DeepIDTorch can subclass nn.Module and register its trained tensors as model buffers.", "Лениво импортирует torch.nn как nn, чтобы DeepIDTorch наследовал nn.Module и регистрировал обученные тензоры как буферы модели.", "מייבאת באופן עצל את torch.nn בשם nn כדי ש־DeepIDTorch יירש מ־nn.Module וירשום את הטנזורים המאומנים כמאגרי מודל."],
+    "import torch.nn.functional as F": ["Lazily imports functional neural operations F: convolution, max-pooling, ReLU, and L2 normalization used in the exact forward pass.", "Лениво импортирует функциональные операции F: свёртку, max-pooling, ReLU и L2-нормализацию точного прямого прохода.", "מייבאת באופן עצל את פעולות הרשת F: קונבולוציה, max-pooling, ‏ReLU ונרמול L2 של המעבר הקדמי המדויק."]
+  };
+  if (imports[text]) return imports[text][lang === "ru" ? 1 : lang === "he" ? 2 : 0];
+  const assignments = {
+    "def _image_paths(folder: Path) -> list[Path]:": ["Defines the helper that returns supported image files from one reference folder in stable modification-time/name order.", "Объявляет функцию, которая возвращает допустимые изображения одной папки эталонов в стабильном порядке времени изменения и имени.", "מגדירה פונקציית עזר שמחזירה קובצי תמונה נתמכים מתיקיית ייחוס אחת בסדר יציב של זמן שינוי ושם."],
+    "def __init__(": ["Begins the DeepIDIdentityDetector constructor; its following parameters configure the working folder, known identities, and acceptance thresholds.", "Начинает конструктор DeepIDIdentityDetector; следующие параметры задают рабочую папку, известные имена и пороги принятия.", "מתחילה את בנאי DeepIDIdentityDetector; הפרמטרים הבאים מגדירים את תיקיית העבודה, הזהויות הידועות וספי הקבלה."],
+    "def __init__(self, w):": ["Defines the nested DeepIDTorch model constructor, which receives the decoded weight dictionary w and registers every trained tensor as a non-trainable buffer.", "Объявляет конструктор вложенной модели DeepIDTorch: он принимает словарь весов w и регистрирует каждый обученный тензор как необучаемый буфер.", "מגדירה את בנאי המודל המקונן DeepIDTorch, שמקבל את מילון המשקלים w ורושם כל טנזור מאומן כמאגר שאינו נלמד."],
+    'IDENTITIES = ("Adi", "Faraj", "Slava")': ["Defines the only three identity labels the detector can return as known people: Adi, Faraj, or Slava.", "Задаёт три единственных известных имени, которые детектор может вернуть: Adi, Faraj или Slava.", "מגדירה את שלוש הזהויות הידועות היחידות שהגלאי יכול להחזיר: Adi,‏ Faraj או Slava."],
+    'IMG_EXTS = {".png", ".jpg", ".jpeg", ".bmp"}': ["Defines the four file extensions accepted when the detector searches reference-image folders.", "Задаёт четыре расширения файлов, которые детектор принимает при поиске эталонных изображений.", "מגדירה את ארבע סיומות הקבצים שהגלאי מקבל בעת חיפוש תמונות ייחוס."],
+    "MIN_SCORE = 0.89": ["Sets the default acceptance threshold: the winning cosine-similarity score must be at least 0.89.", "Задаёт порог принятия по умолчанию: победившее косинусное сходство должно быть не меньше 0,89.", "מגדירה את סף הקבלה ברירת המחדל: ציון הדמיון cosine המנצח חייב להיות לפחות 0.89."],
+    "MIN_MARGIN = 0.04": ["Sets the default separation threshold: first place must lead the runner-up by at least 0.04 unless the permitted scene-hint tie-break applies.", "Задаёт порог отрыва: первое место должно опережать второе минимум на 0,04, кроме разрешённого tie-break по подсказке сцены.", "מגדירה את סף ההפרדה: המקום הראשון חייב להוביל על השני ב־0.04 לפחות, אלא אם חל שובר השוויון המותר של רמז הסצנה."],
+    'path = self.work_dir / "models" / "deepid_weights.bin"': ["Builds the exact path to the trained DeepID binary weights inside the detector working directory.", "Строит точный путь к бинарному файлу обученных весов DeepID внутри рабочей папки детектора.", "בונה את הנתיב המדויק לקובץ המשקלים הבינרי המאומן של DeepID בתוך תיקיית העבודה של הגלאי."],
+    "shapes = {": ["Starts the authoritative name-to-shape table used to validate and reshape every tensor record from the weights file.", "Начинает точную таблицу «имя → форма», по которой проверяется и формируется каждый тензор из файла весов.", "מתחילה את טבלת שם־לצורה המחייבת שבעזרתה מאמתים ומשנים צורה לכל רשומת טנזור מקובץ המשקלים."],
+    "off = 0": ["Initializes the byte offset at the beginning of the binary weights buffer; later reads advance it field by field.", "Устанавливает байтовое смещение в начало бинарного буфера весов; последующие чтения двигают его по полям.", "מאתחלת את היסט הבייטים לתחילת מאגר המשקלים הבינרי; הקריאות הבאות מקדמות אותו שדה אחר שדה."],
+    'records, = struct.unpack_from("<I", raw, off)': ["Decodes the unsigned 32-bit little-endian record count stored immediately after the DIDW1 signature.", "Декодирует число записей как беззнаковое 32-битное little-endian значение сразу после сигнатуры DIDW1.", "מפענחת את מספר הרשומות כמספר שלם unsigned בן 32 סיביות בסדר little-endian מיד לאחר חתימת DIDW1."],
+    'name_len, = struct.unpack_from("<I", raw, off)': ["Decodes the byte length of the current tensor's UTF-8 name so the next slice reads exactly that name.", "Декодирует длину UTF-8-имени текущего тензора в байтах, чтобы следующий срез прочитал ровно это имя.", "מפענחת את אורך שם הטנזור הנוכחי ב־UTF-8 בבייטים, כדי שהפרוסה הבאה תקרא בדיוק את השם."],
+    'count, = struct.unpack_from("<I", raw, off)': ["Decodes how many float32 values belong to the current named tensor before reading its numeric payload.", "Декодирует количество значений float32 текущего именованного тензора перед чтением числовых данных.", "מפענחת כמה ערכי float32 שייכים לטנזור בעל השם הנוכחי לפני קריאת המטען המספרי."],
+    "magic = raw[off : off + 8]": ["Copies the first eight bytes as the file signature that must equal DIDW1 followed by three zero bytes.", "Берёт первые восемь байт как сигнатуру файла, которая должна равняться DIDW1 и трём нулевым байтам.", "לוקחת את שמונת הבייטים הראשונים כחתימת הקובץ, שחייבת להיות DIDW1 ואחריה שלושה בייטים אפסיים."],
+    'name = raw[off : off + name_len].decode("utf-8")': ["Reads the current tensor name from name_len bytes and decodes it as UTF-8 so the matching expected shape can be selected.", "Читает имя текущего тензора из name_len байт и декодирует UTF-8, чтобы выбрать ожидаемую форму.", "קוראת את שם הטנזור הנוכחי מתוך name_len בייטים ומפענחת UTF-8 כדי לבחור את הצורה הצפויה."],
+    "weights = {}": ["Creates the dictionary that will map each decoded layer name to its validated NumPy weight tensor.", "Создаёт словарь, который сопоставит каждому имени слоя проверенный тензор весов NumPy.", "יוצרת מילון שימפה כל שם שכבה לטנזור משקלי NumPy שפוענח ואומת."],
+    "device = self._device_name(mode)": ["Resolves the requested mode to the literal device string cpu or cuda before creating or retrieving the model.", "Преобразует запрошенный режим в точную строку устройства cpu или cuda до создания либо получения модели.", "ממירה את המצב המבוקש למחרוזת ההתקן המדויקת cpu או cuda לפני יצירה או שליפה של המודל."],
+    "weights = self._load_weights()": ["Loads the validated trained tensors once, or reuses the already decoded weight dictionary from the detector cache.", "Один раз загружает проверенные обученные тензоры либо берёт уже декодированный словарь весов из кэша.", "טוענת פעם אחת את הטנזורים המאומנים שאומתו, או משתמשת במילון המשקלים שכבר פוענח ונשמר במטמון."],
+    "return torch.tensor(w[name]).permute(3, 2, 0, 1).contiguous()": ["Converts a stored convolution kernel from NumPy to PyTorch, changes its axes from [H,W,In,Out] to PyTorch [Out,In,H,W], and makes the memory contiguous.", "Преобразует свёрточное ядро NumPy в PyTorch, меняет оси [H,W,In,Out] на [Out,In,H,W] PyTorch и делает память непрерывной.", "ממירה kernel של קונבולוציה מ־NumPy ל־PyTorch, משנה צירים מ־[H,W,In,Out] ל־[Out,In,H,W] של PyTorch והופכת את הזיכרון לרציף."],
+    "items = []": ["Creates the temporary ordered list that will receive every unique (identity label, reference path) pair.", "Создаёт временный упорядоченный список для уникальных пар (имя человека, путь к эталону).", "יוצרת רשימה זמנית מסודרת שתקבל כל זוג ייחודי של (תווית זהות, נתיב ייחוס)."],
+    "folders = [": ["Starts the two-folder list searched for the current identity: identity_references/<name> and Face_detector/references/<name>.", "Начинает список двух папок текущего человека: identity_references/<имя> и Face_detector/references/<имя>.", "מתחילה את רשימת שתי התיקיות שנסרקות לזהות הנוכחית: identity_references/<name> ו־Face_detector/references/<name>."],
+    'self.work_dir / "identity_references" / label,': ["Adds the primary reference folder identity_references/<current identity> to the search list.", "Добавляет основную папку эталонов identity_references/<текущее имя> в список поиска.", "מוסיפה לרשימת החיפוש את תיקיית הייחוס הראשית identity_references/<הזהות הנוכחית>."],
+    'self.work_dir / "Face_detector" / "references" / label,': ["Adds the legacy-compatible Face_detector/references/<current identity> folder so existing reference sets are also found.", "Добавляет совместимую со старой структурой папку Face_detector/references/<текущее имя>, чтобы найти существующие эталоны.", "מוסיפה את התיקייה התואמת למבנה הישן Face_detector/references/<הזהות הנוכחית>, כדי למצוא גם ערכות ייחוס קיימות."],
+    "seen_paths = set()": ["Creates an empty set of normalized absolute paths so the same reference file cannot be added twice.", "Создаёт пустое множество нормализованных абсолютных путей, чтобы один эталон не добавился дважды.", "יוצרת קבוצה ריקה של נתיבים מוחלטים ומנורמלים כדי שאותו קובץ ייחוס לא יתווסף פעמיים."],
+    "tensors = []": ["Creates the list that will receive one preprocessed [3,55,47] tensor for each reference photograph during one-time initialization.", "Создаёт список для одного подготовленного тензора [3,55,47] каждой эталонной фотографии при одноразовой инициализации.", "יוצרת רשימה שתקבל טנזור מעובד [3,55,47] אחד לכל תמונת ייחוס במהלך האתחול החד־פעמי."],
+    "attempts = []": ["Creates the list of best per-label candidates collected from every crop of this one screenshot.", "Создаёт список лучших кандидатов по каждому имени, собранных из всех обрезок одного скриншота.", "יוצרת רשימת מועמדים מיטביים לכל תווית שנאספו מכל החיתוכים של צילום המסך היחיד."],
+    '"accepted": False,': ["Sets accepted to false in the no-candidate result because the detector has no identity score it can safely accept.", "Ставит accepted=false в результате без кандидатов: у детектора нет оценки личности, которую можно принять.", "מגדירה accepted=false בתוצאה ללא מועמדים, משום שאין לגלאי ציון זהות שניתן לקבל בבטחה."],
+    '"accepted": bool(accepted),': ["Writes the final threshold decision as a JSON-compatible Boolean in the successful ranking result.", "Записывает итог проверки порогов как совместимый с JSON Boolean в результат ранжирования.", "כותבת את החלטת הספים הסופית כערך Boolean תואם JSON בתוצאת הדירוג."],
+    '"identity": "Unknown",': ["Returns identity=Unknown when no ranked candidate exists.", "Возвращает identity=Unknown, когда ранжированных кандидатов нет.", "מחזירה identity=Unknown כאשר אין מועמד מדורג."],
+    '"identity": best["label"] if accepted else "Unknown",': ["Returns the winning label only if the threshold decision accepted it; otherwise deliberately returns Unknown.", "Возвращает имя победителя только при принятом решении порогов; иначе намеренно возвращает Unknown.", "מחזירה את תווית המנצח רק אם החלטת הספים קיבלה אותה; אחרת מחזירה בכוונה Unknown."],
+    '"best_label": "Unknown",': ["Reports that no best label exists in the empty-ranking case.", "Сообщает отсутствие лучшего имени в случае пустого ранжирования.", "מדווחת שאין תווית מיטבית במקרה של דירוג ריק."],
+    '"best_label": best["label"],': ["Reports which known identity had the highest selected score, even when final acceptance is false.", "Сообщает известное имя с максимальной выбранной оценкой, даже если итоговое принятие равно false.", "מדווחת איזו זהות מוכרת קיבלה את הציון הנבחר הגבוה ביותר, גם אם הקבלה הסופית היא false."],
+    '"matched_reference": str(ref_path),': ["Stores the exact reference-file path that produced this candidate score for audit and debugging.", "Сохраняет точный путь к эталону, давшему эту оценку кандидата, для проверки и отладки.", "שומרת את נתיב קובץ הייחוס המדויק שהפיק את ציון המועמד לצורך ביקורת וניפוי שגיאות."],
+    '"matched_reference": best.get("matched_reference", ""),': ["Returns the winning reference path, or an empty string if that optional audit field is unavailable.", "Возвращает путь победившего эталона либо пустую строку, если необязательное поле отсутствует.", "מחזירה את נתיב הייחוס המנצח, או מחרוזת ריקה אם שדה הביקורת האופציונלי אינו זמין."],
+    '"elapsed_ms": elapsed_ms,': ["Preserves the measured milliseconds in the no-candidate result without altering the timing value.", "Сохраняет измеренные миллисекунды в результате без кандидатов без изменения значения времени.", "שומרת את המילישניות שנמדדו בתוצאה ללא מועמדים בלי לשנות את ערך הזמן."],
+    '"elapsed_ms": float(elapsed_ms),': ["Converts the measured duration to a plain Python float so it serializes reliably in the final result dictionary.", "Преобразует длительность в обычный float Python для надёжной сериализации итогового словаря.", "ממירה את משך הזמן ל־float רגיל של Python כדי שיסתדר באופן אמין במילון התוצאה הסופי."],
+    "row = row_np[row_index]": ["Selects the N reference-similarity scores belonging to the current screenshot crop.", "Выбирает N оценок сходства с эталонами для текущей обрезки скриншота.", "בוחרת את N ציוני הדמיון לייחוסים השייכים לחיתוך הנוכחי של צילום המסך."],
+    "score = float(score)": ["Converts the current NumPy similarity scalar to a plain Python float for comparison and JSON serialization.", "Преобразует текущую NumPy-оценку сходства в обычный float Python для сравнения и JSON.", "ממירה את סקלר הדמיון הנוכחי של NumPy ל־float רגיל של Python לצורך השוואה ו־JSON."],
+    'label = attempt["label"]': ["Reads which known person this candidate attempt represents before keeping that person's highest score.", "Считывает имя человека текущей попытки перед сохранением его максимальной оценки.", "קוראת איזו זהות מוכרת מייצג הניסיון הנוכחי לפני שמירת הציון הגבוה ביותר שלה."],
+    'ranked = sorted(best_by_label.values(), key=lambda item: item["score"], reverse=True)': ["Sorts each person's best candidate from highest to lowest score so index 0 is the winner and index 1 is the runner-up.", "Сортирует лучший результат каждого человека по убыванию: индекс 0 — победитель, индекс 1 — второе место.", "ממיינת את המועמד הטוב ביותר של כל אדם מן הציון הגבוה לנמוך, כך שאינדקס 0 הוא המנצח ואינדקס 1 המקום השני."],
+    "best = dict(ranked[0])": ["Copies the top-ranked candidate into a mutable result object that an allowed scene-hint tie-break may replace.", "Копирует кандидата первого места в изменяемый объект, который разрешённая подсказка сцены может заменить при близких оценках.", "מעתיקה את המועמד המדורג ראשון לאובייקט שניתן לשינוי, שאותו רמז סצנה מותר עשוי להחליף כאשר הציונים קרובים."],
+    'runner = ranked[1] if len(ranked) > 1 else {"label": "Unknown", "score": -1.0}': ["Selects the second-ranked identity; if no second identity exists, creates an Unknown fallback with score −1.0 for a well-defined margin.", "Выбирает человека на втором месте; если его нет, создаёт fallback Unknown с оценкой −1,0, чтобы отрыв оставался определённым.", "בוחרת את הזהות המדורגת שנייה; אם אין זהות שנייה, יוצרת ערך גיבוי Unknown בציון ‎−1.0 כדי שהפער יהיה מוגדר."],
+    'source = "deepid"': ["Records that the current winner was selected directly by the DeepID similarity ranking.", "Отмечает, что текущий победитель выбран непосредственно по сходству DeepID.", "מתעדת שהמנצח הנוכחי נבחר ישירות לפי דירוג הדמיון של DeepID."],
+    "hint = best_by_label[str(scene_hint)]": ["Retrieves the candidate for the simulator-provided identity hint; the following condition limits it to a close-score tie-break.", "Получает кандидата подсказанного симулятором имени; следующее условие ограничивает подсказку только близкими оценками.", "שולפת את המועמד לזהות שרמז הסימולטור ציין; התנאי הבא מגביל אותה לשובר שוויון בין ציונים קרובים."],
+    "best = dict(hint)": ["Replaces the winner with the hinted identity only after the preceding score and closeness checks passed.", "Заменяет победителя подсказанным именем только после прохождения предыдущих проверок оценки и близости.", "מחליפה את המנצח בזהות המרומזת רק לאחר שבדיקות הציון והקרבה הקודמות עברו."],
+    'source = "scene_hint_tiebreak"': ["Marks that the accepted winner came from the permitted close-score scene-hint tie-break, not from an unconditional override.", "Отмечает, что победитель выбран разрешённым tie-break подсказки сцены при близких оценках, а не безусловной подменой.", "מסמנת שהמנצח התקבל באמצעות שובר השוויון המותר של רמז הסצנה בציונים קרובים, ולא בהחלפה ללא תנאי."],
+    'runner = next((r for r in ranked if r["label"] != best["label"]), runner)': ["After a hint changes the winner, selects the highest-ranked different identity as the new runner-up; otherwise keeps the existing fallback.", "После смены победителя подсказкой выбирает лучшего другого человека как новое второе место; при отсутствии сохраняет прежний fallback.", "לאחר שרמז משנה את המנצח, בוחרת את הזהות השונה המדורגת הגבוהה ביותר כמקום השני החדש; אם אין כזו נשמר ערך הגיבוי."],
+    'margin = float(best["score"]) - float(runner.get("score", -1.0))': ["Computes the confidence margin as winner score minus runner-up score.", "Вычисляет отрыв уверенности: оценка победителя минус оценка второго места.", "מחשבת את פער הביטחון: ציון המנצח פחות ציון המקום השני."],
+    'accepted = float(best["score"]) >= self.min_score and (margin >= self.min_margin or source == "scene_hint_tiebreak")': ["Accepts the identity only when its score reaches min_score and either its lead reaches min_margin or the validated close-score scene tie-break selected it.", "Принимает имя только если оценка достигла min_score и либо отрыв достиг min_margin, либо сработал проверенный tie-break подсказки сцены.", "מקבלת את הזהות רק אם הציון הגיע ל־min_score וגם הפער הגיע ל־min_margin או ששובר השוויון המאומת של רמז הסצנה בחר בה."],
+    "variants = self._variants(image_path)": ["Opens the one requested screenshot and derives its full-frame and centered-crop attempts before timed inference begins.", "Открывает один запрошенный скриншот и создаёт полный кадр и центральные обрезки до начала измеряемого инференса.", "פותחת את צילום המסך היחיד שהתבקש ומפיקה את ניסיונות הפריים המלא והחיתוכים המרכזיים לפני תחילת ההסקה הנמדדת."]
+  };
+  if (assignments[text]) return assignments[text][lang === "ru" ? 1 : lang === "he" ? 2 : 0];
+  return "";
+}
+
 function sourceLineAnnotation(line, lang) {
   const text = line.trim();
+  const cudaSpecific = cudaSingleSourceAnnotation(text, lang);
+  if (cudaSpecific) return cudaSpecific;
   if (!text) {
     return lang === "ru"
       ? "Пустая строка визуально отделяет соседние логические части исходника; Python не выполняет на ней команду."
@@ -3630,10 +3786,6 @@ function patternCodeAnnotation(line) {
   const trimmed = line.trim();
   const exact = detailedCodeLineAnnotations[trimmed];
   if (exact) return repairLocalizedText(exact[lang] || exact.en);
-  const looksCpp = /^(#include|#if|#ifdef|#ifndef|#elif|#else|#endif|#define|namespace\b|struct\b|class\b|using\b|template\b|\/\/|\/\*|\*)/.test(trimmed)
-    || /[;{}]$/.test(trimmed)
-    || /\b(?:std::|cl[A-Z]\w*|CL_[A-Z_]+|DeepIDModel|FaceMatcher|MatchResult)\b/.test(trimmed);
-  if (looksCpp) return currentCppSourceAnnotation(trimmed, lang);
   return sourceLineAnnotation(trimmed, lang);
 }
 
@@ -3773,24 +3925,11 @@ async function ensureExactStageCode() {
   if (exactStageCodeState === "loading") return false;
   exactStageCodeState = "loading";
   try {
-    const sourceTexts = await Promise.all(currentRuntimeStageSources.map(async (source) => {
-      const paths = source.paths || [source.path];
-      return Promise.all(paths.map(async (path) => {
-        const response = await fetch(path, { cache: "no-store" });
-        if (!response.ok) throw new Error(`${path} HTTP ${response.status}`);
-        return response.text();
-      }));
-    }));
+    const response = await fetch("source/cuda_deepid_detector.py", { cache: "no-store" });
+    if (!response.ok) throw new Error(`source/cuda_deepid_detector.py HTTP ${response.status}`);
+    const detectorModule = await response.text();
     detectorSourceLoaded = true;
-    const normalizedFiles = sourceTexts.map((sources) => sources.flatMap((source) => {
-      const lines = source.replace(/\r\n/g, "\n").split("\n");
-      if (lines[lines.length - 1] === "") lines.pop();
-      return lines;
-    }));
-    const lineBlocks = currentRuntimeStageSources.map((source, index) => {
-      const lines = normalizedFiles[index];
-      return lines.slice(source.from || 0, source.to == null ? lines.length : source.to);
-    });
+    const lineBlocks = detectorStageLineBlocks(detectorModule, "single");
     if (lineBlocks.length !== stageDetails.length) {
       throw new Error(`expected ${stageDetails.length} stage blocks, found ${lineBlocks.length}`);
     }
@@ -3801,15 +3940,19 @@ async function ensureExactStageCode() {
     const combinedLines = lineBlocks.flat();
     stageRecognitionLineCount = lineBlocks.reduce((total, lines) => total + lines.length, 0);
     combinedRecognitionCode = combinedLines.join("\n");
-    detectorSourceText = combinedRecognitionCode;
+    const normalizedModuleLines = detectorModule.replace(/\r\n/g, "\n").split("\n");
+    if (normalizedModuleLines[normalizedModuleLines.length - 1] === "") normalizedModuleLines.pop();
+    const detectBatchStart = normalizedModuleLines.findIndex((line) => /^    def detect_batch\b/.test(line));
+    if (detectBatchStart < 0) throw new Error("detect_batch boundary is missing");
+    detectorSourceText = normalizedModuleLines.slice(0, detectBatchStart).join("\n");
     combinedRecognitionLineCount = codeLineCount(combinedRecognitionCode);
     if (combinedRecognitionLineCount !== stageRecognitionLineCount) {
       throw new Error(
         `combined recognition line count ${combinedRecognitionLineCount} does not equal stage sum ${stageRecognitionLineCount}`
       );
     }
-    if (combinedLines.join("\n") !== detectorSourceText) {
-      throw new Error("the combined stage text is not identical to the loaded current sources");
+    if (combinedRecognitionCode !== detectorSourceText) {
+      throw new Error("stages 1–6 are not the exact CUDA source prefix through detect_image");
     }
     exactStageCodeState = "ready";
     return true;
@@ -4069,8 +4212,8 @@ function renderError(error) {
 }
 
 async function recognizeSelectedFiles() {
-  const files = Array.from(imageInput.files || []);
-  if (!files.length) {
+  const file = imageInput.files?.[0];
+  if (!file) {
     summaryBox.textContent = translations[document.documentElement.lang]?.dropHint || translations.en.dropHint;
     return;
   }
@@ -4079,20 +4222,13 @@ async function recognizeSelectedFiles() {
   const margin = Number(marginInput.value);
   recognizeButton.disabled = true;
   backendStatus.textContent = uiText("running");
-  summaryBox.textContent = `${uiText("processing")} ${files.length} ${uiText("processedImages")} (${mode})…`;
+  summaryBox.textContent = `${uiText("processing")} ${file.name} (${mode})…`;
   resultList.innerHTML = "";
   jsonBox.textContent = "{}";
   try {
-    let results;
-    if (files.length > 1) {
-      selectDetectorVariant("batch");
-      summaryBox.textContent = `${uiText("processing")}: ${files.length} (${mode}, /api/detect-batch)…`;
-      results = await runRecognitionBatch(files, mode, score, margin);
-    } else {
-      selectDetectorVariant("single");
-      const result = await runRecognition(files[0], mode, score, margin);
-      results = [{ file: files[0].name, ...result }];
-    }
+    selectDetectorVariant("single");
+    const result = await runRecognition(file, mode, score, margin);
+    const results = [{ file: file.name, ...result }];
     renderResults(results);
     backendStatus.textContent = uiText("ready");
   } catch (error) {
@@ -4142,7 +4278,7 @@ stageReturnBottom.addEventListener("click", () => {
   document.getElementById("howItWorksTitle").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
-imageInput.addEventListener("change", () => renderPreviews(Array.from(imageInput.files || [])));
+imageInput.addEventListener("change", () => renderPreviews(imageInput.files?.[0] ? [imageInput.files[0]] : []));
 scoreInput.addEventListener("input", () => { scoreValue.textContent = Number(scoreInput.value).toFixed(2); });
 marginInput.addEventListener("input", () => { marginValue.textContent = Number(marginInput.value).toFixed(3).replace(/0$/, ""); });
 recognizeButton.addEventListener("click", recognizeSelectedFiles);
