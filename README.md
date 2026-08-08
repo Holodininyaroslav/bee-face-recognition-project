@@ -56,22 +56,20 @@ instructions.
 
 The face detector is intentionally exposed as an engineering pipeline instead of a hidden black box.
 
-The GitHub Pages source inspector now has two explicit, non-mixed views:
-
-- **Single-image recognition:** module initialization through `detect_image`, 302 physical source lines.
-- **Batch recognition:** the complete detector-only module including the genuinely batched CUDA branch in `detect_batch`, 379 physical source lines.
-
-For either view, the six full stage blocks are exact consecutive slices of
-`source/cuda_deepid_detector.py`. The complete listing shown below the stages
-is assembled from those same blocks and is checked against the selected source
-boundary for both line count and exact text order.
+The GitHub Pages simple demonstration accepts exactly one screenshot. Its
+six-stage source inspector loads exact blocks from
+`source/local_detector_v2/sface_identity_verifier.py` and documents the local
+NVIDIA path actually used by Hive for that request. The page checks the loaded
+source-block line count before displaying the annotated listing in English,
+Russian, or Hebrew. Batch controls and the 50/500 simulation paths are not part
+of this one-screenshot demonstration.
 
 1. **Image capture** - the Hive UI, simple demo, or bee simulation provides an image / screenshot.
-2. **Face detection and crop** - the detector finds the face region and prepares a normalized crop.
-3. **Embedding extraction** - a DeepID-style neural model converts the face into a compact vector representation.
-4. **Reference comparison** - the vector is compared against stored identity references.
-5. **Score and margin decision** - the best identity is accepted only if confidence and margin are high enough.
-6. **JSON response** - Hive receives the label, score, runner-up, margin, backend, elapsed time, and accepted/rejected state.
+2. **CUDA image preparation** - after host PNG/JPEG decoding, the screenshot is uploaded once; resize, normalization, and padding run as CUDA tensor operations.
+3. **CUDA face detection** - YuNet runs through ONNX Runtime CUDA, and its face box and five landmarks are decoded on the GPU.
+4. **CUDA alignment and embedding** - a five-landmark similarity transform and `grid_sample` create the aligned crop, then SFace produces the identity vector on CUDA.
+5. **CUDA reference comparison** - the SFace vector is compared with cached GPU reference matrices.
+6. **One JSON response** - only the final small scores and indices return to the host; Hive receives one label, score, runner-up, margin, provider, timing, and accepted/rejected state.
 7. **Hive event logging** - the result is written into the Hive detection stream.
 8. **Optional neutrino handoff** - if the neutrino concept simulator is open, the recognized name is inserted into its message flow.
 
@@ -90,7 +88,7 @@ Recommended behavior:
 
 - **AMD/Radeon machine:** use the OpenCL path.
 - **No supported GPU:** use the CPU path.
-- **NVIDIA/CUDA machine:** use the optional Colab/CUDA notebook, or add a CUDA local build later if a CUDA environment is available.
+- **NVIDIA/CUDA machine:** use the local ONNX Runtime CUDA YuNet/SFace pipeline installed with the NVIDIA suite.
 
 For the local NVIDIA game implementation, use
 `installers/nvidia_bee_simulation/Start NVIDIA Bee Simulation.bat` after

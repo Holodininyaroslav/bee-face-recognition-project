@@ -2176,16 +2176,16 @@ print(batch["results"], batch["total_ms"], batch["avg_ms_per_photo"])`
   }
 };
 
-// The simple demonstration and this inspector now describe the same local stack.
-// Each full stage below is loaded from the current detector sources under
-// source/local_detector_v2; the old standalone PyTorch/CUDA listing is not used.
+// The simple demonstration sends exactly one screenshot through the current
+// NVIDIA path. Each stage below is an exact block from the verifier that the
+// local Hive invokes for that one-image CUDA request.
 const currentRuntimeStageSources = [
-  { path: "source/local_detector_v2/deepid_engine.hpp", from: 0, to: null },
-  { path: "source/local_detector_v2/deepid_engine.cpp", from: 0, to: 442 },
-  { path: "source/local_detector_v2/deepid_engine.cpp", from: 442, to: null },
-  { path: "source/local_detector_v2/deepid_opencl.cpp", from: 0, to: null },
-  { path: "source/local_detector_v2/identity_cli.cpp", from: 0, to: null },
-  { path: "source/local_detector_v2/sface_identity_verifier.py", from: 0, to: null }
+  { path: "source/local_detector_v2/sface_identity_verifier.py", fromMatch: "^class SFaceIdentityVerifier:", toMatch: "^    def warmup_cuda_batches" },
+  { path: "source/local_detector_v2/sface_identity_verifier.py", fromMatch: "^    def _prepare_cuda_detection_batch", toMatch: "^    def _decode_yunet_faces_cuda" },
+  { path: "source/local_detector_v2/sface_identity_verifier.py", fromMatch: "^    def _decode_yunet_faces_cuda", toMatch: "^    def _align_faces_cuda" },
+  { path: "source/local_detector_v2/sface_identity_verifier.py", fromMatch: "^    def _align_faces_cuda", toMatch: "^    def _score_vectors_cuda" },
+  { path: "source/local_detector_v2/sface_identity_verifier.py", fromMatch: "^    def _score_vectors_cuda", toMatch: "^    def _pad_to_detection_batch" },
+  { path: "source/local_detector_v2/sface_identity_verifier.py", fromMatch: "^    def verify_batch", to: null }
 ];
 
 const currentRuntimeStages = [
@@ -2297,18 +2297,148 @@ const currentRuntimeStages = [
   }
 ];
 
-Object.assign(detectorVariantCatalog.single, {
-  label: { en: "single-image CUDA recognition", ru: "одиночное распознавание CUDA", he: "זיהוי CUDA של תמונה יחידה" },
-  description: {
-    en: "One screenshot enters the CUDA DeepID detector. The full frame and several centered crops of that same screenshot provide robust recognition attempts that are reduced to one identity.",
-    ru: "В CUDA-детектор DeepID поступает один скриншот. Полный кадр и несколько центральных обрезок того же скриншота дают устойчивые попытки, которые сводятся к одному имени.",
-    he: "צילום מסך יחיד נכנס לגלאי DeepID של CUDA. הפריים המלא וכמה חיתוכים מרכזיים של אותו צילום מסך מספקים ניסיונות זיהוי עמידים שמצטמצמים לזהות אחת."
+const singleCudaStages = [
+  {
+    level: "01",
+    title: { en: "CUDA runtime and model sessions", ru: "Среда CUDA и сессии моделей", he: "סביבת CUDA וסשנים של המודלים" },
+    summary: {
+      en: "Creates CUDA-only YuNet and SFace ONNX Runtime sessions, initializes GPU reference tensors, and rejects startup when CUDA is not the active provider.",
+      ru: "Создаёт CUDA-сессии ONNX Runtime для YuNet и SFace, размещает эталонные векторы на GPU и останавливает запуск, если активным provider является не CUDA.",
+      he: "יוצר סשנים של ONNX Runtime ב-CUDA עבור YuNet ו-SFace, מציב את וקטורי הייחוס ב-GPU ועוצר את ההפעלה אם CUDA אינה ה-provider הפעיל."
+    },
+    diagram: { en: ["Load models", "CUDA provider", "GPU references", "Ready"], ru: ["Загрузка моделей", "Provider CUDA", "Эталоны на GPU", "Готово"], he: ["טעינת מודלים", "CUDA provider", "ייחוסים ב-GPU", "מוכן"] },
+    diagramNotes: {
+      en: ["Loads the YuNet detector and SFace recognizer ONNX files once when Hive starts.", "Creates ONNX Runtime sessions with CUDAExecutionProvider first and verifies that it remains the active provider.", "Copies the cached normalized reference embeddings to CUDA memory once, before the screenshot request.", "The one-image request starts only after both neural networks and the reference matrix are resident on the GPU."],
+      ru: ["Один раз при запуске Hive загружает ONNX-файлы детектора YuNet и распознавателя SFace.", "Создаёт сессии ONNX Runtime с CUDAExecutionProvider первым и проверяет, что именно он остался активным provider.", "Один раз до запроса снимка копирует кэшированные нормализованные эталонные векторы в память CUDA.", "Запрос одного изображения начинается только после размещения обеих нейросетей и матрицы эталонов на GPU."],
+      he: ["טוען פעם אחת בעת הפעלת Hive את קובצי ה-ONNX של גלאי YuNet ושל מזהה SFace.", "יוצר סשנים של ONNX Runtime כאשר CUDAExecutionProvider ראשון ומוודא שהוא נשאר ה-provider הפעיל.", "מעתיק פעם אחת, לפני בקשת צילום המסך, את embeddings הייחוס המנורמלים לזיכרון CUDA.", "בקשת התמונה היחידה מתחילה רק לאחר ששתי הרשתות ומטריצת הייחוס נמצאות ב-GPU."]
+    },
+    layers: { en: "YuNet ONNX + SFace ONNX initialization", ru: "Инициализация YuNet ONNX + SFace ONNX", he: "אתחול YuNet ONNX ו-SFace ONNX" },
+    connections: { en: "No screenshot inference yet", ru: "Инференс снимка ещё не выполняется", he: "עדיין אין הסקה של צילום המסך" },
+    tensor: "cached reference vectors → CUDA memory",
+    cudaShort: { en: "CUDA provider is mandatory; no silent CPU fallback", ru: "CUDA обязательна; скрытого перехода на CPU нет", he: "CUDA נדרשת; אין מעבר שקט ל-CPU" },
+    cuda: { en: "CPU may build or read the reference cache at service startup, but the request-time reference matrix is copied to CUDA once. Both model sessions must report CUDAExecutionProvider before recognition is accepted.", ru: "CPU может создать или прочитать кэш эталонов при запуске сервиса, но рабочая матрица эталонов один раз переносится в CUDA. До распознавания обе сессии обязаны сообщить CUDAExecutionProvider.", he: "ה-CPU עשוי ליצור או לקרוא את מטמון הייחוס בעת הפעלת השירות, אך מטריצת הייחוס הפעילה מועברת פעם אחת ל-CUDA. לפני הזיהוי שני הסשנים חייבים לדווח על CUDAExecutionProvider." },
+    code: `verifier = SFaceIdentityVerifier(reference_root, labels, model_root, device="cuda")
+assert verifier.cuda_yunet_session.get_providers()[0] == "CUDAExecutionProvider"
+assert verifier.cuda_session.get_providers()[0] == "CUDAExecutionProvider"`
   },
-  source: {
-    en: "Exact source/cuda_deepid_detector.py from the first import through the end of detect_image: the complete single-screenshot detector boundary.",
-    ru: "Точный source/cuda_deepid_detector.py от первого импорта до конца detect_image: полная граница детектора одного скриншота.",
-    he: "הקובץ המדויק source/cuda_deepid_detector.py מן הייבוא הראשון ועד סוף detect_image: הגבול המלא של גלאי צילום מסך יחיד."
+  {
+    level: "02",
+    title: { en: "One screenshot: decode, upload, resize", ru: "Один снимок: декодирование, загрузка, размер", he: "צילום מסך אחד: פענוח, העלאה ושינוי גודל" },
+    summary: {
+      en: "Decodes exactly one PNG/JPEG on the CPU, uploads it once, and performs color conversion, scaling, normalization, resize, and padding as CUDA tensor operations.",
+      ru: "Декодирует ровно один PNG/JPEG на CPU, один раз загружает его на GPU, а преобразование цвета, масштабирование, нормализацию, resize и padding выполняет CUDA-тензорами.",
+      he: "מפענח PNG/JPEG יחיד ב-CPU, מעלה אותו פעם אחת ל-GPU ומבצע המרת צבע, נרמול, שינוי גודל וריפוד כפעולות טנזור CUDA."
+    },
+    diagram: { en: ["One file", "CPU decode", "One CUDA upload", "GPU resize + pad"], ru: ["Один файл", "Декодирование CPU", "Одна загрузка CUDA", "GPU resize + padding"], he: ["קובץ אחד", "פענוח ב-CPU", "העלאה אחת ל-CUDA", "שינוי גודל וריפוד ב-GPU"] },
+    diagramNotes: {
+      en: ["The simple page accepts one screenshot and sends one /api/detect request.", "cv2.imread decodes the compressed image because file codecs are host-side in this implementation.", "torch.from_numpy(...).to(device='cuda') performs the only full-image host-to-device transfer.", "CUDA converts BGR to RGB, scales values to 0..1, resizes the image to a maximum side of 192 pixels, and pads dimensions for YuNet."],
+      ru: ["Простая страница принимает один снимок и отправляет один запрос /api/detect.", "cv2.imread декодирует сжатое изображение, потому что файловые кодеки в этой реализации работают на стороне CPU.", "torch.from_numpy(...).to(device='cuda') выполняет единственный полный перенос изображения из RAM в видеопамять.", "CUDA меняет BGR на RGB, переводит значения в диапазон 0..1, уменьшает максимальную сторону до 192 пикселей и дополняет размеры для YuNet."],
+      he: ["העמוד הפשוט מקבל צילום מסך אחד ושולח בקשת ‎/api/detect אחת.", "cv2.imread מפענח את התמונה הדחוסה משום שקודקי הקבצים במימוש הזה פועלים בצד המארח.", "torch.from_numpy(...).to(device='cuda') מבצע את ההעברה המלאה היחידה מ-RAM לזיכרון הכרטיס.", "CUDA ממיר BGR ל-RGB, מנרמל ל-0..1, משנה את הצלע המרבית ל-192 פיקסלים ומרפד את הממדים עבור YuNet."]
+    },
+    layers: { en: "CUDA interpolation, normalization, and padding", ru: "CUDA-интерполяция, нормализация и padding", he: "אינטרפולציה, נרמול וריפוד ב-CUDA" },
+    connections: { en: "One screenshot; no batch expansion", ru: "Один снимок; без размножения в пачку", he: "צילום מסך אחד; ללא הרחבה לאצווה" },
+    tensor: "H×W×3 uint8 → CUDA 1×3×H'×W' float32",
+    cudaShort: { en: "Only compressed-file decoding remains on CPU", ru: "На CPU остаётся только декодирование сжатого файла", he: "רק פענוח הקובץ הדחוס נשאר ב-CPU" },
+    cuda: { en: "The claim 'full CUDA pipeline' begins after cv2.imread. The screenshot is uploaded once; all image preparation after that point stays on the GPU.", ru: "Формулировка «полный CUDA-конвейер» начинается после cv2.imread. Снимок загружается один раз, и вся дальнейшая подготовка изображения остаётся на GPU.", he: "המונח 'צינור CUDA מלא' מתחיל לאחר cv2.imread. צילום המסך מועלה פעם אחת וכל הכנת התמונה לאחר מכן נשארת ב-GPU." },
+    code: `image = cv2.imread(str(screenshot_path), cv2.IMREAD_COLOR)
+detection_tensor, content_size = verifier._prepare_cuda_detection_batch([image], max_side=192, precision="fp32")`
+  },
+  {
+    level: "03",
+    title: { en: "YuNet face and landmarks on CUDA", ru: "Лицо и ориентиры YuNet на CUDA", he: "פנים ונקודות ציון של YuNet ב-CUDA" },
+    summary: {
+      en: "Runs YuNet through ONNX Runtime CUDA and decodes its bounding box and five landmarks directly from GPU tensors for the single screenshot.",
+      ru: "Запускает YuNet через ONNX Runtime CUDA и прямо в GPU-тензорах декодирует рамку лица и пять ориентиров единственного снимка.",
+      he: "מריץ את YuNet דרך ONNX Runtime CUDA ומפענח ישירות בטנזורי GPU את תיבת הפנים ואת חמש נקודות הציון של צילום המסך היחיד."
+    },
+    diagram: { en: ["CUDA image", "YuNet CUDA", "GPU decode", "Best face + 5 points"], ru: ["CUDA-изображение", "YuNet CUDA", "GPU-декодирование", "Лучшее лицо + 5 точек"], he: ["תמונת CUDA", "YuNet CUDA", "פענוח ב-GPU", "הפנים הטובות + 5 נקודות"] },
+    diagramNotes: {
+      en: ["The prepared float32 tensor remains in CUDA memory.", "ONNX Runtime receives the tensor through I/O binding and writes every YuNet output to CUDA memory.", "Torch CUDA operations decode confidence, boxes, and landmarks without converting the intermediate arrays to NumPy.", "For the one screenshot, the largest face nearest the expected center is selected and marked valid only above the confidence threshold."],
+      ru: ["Подготовленный float32-тензор остаётся в памяти CUDA.", "ONNX Runtime получает его через I/O binding и записывает все выходы YuNet в память CUDA.", "Операции Torch CUDA декодируют confidence, рамки и ориентиры без преобразования промежуточных массивов в NumPy.", "Для единственного снимка выбирается крупное лицо возле ожидаемого центра; оно считается допустимым только после прохождения порога confidence."],
+      he: ["טנזור float32 המוכן נשאר בזיכרון CUDA.", "ONNX Runtime מקבל אותו באמצעות I/O binding וכותב את כל פלטי YuNet לזיכרון CUDA.", "פעולות Torch CUDA מפענחות confidence, תיבות ונקודות ציון ללא המרת מערכי הביניים ל-NumPy.", "עבור צילום המסך היחיד נבחרות הפנים הגדולות ליד המרכז הצפוי, ורק ציון מעל הסף מסמן אותן כתקפות."]
+    },
+    layers: { en: "YuNet detector plus CUDA post-processing", ru: "Детектор YuNet и CUDA-постобработка", he: "גלאי YuNet ועיבוד המשך ב-CUDA" },
+    connections: { en: "One detector inference for one screenshot", ru: "Один инференс детектора для одного снимка", he: "הסקת גלאי אחת לצילום מסך אחד" },
+    tensor: "1×3×H'×W' → boxes + confidence + 5 landmarks",
+    cudaShort: { en: "Detection and landmark decoding never return to CPU", ru: "Детекция и декодирование ориентиров не возвращаются на CPU", he: "הזיהוי ופענוח נקודות הציון אינם חוזרים ל-CPU" },
+    cuda: { en: "I/O binding avoids a device-to-host copy between YuNet and post-processing. The decoded face row and validity mask remain CUDA tensors for alignment.", ru: "I/O binding исключает копирование GPU→CPU между YuNet и постобработкой. Декодированная строка лица и маска допустимости остаются CUDA-тензорами для выравнивания.", he: "I/O binding מונע העתקה מן ה-GPU למארח בין YuNet לעיבוד ההמשך. שורת הפנים המפוענחת ומסכת התקפות נשארות טנזורי CUDA לצורך היישור." },
+    code: `yunet_outputs = verifier._run_ort_cuda(verifier.cuda_yunet_session, detection_tensor, YUNET_OUTPUT_NAMES)
+face, valid = verifier._decode_yunet_faces_cuda(yunet_outputs, width, height, content_size, readable)`
+  },
+  {
+    level: "04",
+    title: { en: "Five-landmark alignment on CUDA", ru: "Выравнивание по пяти точкам на CUDA", he: "יישור לפי חמש נקודות ב-CUDA" },
+    summary: {
+      en: "Builds the facial similarity transform from the five YuNet landmarks and creates the aligned 112×112 SFace crop with CUDA grid_sample.",
+      ru: "Строит similarity-преобразование по пяти ориентирам YuNet и создаёт выровненную область SFace 112×112 через CUDA grid_sample.",
+      he: "בונה טרנספורמציית דמיון מחמש נקודות YuNet ויוצר חיתוך SFace מיושר בגודל 112×112 באמצעות CUDA grid_sample."
+    },
+    diagram: { en: ["5 landmarks", "Similarity transform", "CUDA sampling grid", "112×112 face"], ru: ["5 ориентиров", "Similarity transform", "CUDA-сетка выборки", "Лицо 112×112"], he: ["5 נקודות ציון", "טרנספורמציית דמיון", "רשת דגימה ב-CUDA", "פנים 112×112"] },
+    diagramNotes: {
+      en: ["Reads the ten landmark coordinates from the selected YuNet face tensor.", "Solves scale, rotation, and translation against the canonical SFace landmark template entirely with torch operations on CUDA.", "Converts the inverse transform into normalized grid coordinates.", "grid_sample crops and aligns the face without copying the source screenshot back to the CPU."],
+      ru: ["Берёт десять координат ориентиров из выбранного GPU-тензора лица YuNet.", "Полностью операциями torch на CUDA вычисляет масштаб, поворот и перенос к эталонному шаблону SFace.", "Преобразует обратную матрицу в нормализованные координаты сетки.", "grid_sample вырезает и выравнивает лицо без возврата исходного снимка на CPU."],
+      he: ["קורא את עשר הקואורדינטות של נקודות הציון מטנזור הפנים שנבחר על ידי YuNet.", "מחשב קנה מידה, סיבוב והזזה אל תבנית SFace הקנונית באמצעות פעולות torch ב-CUDA בלבד.", "ממיר את הטרנספורמציה ההפוכה לקואורדינטות רשת מנורמלות.", "grid_sample חותך ומיישר את הפנים ללא העתקת צילום המסך בחזרה ל-CPU."]
+    },
+    layers: { en: "CUDA linear algebra + grid_sample", ru: "Линейная алгебра CUDA + grid_sample", he: "אלגברה ליניארית ב-CUDA ו-grid_sample" },
+    connections: { en: "One face transform, one aligned crop", ru: "Одно преобразование лица, одна выровненная область", he: "טרנספורמציית פנים אחת וחיתוך מיושר אחד" },
+    tensor: "landmarks 1×5×2 + image → CUDA 1×3×112×112",
+    cudaShort: { en: "No cv2.alignCrop and no CPU crop", ru: "Без cv2.alignCrop и без CPU-обрезки", he: "ללא cv2.alignCrop וללא חיתוך ב-CPU" },
+    cuda: { en: "This is the important change from the old demo: alignment and crop are now GPU tensor operations, so the detector output flows directly into SFace.", ru: "Это ключевое отличие от старой демонстрации: выравнивание и обрезка теперь являются GPU-тензорными операциями, поэтому выход детектора сразу поступает в SFace.", he: "זהו השינוי החשוב לעומת ההדגמה הישנה: היישור והחיתוך הם כעת פעולות טנזור GPU, ולכן פלט הגלאי עובר ישירות ל-SFace." },
+    code: `aligned_face = verifier._align_faces_cuda(detection_tensor, face, valid)
+assert aligned_face.shape == (1, 3, 112, 112)`
+  },
+  {
+    level: "05",
+    title: { en: "SFace embedding and GPU identity scores", ru: "SFace-вектор и оценки личности на GPU", he: "embedding של SFace וציוני זהות ב-GPU" },
+    summary: {
+      en: "Runs SFace on CUDA, normalizes its identity vector, and compares it with all cached reference vectors using one GPU matrix operation.",
+      ru: "Запускает SFace на CUDA, нормализует вектор личности и одной матричной операцией GPU сравнивает его со всеми кэшированными эталонами.",
+      he: "מריץ את SFace ב-CUDA, מנרמל את וקטור הזהות ומשווה אותו לכל וקטורי הייחוס השמורים באמצעות פעולת מטריצה אחת ב-GPU."
+    },
+    diagram: { en: ["112×112 face", "SFace CUDA", "GPU cosine scores", "Best reference"], ru: ["Лицо 112×112", "SFace CUDA", "Cosine-оценки GPU", "Лучший эталон"], he: ["פנים 112×112", "SFace CUDA", "ציוני cosine ב-GPU", "הייחוס הטוב ביותר"] },
+    diagramNotes: {
+      en: ["The aligned face tensor is already in CUDA memory.", "SFace executes through its CUDAExecutionProvider session and returns the embedding to CUDA memory through I/O binding.", "Torch normalizes the embedding and multiplies it by each identity's cached reference matrix on the GPU.", "GPU reductions return the best score and reference index for Adi, Faraj, and Slava."],
+      ru: ["Выровненный тензор лица уже находится в памяти CUDA.", "SFace выполняется с CUDAExecutionProvider и через I/O binding возвращает вектор в память CUDA.", "Torch нормализует вектор и умножает его на кэшированную матрицу эталонов каждого человека на GPU.", "GPU-редукции возвращают лучшую оценку и индекс эталона для Adi, Faraj и Slava."],
+      he: ["טנזור הפנים המיושר כבר נמצא בזיכרון CUDA.", "SFace פועל באמצעות CUDAExecutionProvider ומחזיר את ה-embedding לזיכרון CUDA דרך I/O binding.", "Torch מנרמל את הווקטור ומכפיל אותו במטריצת הייחוס של כל זהות ב-GPU.", "פעולות הצמצום ב-GPU מחזירות את הציון ואת אינדקס הייחוס הטובים ביותר עבור Adi, Faraj ו-Slava."]
+    },
+    layers: { en: "SFace ONNX + L2 normalization + matrix scoring", ru: "SFace ONNX + L2-нормализация + матричная оценка", he: "SFace ONNX, נרמול L2 וחישוב מטריציוני" },
+    connections: { en: "1 embedding compared with every cached reference", ru: "Один вектор сравнивается со всеми эталонами", he: "embedding אחד מושווה לכל הייחוסים" },
+    tensor: "1×3×112×112 → 1×128 → 1×N scores",
+    cudaShort: { en: "Embedding and reference comparison both stay on CUDA", ru: "И вектор, и сравнение с эталонами остаются на CUDA", he: "גם ה-embedding וגם ההשוואה נשארים ב-CUDA" },
+    cuda: { en: "Only the final small score and index matrices are copied to host memory after all neural and comparison work has completed.", ru: "Только итоговые маленькие матрицы оценок и индексов копируются в RAM после завершения всей нейросетевой работы и сравнения.", he: "רק מטריצות הציונים והאינדקסים הקטנות מועתקות לזיכרון המארח לאחר שכל עבודת הרשת וההשוואה הסתיימה." },
+    code: `embedding = verifier._run_ort_cuda(verifier.cuda_session, aligned_face)[0]
+scores, matches = verifier._score_vectors_cuda(embedding)`
+  },
+  {
+    level: "06",
+    title: { en: "One result for one screenshot", ru: "Один результат для одного снимка", he: "תוצאה אחת לצילום מסך אחד" },
+    summary: {
+      en: "Executes the verifier with a one-item input, uses float32 precision, applies score and margin thresholds, and returns one identity JSON result with measured CUDA-stage timings.",
+      ru: "Запускает verifier с одним входным изображением, использует точность float32, применяет пороги score и margin и возвращает один JSON-результат личности с замерами этапов CUDA.",
+      he: "מריץ את המאמת עם תמונת קלט אחת, משתמש בדיוק float32, מחיל ספי score ו-margin ומחזיר תוצאת JSON אחת עם זמני שלבי CUDA."
+    },
+    diagram: { en: ["One screenshot", "FP32 CUDA pipeline", "Score + margin", "One JSON result"], ru: ["Один снимок", "CUDA FP32", "Score + margin", "Один JSON-результат"], he: ["צילום מסך אחד", "צינור CUDA ב-FP32", "Score ו-margin", "תוצאת JSON אחת"] },
+    diagramNotes: {
+      en: ["The browser sends one file, and Hive invokes the CUDA verifier with a list containing only that path.", "A one-image request selects the FP32 YuNet and SFace sessions; FP16 is reserved for large batches and is not part of this demo.", "The best identity is accepted only when both its similarity score and its lead over the runner-up pass the configured thresholds.", "The response reports one identity together with provider names, pipeline name, precision, timing, and cpu_intermediate_count=0."],
+      ru: ["Браузер отправляет один файл, а Hive вызывает CUDA-verifier со списком, содержащим только этот путь.", "Запрос одного изображения выбирает FP32-сессии YuNet и SFace; FP16 предназначен для больших пачек и не относится к этой демонстрации.", "Лучшее имя принимается только когда и similarity score, и его отрыв от второго места проходят заданные пороги.", "Ответ содержит одну личность, названия provider, имя конвейера, точность, время и cpu_intermediate_count=0."],
+      he: ["הדפדפן שולח קובץ אחד ו-Hive מפעיל את מאמת CUDA עם רשימה שמכילה רק את הנתיב הזה.", "בקשה של תמונה אחת בוחרת בסשנים FP32 של YuNet ו-SFace; ‏FP16 שמור לאצוות גדולות ואינו חלק מההדגמה הזו.", "הזהות המובילה מתקבלת רק אם גם ציון הדמיון וגם הפער מן המקום השני עוברים את הספים שנקבעו.", "התשובה מדווחת על זהות אחת יחד עם שמות ה-provider, שם הצינור, הדיוק, הזמנים ו-cpu_intermediate_count=0."]
+    },
+    layers: { en: "Threshold decision and JSON serialization", ru: "Пороговое решение и формирование JSON", he: "החלטת סף ויצירת JSON" },
+    connections: { en: "Exactly one physical recognition", ru: "Ровно одно физическое распознавание", he: "זיהוי פיזי אחד בדיוק" },
+    tensor: "one screenshot → one face vector → one identity result",
+    cudaShort: { en: "Single image is FP32; no 50/500 batch behavior", ru: "Одиночное изображение использует FP32; логики 50/500 здесь нет", he: "תמונה יחידה משתמשת ב-FP32; אין כאן התנהגות של 50/500" },
+    cuda: { en: "The returned cpu_intermediate_count is zero because no detector, alignment, embedding, or scoring intermediate is copied to CPU. File decoding and final JSON construction are host operations and are reported separately.", ru: "cpu_intermediate_count равен нулю, потому что промежуточные данные детекции, выравнивания, SFace и сравнения не копируются на CPU. Декодирование файла и сборка итогового JSON являются host-операциями и учитываются отдельно.", he: "cpu_intermediate_count שווה לאפס משום שנתוני הביניים של הזיהוי, היישור, SFace וההשוואה אינם מועתקים ל-CPU. פענוח הקובץ ובניית ה-JSON הסופי הן פעולות מארח ומדווחות בנפרד." },
+    code: `payload = verifier.verify_batch([screenshot_path])
+result = payload["results"][0]
+print(result["label"], result["score"], payload["gpu_total_ms"])`
   }
+];
+
+Object.assign(detectorVariantCatalog.single, {
+  label: { en: "single-image request", ru: "одиночный запрос", he: "בקשת תמונה יחידה" },
+  description: { en: "The page sends exactly one screenshot to /api/detect in CUDA mode. After CPU file decoding, resize, YuNet, landmark decode, alignment, SFace, and reference scoring run on the NVIDIA GPU.", ru: "Страница отправляет ровно один снимок в /api/detect в режиме CUDA. После декодирования файла на CPU изменение размера, YuNet, декодирование ориентиров, выравнивание, SFace и сравнение с эталонами выполняются на NVIDIA GPU.", he: "הדף שולח צילום מסך אחד בדיוק אל ‎/api/detect במצב CUDA. לאחר פענוח הקובץ ב-CPU, שינוי הגודל, YuNet, פענוח נקודות הציון, היישור, SFace וההשוואה לייחוסים פועלים ב-NVIDIA GPU." },
+  source: { en: "Exact CUDA runtime blocks used by the one-screenshot verifier; batch controls and 50/500 behavior are intentionally outside this demonstration.", ru: "Точные блоки CUDA-пути, которые использует verifier одного снимка; управление пачками и поведение 50/500 намеренно не входят в эту демонстрацию.", he: "בלוקי זמן הריצה המדויקים של CUDA שבהם משתמש מאמת צילום המסך היחיד; בקרות אצווה והתנהגות 50/500 אינן חלק מההדגמה בכוונה." },
+  stages: singleCudaStages
 });
 delete detectorVariantCatalog.batch;
 
@@ -2392,6 +2522,64 @@ Object.assign(detailUi.he, {
   openFullCode: "פתיחת מקור CUDA המדויק של השלב",
   codeSourceShort: "תרשים קצר של מסלול CUDA לתמונה יחידה",
   codeSourceFull: "מקור גלאי CUDA המדויק"
+});
+
+Object.assign(translations.en, {
+  simpleNote: "Upload one screenshot, choose CUDA or CPU, and press Recognize.",
+  dropHint: "Choose one screenshot for CUDA/CPU analysis.",
+  howIntro: "This inspector documents the exact one-screenshot NVIDIA path: CPU file decode followed by CUDA resize, YuNet, landmark decode, alignment, SFace, reference scoring, and one Hive JSON result.",
+  variantKicker: "ONE-SCREENSHOT CUDA RUNTIME",
+  variantTitle: "Single-image recognition path",
+  variantSingle: "Single-image CUDA recognition",
+  modeExplainTitle: "CUDA and CPU mode",
+  modeExplainText: "CUDA mode sends one screenshot through the NVIDIA pipeline. PNG/JPEG decoding and final JSON construction run on the host; all detector, alignment, embedding, and reference-scoring intermediates remain on CUDA. CPU mode is retained only for comparison.",
+  sourceTitle: "Exact CUDA code blocks for one screenshot",
+  sourceIntro: "The six stages below load exact blocks from the current SFace verifier. They describe one FP32 screenshot request only; the 50/500 batch paths are intentionally excluded.",
+  sourceLoading: "Loading the one-screenshot CUDA verifier blocks…",
+  sourceError: "Could not load or verify the one-screenshot CUDA verifier blocks.",
+  openRawDetectorSource: "Open current CUDA verifier source",
+  fullStageExact: "Exact block from the current CUDA verifier",
+  fullStageDetector: "Exact block from the current CUDA verifier",
+  fullStageNotebook: "Exact block from the current CUDA verifier",
+  sourceLoaded: "Verified: {total} exact source lines for the {variant} path = {sum} lines across stages 1–6."
+});
+Object.assign(translations.ru, {
+  simpleNote: "Загрузите один снимок, выберите CUDA или CPU и нажмите «Распознать».",
+  dropHint: "Выберите один снимок для анализа через CUDA/CPU.",
+  howIntro: "Инспектор описывает точный NVIDIA-путь одного снимка: декодирование файла на CPU, затем CUDA resize, YuNet, декодирование ориентиров, выравнивание, SFace, сравнение с эталонами и один JSON-ответ Hive.",
+  variantKicker: "CUDA-ПУТЬ ОДНОГО СНИМКА",
+  variantTitle: "Путь одиночного распознавания",
+  variantSingle: "Одиночное распознавание CUDA",
+  modeExplainTitle: "Режимы CUDA и CPU",
+  modeExplainText: "Режим CUDA отправляет один снимок в NVIDIA-конвейер. Декодирование PNG/JPEG и сборка итогового JSON выполняются на host; все промежуточные данные детектора, выравнивания, SFace и сравнения с эталонами остаются в CUDA. CPU сохранён только для сравнения.",
+  sourceTitle: "Точные блоки CUDA-кода для одного снимка",
+  sourceIntro: "Шесть этапов загружают точные блоки актуального SFace-verifier. Они описывают только один FP32-снимок; пути пачек 50/500 намеренно исключены.",
+  sourceLoading: "Загружаются CUDA-блоки verifier одного снимка…",
+  sourceError: "Не удалось загрузить или проверить CUDA-блоки verifier одного снимка.",
+  openRawDetectorSource: "Открыть актуальный исходник CUDA-verifier",
+  fullStageExact: "Точный блок актуального CUDA-verifier",
+  fullStageDetector: "Точный блок актуального CUDA-verifier",
+  fullStageNotebook: "Точный блок актуального CUDA-verifier",
+  sourceLoaded: "Проверено: {total} точных строк пути «{variant}» = {sum} строк на этапах 1–6."
+});
+Object.assign(translations.he, {
+  simpleNote: "העלו צילום מסך אחד, בחרו CUDA או CPU ולחצו על זיהוי.",
+  dropHint: "בחרו צילום מסך אחד לניתוח באמצעות CUDA/CPU.",
+  howIntro: "הבודק מתאר את מסלול NVIDIA המדויק לצילום מסך אחד: פענוח הקובץ ב-CPU ולאחריו שינוי גודל ב-CUDA, ‏YuNet, פענוח נקודות ציון, יישור, SFace, השוואת ייחוסים ותשובת JSON אחת של Hive.",
+  variantKicker: "מסלול CUDA לצילום מסך אחד",
+  variantTitle: "מסלול זיהוי של תמונה יחידה",
+  variantSingle: "זיהוי CUDA לתמונה יחידה",
+  modeExplainTitle: "מצבי CUDA ו-CPU",
+  modeExplainText: "מצב CUDA שולח צילום מסך אחד דרך צינור NVIDIA. פענוח PNG/JPEG ובניית ה-JSON הסופי פועלים במארח; כל נתוני הביניים של הגלאי, היישור, SFace והשוואת הייחוסים נשארים ב-CUDA. מצב CPU נשמר להשוואה בלבד.",
+  sourceTitle: "בלוקי קוד CUDA מדויקים לצילום מסך אחד",
+  sourceIntro: "ששת השלבים טוענים בלוקים מדויקים ממאמת SFace הנוכחי. הם מתארים בקשת FP32 של צילום מסך אחד בלבד; מסלולי אצווה 50/500 אינם כלולים בכוונה.",
+  sourceLoading: "טוען את בלוקי CUDA של מאמת צילום המסך היחיד…",
+  sourceError: "לא ניתן לטעון או לאמת את בלוקי CUDA של מאמת צילום המסך היחיד.",
+  openRawDetectorSource: "פתיחת קוד המקור הנוכחי של מאמת CUDA",
+  fullStageExact: "בלוק מדויק ממאמת CUDA הנוכחי",
+  fullStageDetector: "בלוק מדויק ממאמת CUDA הנוכחי",
+  fullStageNotebook: "בלוק מדויק ממאמת CUDA הנוכחי",
+  sourceLoaded: "אומת: {total} שורות מקור מדויקות במסלול «{variant}» = {sum} שורות בשלבים 1–6."
 });
 
 function activeVariantDefinition() {
@@ -2490,9 +2678,9 @@ function localized(value) {
 }
 
 const codeAnnotationFallback = {
-  en: "This line belongs to the CUDA/OpenCL detector pipeline for the selected stage.",
-  ru: "Эта строка относится к CUDA/OpenCL-цепочке детектора на выбранном этапе.",
-  he: "השורה הזו שייכת לשרשרת CUDA/OpenCL של הגלאי בשלב הנבחר."
+  en: "This line belongs to the one-screenshot CUDA detector pipeline for the selected stage.",
+  ru: "Эта строка относится к CUDA-конвейеру одного снимка на выбранном этапе.",
+  he: "השורה הזו שייכת לצינור גלאי CUDA של צילום מסך אחד בשלב הנבחר."
 };
 
 const codeBlankAnnotation = {
@@ -3047,7 +3235,26 @@ const colabCodePatternAnnotations = [
   }]
 ];
 
+Object.assign(detailedCodeLineAnnotations, {
+  "continue": {
+    en: "Skips the remaining statements for the current item and continues with the next item in the surrounding loop.",
+    ru: "Пропускает оставшиеся команды для текущего элемента и переходит к следующему элементу окружающего цикла.",
+    he: "מדלגת על שאר הפקודות עבור האיבר הנוכחי וממשיכה לאיבר הבא בלולאה שמסביב."
+  },
+  "return {": {
+    en: "Starts the Python dictionary returned to the caller; Hive later serializes these fields as JSON.",
+    ru: "Начинает Python-словарь, возвращаемый вызывающему коду; затем Hive сериализует эти поля в JSON.",
+    he: "פותחת מילון Python שמוחזר לקוד הקורא; לאחר מכן Hive מסדרת את השדות האלה כ-JSON."
+  },
+  "}": {
+    en: "Closes the current Python dictionary or grouped expression; it performs no separate computation.",
+    ru: "Закрывает текущий Python-словарь либо сгруппированное выражение; отдельного вычисления строка не выполняет.",
+    he: "סוגרת את מילון Python או את הביטוי המקובץ הנוכחי; השורה אינה מבצעת חישוב נפרד."
+  }
+});
+
 const sourceImportMeaning = {
+  cv2: { ru: "для декодирования файла изображения перед единственной загрузкой в CUDA", he: "לפענוח קובץ התמונה לפני ההעלאה היחידה ל-CUDA" },
   json: { ru: "для чтения и формирования JSON-ответов", he: "לקריאה וליצירה של תשובות JSON" },
   math: { ru: "для математических вычислений", he: "לחישובים מתמטיים" },
   struct: { ru: "для работы с двоичным представлением данных", he: "לעבודה עם ייצוג בינארי של נתונים" },
@@ -3059,10 +3266,20 @@ const sourceImportMeaning = {
   pathlib: { ru: "для безопасной работы с путями и файлами", he: "לעבודה בטוחה עם נתיבים וקבצים" },
   typing: { ru: "для аннотаций типов Python", he: "להערות טיפוסים של Python" },
   torch: { ru: "для тензорных вычислений и запуска на CUDA", he: "לחישובי טנזורים והרצה ב-CUDA" },
+  onnxruntime: { ru: "для запуска YuNet и SFace через CUDAExecutionProvider", he: "להרצת YuNet ו-SFace באמצעות CUDAExecutionProvider" },
   fastapi: { ru: "для HTTP-API детектора", he: "ל-HTTP API של הגלאי" }
 };
 
 const sourceFunctionMeaning = {
+  _initialize_cuda_pipeline: { ru: "проверяет CUDA и размещает кэшированные эталонные векторы в видеопамяти", he: "בודקת את CUDA ומציבה את embeddings הייחוס השמורים בזיכרון הכרטיס" },
+  _run_ort_cuda: { ru: "запускает ONNX Runtime через I/O binding, сохраняя входы и выходы на CUDA", he: "מריצה ONNX Runtime באמצעות I/O binding תוך שמירת הקלט והפלט ב-CUDA" },
+  _create_cuda_session: { ru: "создаёт и проверяет CUDA-сессию модели SFace", he: "יוצרת ומאמתת סשן CUDA של מודל SFace" },
+  _create_cuda_yunet_session: { ru: "создаёт и проверяет CUDA-сессию детектора YuNet", he: "יוצרת ומאמתת סשן CUDA של גלאי YuNet" },
+  _prepare_cuda_detection_batch: { ru: "загружает единственный снимок и выполняет resize, нормализацию и padding на CUDA", he: "מעלה את צילום המסך היחיד ומבצעת שינוי גודל, נרמול וריפוד ב-CUDA" },
+  _decode_yunet_faces_cuda: { ru: "декодирует рамку лица и пять ориентиров прямо в CUDA-тензорах", he: "מפענחת את תיבת הפנים ואת חמש נקודות הציון ישירות בטנזורי CUDA" },
+  _align_faces_cuda: { ru: "выравнивает лицо по пяти ориентирам через CUDA grid_sample", he: "מיישרת את הפנים לפי חמש נקודות באמצעות CUDA grid_sample" },
+  _score_vectors_cuda: { ru: "сравнивает SFace-вектор со всеми кэшированными эталонами на GPU", he: "משווה את embedding של SFace לכל הייחוסים השמורים ב-GPU" },
+  verify_batch: { ru: "в этой демонстрации выполняет полный CUDA-путь для списка ровно из одного снимка", he: "בהדגמה הזו מריצה את מסלול CUDA המלא עבור רשימה ובה צילום מסך אחד בדיוק" },
   _resample: { ru: "выбирает качественный алгоритм изменения размера изображения", he: "בוחרת אלגוריתם איכותי לשינוי גודל התמונה" },
   _font: { ru: "подбирает шрифт для подписей в интерфейсе", he: "בוחרת גופן לכיתובים בממשק" },
   _text: { ru: "рисует текстовую подпись на изображении", he: "מציירת כיתוב על תמונה" },
@@ -3106,6 +3323,66 @@ const sourceCommentMeaning = {
 function operationAnnotation(text, lang) {
   const say = (en, ru, he) => repairLocalizedText(lang === "ru" ? ru : lang === "he" ? he : en);
   const value = text.replace(/^print\(/, "").replace(/\)\s*$/, "");
+  if (/cv2\.imread\s*\(/.test(text)) return say(
+    "Decodes the one compressed PNG/JPEG screenshot in host memory. This codec step is the only full-image CPU stage before one CUDA upload.",
+    "Декодирует единственный сжатый PNG/JPEG-снимок в RAM. Этот этап кодека — единственная полноразмерная CPU-операция до одной загрузки в CUDA.",
+    "מפענחת את צילום המסך הדחוס היחיד מסוג PNG/JPEG בזיכרון המארח. שלב הקודק הזה הוא פעולת ה-CPU היחידה על התמונה המלאה לפני העלאה אחת ל-CUDA."
+  );
+  if (/CUDAExecutionProvider/.test(text)) return say(
+    "Names or verifies ONNX Runtime's NVIDIA CUDA provider. The session is rejected when this provider is not first and active.",
+    "Задаёт или проверяет NVIDIA CUDA provider среды ONNX Runtime. Сессия отклоняется, если этот provider не является первым и активным.",
+    "מציינת או מאמתת את ספק CUDA של NVIDIA ב-ONNX Runtime. הסשן נדחה אם provider זה אינו הראשון והפעיל."
+  );
+  if (/io_binding\(\)|bind_ortvalue_input|bind_output|run_with_iobinding|from_dlpack/.test(text)) return say(
+    "Uses zero-copy-style CUDA I/O binding so the ONNX model consumes and produces device tensors without an intermediate NumPy/CPU round trip.",
+    "Использует CUDA I/O binding, чтобы ONNX-модель принимала и возвращала GPU-тензоры без промежуточного прохода через NumPy/CPU.",
+    "משתמשת ב-CUDA I/O binding כדי שמודל ONNX יקבל ויחזיר טנזורי התקן ללא מעבר ביניים דרך NumPy/CPU."
+  );
+  if (/\.to\(device="cuda"|device="cuda"/.test(text)) return say(
+    "Places this tensor directly in NVIDIA CUDA memory. For the screenshot tensor, this is the single host-to-device image transfer.",
+    "Размещает тензор непосредственно в памяти NVIDIA CUDA. Для тензора снимка это единственный перенос изображения host→device.",
+    "מציבה את הטנזור ישירות בזיכרון NVIDIA CUDA. עבור טנזור צילום המסך זו העברת התמונה היחידה מן המארח להתקן."
+  );
+  if (/functional\.(interpolate|pad)|torch\.stack\(/.test(text)) return say(
+    "Performs resize, padding, or tensor assembly on CUDA after the screenshot has been uploaded; no prepared image is copied back to the CPU.",
+    "Выполняет resize, padding либо сборку тензора на CUDA после загрузки снимка; подготовленное изображение не копируется обратно на CPU.",
+    "מבצעת שינוי גודל, ריפוד או הרכבת טנזור ב-CUDA לאחר העלאת צילום המסך; התמונה המוכנה אינה מועתקת בחזרה ל-CPU."
+  );
+  if (/YUNET_OUTPUT_NAMES|yunet_outputs|_decode_yunet_faces_cuda/.test(text)) return say(
+    "Handles YuNet detector outputs for the one screenshot: confidence, face box, and five landmarks remain CUDA tensors.",
+    "Обрабатывает выходы YuNet для одного снимка: confidence, рамка лица и пять ориентиров остаются CUDA-тензорами.",
+    "מטפלת בפלטי YuNet עבור צילום המסך היחיד: confidence, תיבת הפנים וחמש נקודות הציון נשארים טנזורי CUDA."
+  );
+  if (/grid_sample|affine_grid|torch\.linalg\.(lstsq|inv)/.test(text)) return say(
+    "Computes or applies the five-landmark similarity transform on CUDA to produce the aligned 112x112 SFace input.",
+    "Вычисляет или применяет similarity-преобразование по пяти ориентирам на CUDA, создавая выровненный вход SFace 112x112.",
+    "מחשבת או מחילה ב-CUDA את טרנספורמציית הדמיון לפי חמש נקודות כדי ליצור קלט SFace מיושר בגודל 112x112."
+  );
+  if (!/\.cpu\(\)/.test(text) && /functional\.normalize|reference_vectors|score_matrix|match_matrix|torch\.max\(/.test(text)) return say(
+    "Normalizes or compares SFace embeddings against the cached reference matrix on CUDA and keeps the best score/index per identity.",
+    "Нормализует либо сравнивает SFace-векторы с кэшированной матрицей эталонов на CUDA и сохраняет лучшую оценку/индекс каждой личности.",
+    "מנרמלת או משווה embeddings של SFace למטריצת הייחוס השמורה ב-CUDA ושומרת את הציון והאינדקס הטובים לכל זהות."
+  );
+  if (/\.cpu\(\)\.(tolist|numpy)|\.cpu\(\)/.test(text)) return say(
+    "Copies only the final small validity, score, or reference-index result to host memory after GPU inference and scoring have finished.",
+    "Копирует в RAM только итоговую маленькую маску, оценки либо индексы эталонов после завершения инференса и сравнения на GPU.",
+    "מעתיקה לזיכרון המארח רק את מסכת התקפות, הציונים או אינדקסי הייחוס הקטנים לאחר שההסקה וההשוואה ב-GPU הסתיימו."
+  );
+  if (/precision\s*=\s*"fp16" if len\(image_paths\) >= 100 else "fp32"/.test(text)) return say(
+    "Selects FP32 for this one-screenshot request. FP16 is used only by large batch requests and is not active in the simple demo.",
+    "Выбирает FP32 для запроса одного снимка. FP16 используется только большими пачками и в простой демонстрации не активен.",
+    "בוחרת FP32 עבור בקשת צילום המסך היחיד. FP16 משמש רק אצוות גדולות ואינו פעיל בהדגמה הפשוטה."
+  );
+  if (/cpu_intermediate_count/.test(text)) return say(
+    "Reports zero CPU intermediates: detection, landmark decoding, alignment, SFace, and reference scoring all remained on CUDA.",
+    "Сообщает ноль CPU-intermediate: детекция, декодирование ориентиров, выравнивание, SFace и сравнение с эталонами оставались на CUDA.",
+    "מדווחת על אפס נתוני ביניים ב-CPU: הזיהוי, פענוח נקודות הציון, היישור, SFace והשוואת הייחוסים נשארו כולם ב-CUDA."
+  );
+  if (/^[A-Za-z_]\w*\[[^\]]+\]\s*=\s*\{$/.test(text)) return say(
+    "Starts the structured result dictionary for this screenshot position; the following fields describe its identity and measured scores.",
+    "Начинает структурированный словарь результата для этой позиции снимка; следующие поля описывают личность и измеренные оценки.",
+    "פותחת מילון תוצאה מובנה עבור מיקום צילום המסך הזה; השדות הבאים מתארים את הזהות ואת הציונים שנמדדו."
+  );
   if (/^print\(/.test(text)) return say(
     "Prints the value of " + value + " in Colab output. This is a diagnostic display; it does not start face recognition.",
     "Выводит значение " + value + " в результатах Colab. Это диагностический вывод; распознавание лиц он не запускает.",
@@ -3532,6 +3809,15 @@ function englishSourceLineAnnotation(text) {
  if (classMatch) return `Defines the ${classMatch[1]} class that groups related detector state and behavior.`;
   if (functionMatch) {
     const functionPurpose = {
+      _initialize_cuda_pipeline: "validates CUDA and places cached reference embeddings in GPU memory",
+      _run_ort_cuda: "executes ONNX Runtime with CUDA I/O binding so inputs and outputs stay on the device",
+      _create_cuda_session: "creates and validates the CUDA SFace session",
+      _create_cuda_yunet_session: "creates and validates the CUDA YuNet session",
+      _prepare_cuda_detection_batch: "uploads the screenshot and performs CUDA resize, normalization, and padding",
+      _decode_yunet_faces_cuda: "decodes the face box and five landmarks directly in CUDA tensors",
+      _align_faces_cuda: "aligns the detected face from five landmarks with CUDA grid sampling",
+      _score_vectors_cuda: "compares the SFace embedding with every cached reference on the GPU",
+      verify_batch: "runs the full CUDA verifier; this page calls it with exactly one screenshot",
       _image_paths: "collects usable image files from a folder",
       _ensure_torch: "loads and caches the PyTorch modules used by the detector",
       _device_name: "chooses the CPU or CUDA backend name for the requested mode",
@@ -3852,6 +4138,10 @@ function patternCodeAnnotation(line) {
   const trimmed = line.trim();
   const exact = detailedCodeLineAnnotations[trimmed];
   if (exact) return repairLocalizedText(exact[lang] || exact.en);
+  const looksCpp = /^(#include|#if|#ifdef|#ifndef|#elif|#else|#endif|#define|namespace\b|struct\b|class\b|using\b|template\b|\/\/|\/\*|\*)/.test(trimmed)
+    || /;$/.test(trimmed)
+    || /\b(?:std::|cl[A-Z]\w*|CL_[A-Z_]+|DeepIDModel|FaceMatcher|MatchResult)\b/.test(trimmed);
+  if (looksCpp) return currentCppSourceAnnotation(trimmed, lang);
   return sourceLineAnnotation(trimmed, lang);
 }
 
@@ -4281,11 +4571,34 @@ async function ensureExactStageCode() {
   if (exactStageCodeState === "loading") return false;
   exactStageCodeState = "loading";
   try {
-    const response = await fetch("source/cuda_deepid_detector.py", { cache: "no-store" });
-    if (!response.ok) throw new Error(`source/cuda_deepid_detector.py HTTP ${response.status}`);
-    const detectorModule = await response.text();
+    const sourceTexts = await Promise.all(currentRuntimeStageSources.map(async (source) => {
+      const paths = source.paths || [source.path];
+      return Promise.all(paths.map(async (path) => {
+        const response = await fetch(path, { cache: "no-store" });
+        if (!response.ok) throw new Error(`${path} HTTP ${response.status}`);
+        return response.text();
+      }));
+    }));
     detectorSourceLoaded = true;
-    const lineBlocks = detectorStageLineBlocks(detectorModule, "single");
+    const normalizedFiles = sourceTexts.map((sources) => sources.flatMap((source) => {
+      const lines = source.replace(/\r\n/g, "\n").split("\n");
+      if (lines[lines.length - 1] === "") lines.pop();
+      return lines;
+    }));
+    const lineBlocks = currentRuntimeStageSources.map((source, index) => {
+      const lines = normalizedFiles[index];
+      const findBoundary = (pattern, fallback, label) => {
+        if (!pattern) return fallback;
+        const expression = new RegExp(pattern);
+        const found = lines.findIndex((line) => expression.test(line));
+        if (found < 0) throw new Error(`missing ${label} boundary ${pattern} in ${source.path}`);
+        return found;
+      };
+      const from = findBoundary(source.fromMatch, source.from || 0, "start");
+      const to = findBoundary(source.toMatch, source.to == null ? lines.length : source.to, "end");
+      if (to <= from) throw new Error(`invalid source boundaries in ${source.path}: ${from}..${to}`);
+      return lines.slice(from, to);
+    });
     if (lineBlocks.length !== stageDetails.length) {
       throw new Error(`expected ${stageDetails.length} stage blocks, found ${lineBlocks.length}`);
     }
@@ -4299,19 +4612,15 @@ async function ensureExactStageCode() {
     const combinedLines = lineBlocks.flat();
     stageRecognitionLineCount = lineBlocks.reduce((total, lines) => total + lines.length, 0);
     combinedRecognitionCode = combinedLines.join("\n");
-    const normalizedModuleLines = detectorModule.replace(/\r\n/g, "\n").split("\n");
-    if (normalizedModuleLines[normalizedModuleLines.length - 1] === "") normalizedModuleLines.pop();
-    const detectBatchStart = normalizedModuleLines.findIndex((line) => /^    def detect_batch\b/.test(line));
-    if (detectBatchStart < 0) throw new Error("detect_batch boundary is missing");
-    detectorSourceText = normalizedModuleLines.slice(0, detectBatchStart).join("\n");
+    detectorSourceText = combinedRecognitionCode;
     combinedRecognitionLineCount = codeLineCount(combinedRecognitionCode);
     if (combinedRecognitionLineCount !== stageRecognitionLineCount) {
       throw new Error(
         `combined recognition line count ${combinedRecognitionLineCount} does not equal stage sum ${stageRecognitionLineCount}`
       );
     }
-    if (combinedRecognitionCode !== detectorSourceText) {
-      throw new Error("stages 1–6 are not the exact CUDA source prefix through detect_image");
+    if (combinedLines.join("\n") !== detectorSourceText) {
+      throw new Error("the combined stage text is not identical to the loaded CUDA source blocks");
     }
     exactStageCodeState = "ready";
     return true;
@@ -4483,7 +4792,7 @@ function parseSseData(text) {
 }
 
 async function runRecognition(file, mode, score, margin) {
-  if (!(await requireLocalBridge("send selected image(s) to the local face detector"))) {
+  if (!(await requireLocalBridge("send the selected screenshot to the local face detector"))) {
     throw new Error("Local bridge was not approved for this recognition request.");
   }
   const endpoint = withLocalToken(`${LOCAL_HIVE_BASE}/api/detect?mode=${encodeURIComponent(mode)}&processor_id=0&source=github-pages-simple`);
@@ -4501,55 +4810,12 @@ async function runRecognition(file, mode, score, margin) {
   return { markdown: payload.identity || payload.best_label || uiText("unknown"), json: payload };
 }
 
-async function fileToBase64(file) {
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  let binary = "";
-  const chunkSize = 0x8000;
-  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
-  }
-  return btoa(binary);
-}
-
-async function runRecognitionBatch(files, mode, score, margin) {
-  if (!(await requireLocalBridge("send the selected image batch to the local face detector"))) {
-    throw new Error("Local bridge was not approved for this recognition request.");
-  }
-  const endpoint = withLocalToken(`${LOCAL_HIVE_BASE}/api/detect-batch?mode=${encodeURIComponent(mode)}&processor_id=0&source=github-pages-simple&verification=per-image`);
-  const images = await Promise.all(files.map(fileToBase64));
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Accept": "application/json", "X-Bee-Local-Token": LOCAL_BRIDGE_TOKEN },
-    body: JSON.stringify({ images, scene_hints: files.map(() => ""), verification: "per-image" })
-  });
-  if (!response.ok) {
-    throw new Error(`Local Hive batch detector failed: HTTP ${response.status}. Start the approved current Hive service on 127.0.0.1:8876.`);
-  }
-  const payload = await response.json();
-  if (!Array.isArray(payload.results) || payload.results.length !== files.length) {
-    throw new Error(`Hive returned ${payload.results?.length ?? 0} batch results for ${files.length} images.`);
-  }
-  return payload.results.map((item, index) => ({
-    file: files[index].name,
-    markdown: item.identity || item.best_label || uiText("unknown"),
-    json: {
-      ...item,
-      mode: item.mode || payload.mode || mode,
-      backend: item.backend || payload.backend,
-      batch_backend: payload.backend,
-      gpu_batch_ms: payload.gpu_batch_ms,
-      batch_elapsed_ms: payload.elapsed_ms,
-      avg_ms_per_photo: payload.avg_ms_per_photo,
-      requested_min_score: score,
-      requested_min_margin: margin
-    }
-  }));
-}
-
 function renderResults(results) {
   resultList.innerHTML = "";
-  const accepted = results.filter((item) => item.json?.accepted).length;
-  summaryBox.textContent = `${results.length} ${uiText("processedImages")}. ${uiText("acceptedImages")}: ${accepted}.`;
+  const item = results[0];
+  summaryBox.textContent = item?.json?.accepted
+    ? `${item.file}: ${item.json.identity}`
+    : `${item?.file || ""}: ${uiText("unknown")}`;
   results.forEach((item) => {
     const row = document.createElement("article");
     row.className = `result-row ${item.json?.accepted ? "accepted" : "unknown"}`;
@@ -4582,13 +4848,13 @@ async function recognizeSelectedFiles() {
   const margin = Number(marginInput.value);
   recognizeButton.disabled = true;
   backendStatus.textContent = uiText("running");
-  summaryBox.textContent = `${uiText("processing")} ${file.name} (${mode})…`;
+  summaryBox.textContent = `${uiText("processing")} (${mode})…`;
   resultList.innerHTML = "";
   jsonBox.textContent = "{}";
   try {
     selectDetectorVariant("single");
-    const result = await runRecognition(file, mode, score, margin);
-    const results = [{ file: file.name, ...result }];
+    const result = await runRecognition(files[0], mode, score, margin);
+    const results = [{ file: files[0].name, ...result }];
     renderResults(results);
     backendStatus.textContent = uiText("ready");
   } catch (error) {

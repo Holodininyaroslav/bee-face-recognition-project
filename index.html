@@ -65,7 +65,7 @@
         <div>
           <p class="kicker" data-i18n="simpleKicker">SIMPLE MODE</p>
           <h2 data-i18n="simpleTitle">Simple face recognition demo</h2>
-          <p class="panel-note" data-i18n="simpleNote">Upload one screenshot, choose CUDA GPU or CPU, and press Recognize.</p>
+          <p class="panel-note" data-i18n="simpleNote">Upload one screenshot, choose CUDA or CPU, and press Recognize.</p>
         </div>
         <button class="ghost" data-target="home" type="button" data-i18n="back">Back</button>
       </div>
@@ -75,13 +75,13 @@
           <h3 data-i18n="imageTitle">Image / screenshot</h3>
           <input id="imageInput" class="file-input" type="file" accept="image/*">
           <div id="previewGrid" class="preview-grid">
-            <div class="empty-preview" data-i18n="dropHint">Choose one screenshot for CUDA GPU/CPU analysis.</div>
+            <div class="empty-preview" data-i18n="dropHint">Choose one screenshot for CUDA/CPU analysis.</div>
           </div>
 
           <div class="mode-row" role="radiogroup" aria-label="Compute mode">
             <label class="mode-pill">
-              <input type="radio" name="computeMode" value="GPU" checked>
-              <span>GPU</span>
+              <input type="radio" name="computeMode" value="CUDA" checked>
+              <span>CUDA</span>
             </label>
             <label class="mode-pill">
               <input type="radio" name="computeMode" value="CPU">
@@ -123,7 +123,7 @@
           <p class="kicker" data-i18n="howKicker">HOW THE DETECTOR WORKS</p>
           <h3 id="howItWorksTitle" data-i18n="howTitle">What happens to the image inside the neural network</h3>
           <p data-i18n="howIntro">
-            This inspector follows the exact CUDA DeepID source for one screenshot, from one-time initialization through the final identity decision.
+            This inspector follows one screenshot through CPU file decoding and the CUDA YuNet, alignment, SFace, and reference-scoring pipeline.
           </p>
         </div>
         <div class="detector-variant-panel" aria-labelledby="detectorVariantTitle">
@@ -134,7 +134,7 @@
           </div>
           <div class="detector-variant-switch" role="group" aria-label="Recognition request variant">
             <button class="variant-button active" type="button" data-detector-variant="single" aria-pressed="true" data-i18n="variantSingle">
-              Single-image CUDA recognition
+              Single-image recognition
             </button>
           </div>
           <p id="detectorVariantSource" class="variant-source"></p>
@@ -142,45 +142,45 @@
         <div class="pipeline" aria-label="Detector pipeline stages">
           <article class="pipeline-step" role="button" tabindex="0" data-stage="0">
             <strong>01</strong>
-            <h4 data-i18n="step1Title">Initialization and device selection</h4>
-            <p data-i18n="step1Text">Imports the detector dependencies, defines identity thresholds, initializes caches, and verifies whether the requested mode can use CUDA.</p>
+            <h4 data-i18n="step1Title">CUDA runtime and model sessions</h4>
+            <p data-i18n="step1Text">Creates CUDA-only YuNet and SFace sessions and places cached reference vectors on the GPU.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="1">
             <strong>02</strong>
-            <h4 data-i18n="step2Title">Weights and DeepID model</h4>
-            <p data-i18n="step2Text">Reads the trained binary tensors, builds the exact DeepID forward pass, moves its buffers to CPU or CUDA, and caches the model.</p>
+            <h4 data-i18n="step2Title">One screenshot: decode, upload, resize</h4>
+            <p data-i18n="step2Text">Decodes one image on the CPU, uploads it once, and performs resize, normalization, and padding on CUDA.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="2">
             <strong>03</strong>
-            <h4 data-i18n="step3Title">Screenshot variants and input tensors</h4>
-            <p data-i18n="step3Text">Converts the screenshot to RGB, creates full-frame and center-crop variants, resizes them to 47 × 55, normalizes pixels, and produces channel-first tensors.</p>
+            <h4 data-i18n="step3Title">YuNet face and landmarks on CUDA</h4>
+            <p data-i18n="step3Text">Runs YuNet and decodes the face box and five landmarks without copying intermediates to the CPU.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="3">
             <strong>04</strong>
-            <h4 data-i18n="step4Title">One-time reference initialization</h4>
-            <p data-i18n="step4Text">Finds the known-person images, removes duplicate paths, stacks their tensors for one model call, and caches the normalized reference matrix.</p>
+            <h4 data-i18n="step4Title">Five-landmark alignment on CUDA</h4>
+            <p data-i18n="step4Text">Uses a CUDA similarity transform and grid_sample to produce one aligned 112 × 112 face.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="4">
             <strong>05</strong>
-            <h4 data-i18n="step5Title">Embedding comparison and identity decision</h4>
-            <p data-i18n="step5Text">Embeds the prepared variants together, compares them with cached references, keeps each person’s best score, and applies score and margin thresholds.</p>
+            <h4 data-i18n="step5Title">SFace embedding and GPU identity scores</h4>
+            <p data-i18n="step5Text">Runs SFace and compares its vector with all cached reference vectors on the GPU.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="5">
             <strong>06</strong>
-            <h4 data-i18n="step6Title">Single-image execution and result</h4>
-            <p data-i18n="step6Text">Runs the complete path for one screenshot, measures completed inference time, and returns the selected identity, scores, device, and acceptance flag.</p>
+            <h4 data-i18n="step6Title">One result for one screenshot</h4>
+            <p data-i18n="step6Text">Uses FP32 for one physical recognition and returns one identity result with CUDA timings.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
         </div>
         <div class="explain-note">
-          <h4 data-i18n="modeExplainTitle">GPU and CPU mode</h4>
+          <h4 data-i18n="modeExplainTitle">CUDA and CPU mode</h4>
           <p data-i18n="modeExplainText">
-            GPU mode runs the heavy vector and image operations through the accelerator path. CPU mode runs the same recognition logic on the processor. The expected identity result should stay the same; the difference is mainly where the computation runs and how long it takes.
+            CUDA mode keeps detector, alignment, embedding, and scoring intermediates on the NVIDIA GPU. Only compressed-file decoding and final JSON construction run on the host.
           </p>
         </div>
         <section id="stageDetail" class="stage-detail hidden" aria-live="polite">
@@ -245,7 +245,7 @@
             </div>
             <div class="source-actions">
               <button id="loadFullDetectorSource" class="ghost" type="button" data-i18n="openDetectorSource">Show the complete combined code</button>
-              <a class="ghost link" href="source/cuda_deepid_detector.py" target="_blank" rel="noreferrer" data-i18n="openRawDetectorSource">Open raw CUDA detector source</a>
+              <a class="ghost link" href="source/local_detector_v2/sface_identity_verifier.py" target="_blank" rel="noreferrer" data-i18n="openRawDetectorSource">Open current CUDA verifier source</a>
             </div>
           </div>
           <p id="fullSourceMeta" class="source-meta" data-i18n="sourceClosed">Closed. Open it to verify the total against stages 1–6.</p>
