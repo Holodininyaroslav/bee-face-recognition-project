@@ -4724,29 +4724,22 @@ function stageFiveCodeRange(lines, stepIndex) {
     end: matchingLineIndex(lines, endText, endOccurrence)
   });
   const ranges = [
-    () => single("x = torch.stack([self._preprocess_pil(img, device) for _name, img in variants], dim=0)"),
-    () => single("x = F.relu(F.conv2d(x, self.conv1_w, self.conv1_b))"),
-    () => single("x = F.max_pool2d(x, 2, 2)", 0),
-    () => single("x = F.relu(F.conv2d(x, self.conv2_w, self.conv2_b))"),
-    () => single("x = F.max_pool2d(x, 2, 2)", 1),
-    () => single("x = F.relu(F.conv2d(x, self.conv3_w, self.conv3_b))"),
-    () => single("pool3 = F.max_pool2d(x, 2, 2)"),
     () => span(
-      "fc11 = pool3.flatten(1) @ self.fc11_w + self.fc11_b",
-      "fc12 = conv4.flatten(1) @ self.fc12_w + self.fc12_b"
+      "aligned_faces = self._align_faces_cuda(detection_images, selected_faces, valid_mask)",
+      "gpu_align_ms = (time.perf_counter() - align_started) * 1000.0"
     ),
-    () => single("emb = F.relu(fc11 + fc12)"),
-    () => single("return F.normalize(emb, p=2, dim=1)"),
-    () => single("sims = emb @ self.ref_emb[device].T"),
     () => span(
-      "attempts = []",
-      'runner = ranked[1] if len(ranked) > 1 else {"label": "Unknown", "score": -1.0}'
+      "session = self.cuda_large_session if len(image_paths) >= 100 else self.cuda_session",
+      "sface_inference_ms = (time.perf_counter() - sface_started) * 1000.0"
     ),
-    () => {
-      const start = matchingLineIndex(lines, 'source = "deepid"');
-      const nextFunction = lines.findIndex((line) => /^    def detect_image\b/.test(line));
-      return { start, end: nextFunction - 1 };
-    }
+    () => span(
+      "normalized = functional.normalize(vectors.float(), dim=1)",
+      "similarities = normalized @ references[label].transpose(0, 1)"
+    ),
+    () => span(
+      "scores, indices = similarities.max(dim=1)",
+      "return torch.stack(label_scores, dim=1), torch.stack(label_matches, dim=1)"
+    )
   ];
   return ranges[stepIndex]?.() || { start: -1, end: -1 };
 }
