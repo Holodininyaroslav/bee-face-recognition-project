@@ -1268,6 +1268,7 @@ let combinedRecognitionLineCount = 0;
 let stageRecognitionLineCount = 0;
 let exactStageCodeState = "idle";
 let activeDetectorVariant = "single";
+let activeStageFiveCodeStep = -1;
 
 const cleanRuTranslations = {
   kicker: "COLAB GPU / РАСПОЗНАВАНИЕ ЛИЦ / ИНТЕРФЕЙС ПРОЕКТА",
@@ -2507,21 +2508,27 @@ Object.assign(detailUi.en, {
   cudaTitle: "How the single-image CUDA detector implements this stage",
   openFullCode: "Open exact CUDA source for this stage",
   codeSourceShort: "Short single-image CUDA sketch",
-  codeSourceFull: "Exact CUDA detector source"
+  codeSourceFull: "Exact CUDA detector source",
+  focusedCodeSource: "Exact detector source · selected operation · lines {start}–{end}",
+  focusCodeAction: "Show the exact source lines for this operation"
 });
 Object.assign(detailUi.ru, {
   cudaLabel: "Роль CUDA",
   cudaTitle: "Как этот этап реализован в одиночном CUDA-детекторе",
   openFullCode: "Открыть точный CUDA-исходник этапа",
   codeSourceShort: "Короткая схема одиночного CUDA-пути",
-  codeSourceFull: "Точный исходник CUDA-детектора"
+  codeSourceFull: "Точный исходник CUDA-детектора",
+  focusedCodeSource: "Точный исходник детектора · выбранная операция · строки {start}–{end}",
+  focusCodeAction: "Показать точные строки этой операции"
 });
 Object.assign(detailUi.he, {
   cudaLabel: "תפקיד CUDA",
   cudaTitle: "כיצד שלב זה ממומש בגלאי CUDA לתמונה יחידה",
   openFullCode: "פתיחת מקור CUDA המדויק של השלב",
   codeSourceShort: "תרשים קצר של מסלול CUDA לתמונה יחידה",
-  codeSourceFull: "מקור גלאי CUDA המדויק"
+  codeSourceFull: "מקור גלאי CUDA המדויק",
+  focusedCodeSource: "מקור הגלאי המדויק · הפעולה שנבחרה · שורות {start}–{end}",
+  focusCodeAction: "הצגת שורות המקור המדויקות של פעולה זו"
 });
 
 Object.assign(translations.en, {
@@ -4697,11 +4704,129 @@ async function toggleCombinedRecognitionSource() {
   }
 }
 
-function buildStageDiagram(labels, notes) {
+function matchingLineIndex(lines, text, occurrence = 0) {
+  let found = 0;
+  for (let index = 0; index < lines.length; index += 1) {
+    if (lines[index].trim() !== text) continue;
+    if (found === occurrence) return index;
+    found += 1;
+  }
+  return -1;
+}
+
+function stageFiveCodeRange(lines, stepIndex) {
+  const single = (text, occurrence = 0) => {
+    const index = matchingLineIndex(lines, text, occurrence);
+    return { start: index, end: index };
+  };
+  const span = (startText, endText, endOccurrence = 0) => ({
+    start: matchingLineIndex(lines, startText),
+    end: matchingLineIndex(lines, endText, endOccurrence)
+  });
+  const ranges = [
+    () => single("x = torch.stack([self._preprocess_pil(img, device) for _name, img in variants], dim=0)"),
+    () => single("x = F.relu(F.conv2d(x, self.conv1_w, self.conv1_b))"),
+    () => single("x = F.max_pool2d(x, 2, 2)", 0),
+    () => single("x = F.relu(F.conv2d(x, self.conv2_w, self.conv2_b))"),
+    () => single("x = F.max_pool2d(x, 2, 2)", 1),
+    () => single("x = F.relu(F.conv2d(x, self.conv3_w, self.conv3_b))"),
+    () => single("pool3 = F.max_pool2d(x, 2, 2)"),
+    () => span(
+      "fc11 = pool3.flatten(1) @ self.fc11_w + self.fc11_b",
+      "fc12 = conv4.flatten(1) @ self.fc12_w + self.fc12_b"
+    ),
+    () => single("emb = F.relu(fc11 + fc12)"),
+    () => single("return F.normalize(emb, p=2, dim=1)"),
+    () => single("sims = emb @ self.ref_emb[device].T"),
+    () => span(
+      "attempts = []",
+      'runner = ranked[1] if len(ranked) > 1 else {"label": "Unknown", "score": -1.0}'
+    ),
+    () => {
+      const start = matchingLineIndex(lines, 'source = "deepid"');
+      const nextFunction = lines.findIndex((line) => /^    def detect_image\b/.test(line));
+      return { start, end: nextFunction - 1 };
+    }
+  ];
+  return ranges[stepIndex]?.() || { start: -1, end: -1 };
+}
+
+function renderFocusedStageFiveSource(stepIndex, shouldScroll = true) {
+  if (!combinedRecognitionCode) return false;
+  const sourceLines = combinedRecognitionCode.split("\n");
+  const range = stageFiveCodeRange(sourceLines, stepIndex);
+  if (range.start < 0 || range.end < range.start) {
+    console.error(`Could not resolve stage 05 code range for step ${stepIndex + 1}`);
+    return false;
+  }
+
+  stageCodeMode = "full";
+  stageCode.innerHTML = "";
+  stageCode.setAttribute("dir", (document.documentElement.lang || "en") === "he" ? "rtl" : "ltr");
+  stageCode.classList.add("full-code", "focused-source");
+  stageCodeModeButton.textContent = uiText("showShortCode");
+  stageCodeSource.textContent = uiText("focusedCodeSource")
+    .replace("{start}", String(range.start + 1))
+    .replace("{end}", String(range.end + 1));
+
+  const rows = [];
+  sourceLines.forEach((line, index) => {
+    const row = document.createElement("div");
+    row.className = `code-line-note${line.trim() ? "" : " blank"}`;
+    row.dataset.sourceLine = String(index + 1);
+    const code = document.createElement("code");
+    code.textContent = line || " ";
+    const note = document.createElement("span");
+    note.className = "code-note";
+    note.textContent = contextualSingleSourceAnnotation(sourceLines, index);
+    row.append(code, note);
+    if (index >= range.start && index <= range.end) row.classList.add("code-focus");
+    if (index === range.start) row.classList.add("code-focus-start");
+    if (index === range.end) row.classList.add("code-focus-end");
+    rows.push(row);
+    stageCode.appendChild(row);
+  });
+
+  activeStageFiveCodeStep = stepIndex;
+  document.querySelectorAll(".diagram-node.code-linked").forEach((node) => {
+    const selected = Number(node.dataset.codeStep) === stepIndex;
+    node.classList.toggle("code-active", selected);
+    node.setAttribute("aria-pressed", selected ? "true" : "false");
+  });
+
+  const firstRow = rows[range.start];
+  if (firstRow) {
+    requestAnimationFrame(() => {
+      stageCode.scrollTop = Math.max(0, firstRow.offsetTop - stageCode.offsetTop - 18);
+      if (shouldScroll) stageCode.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
+  return true;
+}
+
+async function focusStageFiveCode(stepIndex, shouldScroll = true) {
+  const ready = await ensureExactStageCode();
+  if (currentStageIndex < 0 || stageDetails[currentStageIndex]?.level !== "05") return;
+  if (!ready || !renderFocusedStageFiveSource(stepIndex, shouldScroll)) {
+    stageCodeSource.textContent = uiText("fullStageError");
+  }
+}
+
+function buildStageDiagram(labels, notes, data) {
   stageDiagram.innerHTML = "";
   labels.forEach((label, index) => {
-    const node = document.createElement("div");
+    const codeLinked = data?.level === "05" && activeDetectorVariant === "single";
+    const node = document.createElement(codeLinked ? "button" : "div");
     node.className = "diagram-node";
+    if (codeLinked) {
+      node.type = "button";
+      node.classList.add("code-linked");
+      node.dataset.codeStep = String(index);
+      node.setAttribute("aria-pressed", activeStageFiveCodeStep === index ? "true" : "false");
+      node.setAttribute("aria-label", `${label}. ${uiText("focusCodeAction")}`);
+      node.title = uiText("focusCodeAction");
+      node.addEventListener("click", () => focusStageFiveCode(index));
+    }
     const title = document.createElement("strong");
     title.textContent = label;
     const note = document.createElement("p");
@@ -4726,7 +4851,9 @@ function detectorDiagramNotes(data, labels) {
 
 function renderStageDetail(index, shouldScroll = true) {
   const total = stageDetails.length;
+  const previousStageIndex = currentStageIndex;
   currentStageIndex = (index + total) % total;
+  if (previousStageIndex !== currentStageIndex) activeStageFiveCodeStep = -1;
   const data = stageDetails[currentStageIndex];
   stageDetailKicker.textContent = `${uiText("stageLabel")} ${data.level}`;
   stageDetailTitle.textContent = localized(data.title);
@@ -4743,17 +4870,21 @@ function renderStageDetail(index, shouldScroll = true) {
     });
   }
   const diagramLabels = localized(data.diagram);
-  buildStageDiagram(diagramLabels, detectorDiagramNotes(data, diagramLabels));
+  buildStageDiagram(diagramLabels, detectorDiagramNotes(data, diagramLabels), data);
   stageDetail.classList.remove("hidden");
   document.querySelectorAll(".pipeline-step").forEach((step) => {
     step.classList.toggle("active", Number(step.dataset.stage) === currentStageIndex);
   });
+  if (data.level === "05" && activeStageFiveCodeStep >= 0) {
+    focusStageFiveCode(activeStageFiveCodeStep, false);
+  }
   if (shouldScroll) stageDetail.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function hideStageDetail() {
   if (!stageDetail) return;
   currentStageIndex = -1;
+  activeStageFiveCodeStep = -1;
   stageDetail.classList.add("hidden");
   document.querySelectorAll(".pipeline-step").forEach((step) => step.classList.remove("active"));
 }
@@ -4891,6 +5022,7 @@ document.querySelectorAll(".pipeline-step").forEach((step) => {
 stagePrev.addEventListener("click", () => renderStageDetail(currentStageIndex - 1));
 stageNext.addEventListener("click", () => renderStageDetail(currentStageIndex + 1));
 stageCodeModeButton?.addEventListener("click", () => {
+  activeStageFiveCodeStep = -1;
   stageCodeMode = stageCodeMode === "full" ? "short" : "full";
   if (currentStageIndex >= 0) renderStageDetail(currentStageIndex, false);
 });
