@@ -3789,6 +3789,293 @@ function patternCodeAnnotation(line) {
   return sourceLineAnnotation(trimmed, lang);
 }
 
+function contextualSingleSourceAnnotation(lines, index) {
+  const lang = document.documentElement.lang || "en";
+  const text = lines[index].trim();
+  const say = (en, ru, he) => repairLocalizedText(lang === "ru" ? ru : lang === "he" ? he : en);
+  const occurrence = lines.slice(0, index + 1).filter((line) => line.trim() === text).length;
+  const previous = [...lines.slice(0, index)].reverse().find((line) => line.trim())?.trim() || "module start";
+  const next = lines.slice(index + 1).find((line) => line.trim())?.trim() || "module end";
+
+  if (!text) {
+    const previousIsBlank = index > 0 && !lines[index - 1].trim();
+    const nextIsBlank = index + 1 < lines.length && !lines[index + 1].trim();
+    if (nextIsBlank) {
+      return say(
+        `First of the two blank lines separating the completed top-level section ending with \`${previous}\` from the next definition \`${next}\`; it improves source structure and executes no Python instruction.`,
+        `Первая из двух пустых строк, отделяющих завершённый верхнеуровневый раздел после \`${previous}\` от следующего определения \`${next}\`; она структурирует исходник и не выполняет команду Python.`,
+        `השורה הראשונה מתוך שתי שורות ריקות שמפרידות בין המקטע העליון שהסתיים ב־\`${previous}\` לבין ההגדרה הבאה \`${next}\`; היא מסדרת את קוד המקור ואינה מבצעת פקודת Python.`
+      );
+    }
+    if (previousIsBlank) {
+      return say(
+        `Second of the two blank lines before the top-level definition \`${next}\`; together they mark a top-level boundary and execute no Python instruction.`,
+        `Вторая из двух пустых строк перед верхнеуровневым определением \`${next}\`; вместе они обозначают границу раздела и не выполняют команду Python.`,
+        `השורה השנייה מתוך שתי שורות ריקות לפני ההגדרה העליונה \`${next}\`; יחד הן מסמנות גבול בין מקטעים ואינן מבצעות פקודת Python.`
+      );
+    }
+    return say(
+      `Separates the completed statement \`${previous}\` from the next source section beginning with \`${next}\`; Python executes no instruction on this blank line.`,
+      `Отделяет завершённую команду \`${previous}\` от следующего фрагмента, начинающегося с \`${next}\`; на пустой строке Python ничего не выполняет.`,
+      `מפרידה בין הפקודה שהושלמה \`${previous}\` לבין המקטע הבא שמתחיל ב־\`${next}\`; Python אינה מבצעת הוראה בשורה הריקה.`
+    );
+  }
+
+  const key = `${text}#${occurrence}`;
+  const exact = {
+    "torch, _, _ = self._ensure_torch()#1": [
+      "Loads the cached PyTorch runtime for _device_name; this method needs torch.cuda availability checks but not the returned nn or functional helpers.",
+      "Получает кэшированную среду PyTorch для `_device_name`: здесь нужен `torch` для проверки CUDA, а возвращённые `nn` и `F` не используются.",
+      "מקבלת את סביבת PyTorch מהמטמון עבור `_device_name`; המתודה צריכה את `torch` לבדיקת CUDA ואינה משתמשת ב־`nn` וב־`F` שהוחזרו."
+    ],
+    "torch, _, _ = self._ensure_torch()#2": [
+      "Loads PyTorch for _preprocess_pil so the normalized NumPy array can be wrapped as a tensor and moved to the requested CPU or CUDA device.",
+      "Получает PyTorch для `_preprocess_pil`, чтобы обернуть нормализованный массив NumPy в тензор и перенести его на выбранный CPU или CUDA.",
+      "מקבלת את PyTorch עבור `_preprocess_pil`, כדי לעטוף את מערך NumPy המנורמל כטנזור ולהעבירו ל־CPU או ל־CUDA שנבחרו."
+    ],
+    "torch, _, _ = self._ensure_torch()#3": [
+      "Loads PyTorch for load_references, where reference tensors are stacked, embedded and—on CUDA—synchronized before being cached.",
+      "Получает PyTorch для `load_references`, где тензоры эталонов объединяются, проходят модель и при CUDA синхронизируются перед кэшированием.",
+      "מקבלת את PyTorch עבור `load_references`, שבה טנזורי הייחוס נערמים, עוברים במודל וב־CUDA מסונכרנים לפני השמירה במטמון."
+    ],
+    "torch, _, _ = self._ensure_torch()#4": [
+      "Loads PyTorch for _embed_variants so all crops of this one screenshot can be stacked into one V×3×55×47 tensor.",
+      "Получает PyTorch для `_embed_variants`, чтобы объединить все обрезки одного скриншота в тензор `V×3×55×47`.",
+      "מקבלת את PyTorch עבור `_embed_variants`, כדי לערום את כל החיתוכים של צילום מסך יחיד לטנזור `V×3×55×47`."
+    ],
+    "torch, _, _ = self._ensure_torch()#5": [
+      "Loads PyTorch for detect_image so it can synchronize asynchronous CUDA work before the single-image timer is stopped.",
+      "Получает PyTorch для `detect_image`, чтобы синхронизировать асинхронную работу CUDA до остановки таймера одного изображения.",
+      "מקבלת את PyTorch עבור `detect_image`, כדי לסנכרן עבודת CUDA אסינכרונית לפני עצירת מדידת הזמן של התמונה היחידה."
+    ],
+    "off += 4#1": [
+      "Advances the binary-file cursor by four bytes after reading the uint32 record count from the weight-file header.",
+      "Сдвигает позицию в бинарном файле на 4 байта после чтения `uint32` — количества записей весов в заголовке.",
+      "מקדמת את הסמן בקובץ הבינרי בארבעה בתים לאחר קריאת מספר רשומות המשקלים מסוג `uint32` מן הכותרת."
+    ],
+    "off += 4#2": [
+      "Advances the binary-file cursor by four bytes after reading this record's uint32 tensor-name length.",
+      "Сдвигает позицию на 4 байта после чтения `uint32` — длины имени тензора текущей записи.",
+      "מקדמת את הסמן בארבעה בתים לאחר קריאת אורך שם הטנזור של הרשומה הנוכחית מסוג `uint32`."
+    ],
+    "off += 4#3": [
+      "Advances the binary-file cursor by four bytes after reading this record's uint32 number of float32 tensor elements.",
+      "Сдвигает позицию на 4 байта после чтения `uint32` — количества элементов `float32` в текущем тензоре.",
+      "מקדמת את הסמן בארבעה בתים לאחר קריאת מספר איברי `float32` בטנזור הנוכחי מסוג `uint32`."
+    ],
+    "return torch.tensor(w[name]).contiguous()#1": [
+      "The nested bias helper converts the selected one-dimensional bias array to a contiguous PyTorch tensor without changing its order.",
+      "Вложенная функция `bias` превращает выбранный одномерный массив смещений в непрерывный тензор PyTorch, не меняя порядок элементов.",
+      "פונקציית העזר `bias` ממירה את מערך ההטיות החד־ממדי שנבחר לטנזור PyTorch רציף בלי לשנות את סדר האיברים."
+    ],
+    "return torch.tensor(w[name]).contiguous()#2": [
+      "The nested dense_weight helper converts the selected fully-connected weight matrix to contiguous PyTorch storage; unlike convolution weights, no axis permutation is required.",
+      "Вложенная функция `dense_weight` преобразует матрицу весов полносвязного слоя в непрерывный тензор PyTorch; в отличие от свёрточных весов перестановка осей не нужна.",
+      "פונקציית העזר `dense_weight` ממירה את מטריצת משקלי השכבה המלאה לאחסון PyTorch רציף; בניגוד למשקלי convolution אין צורך בשינוי סדר הצירים."
+    ],
+    "x = F.max_pool2d(x, 2, 2)#1": [
+      "Applies the first non-overlapping 2×2 max-pool: each Conv1 channel shrinks from 52×44 to 26×22, producing [V,20,26,22].",
+      "Выполняет первый `max-pool 2×2` без перекрытия: каждый канал Conv1 уменьшается с `52×44` до `26×22`, результат — `[V,20,26,22]`.",
+      "מבצעת max-pool ראשון של `2×2` ללא חפיפה: כל ערוץ Conv1 קטן מ־`52×44` ל־`26×22`, והתוצאה היא `[V,20,26,22]`."
+    ],
+    "x = F.max_pool2d(x, 2, 2)#2": [
+      "Applies the second non-overlapping 2×2 max-pool: each Conv2 channel shrinks from 24×20 to 12×10, producing [V,40,12,10].",
+      "Выполняет второй `max-pool 2×2` без перекрытия: каждый канал Conv2 уменьшается с `24×20` до `12×10`, результат — `[V,40,12,10]`.",
+      "מבצעת max-pool שני של `2×2` ללא חפיפה: כל ערוץ Conv2 קטן מ־`24×20` ל־`12×10`, והתוצאה היא `[V,40,12,10]`."
+    ],
+    "model, device = self._model(mode)#1": [
+      "Obtains the DeepID model and actual device for one-time reference initialization; cached reference embeddings are stored under that device name.",
+      "Получает модель DeepID и фактическое устройство для одноразовой инициализации эталонов; готовые эталонные векторы кэшируются под именем этого устройства.",
+      "מקבלת את מודל DeepID ואת ההתקן בפועל לאתחול החד־פעמי של הייחוסים; embeddings הייחוס נשמרים במטמון תחת שם התקן זה."
+    ],
+    "model, device = self._model(mode)#2": [
+      "Obtains the DeepID model and actual device for embedding the V crops derived from the current single screenshot.",
+      "Получает модель DeepID и фактическое устройство для вычисления векторов `V` обрезок текущего единственного скриншота.",
+      "מקבלת את מודל DeepID ואת ההתקן בפועל לחישוב embeddings של `V` החיתוכים שנגזרו מצילום המסך היחיד הנוכחי."
+    ],
+    "with torch.inference_mode():#1": [
+      "Disables gradient tracking while the one-time reference-photo tensor is passed through DeepID; no training occurs.",
+      "Отключает вычисление градиентов на время одноразового прохода тензора эталонных фотографий через DeepID; обучение не выполняется.",
+      "מכבה מעקב אחר גרדיאנטים בזמן המעבר החד־פעמי של טנזור תמונות הייחוס דרך DeepID; לא מתבצע אימון."
+    ],
+    "with torch.inference_mode():#2": [
+      "Disables gradient tracking while DeepID embeds the V crops of the current screenshot; this is inference only.",
+      "Отключает вычисление градиентов, пока DeepID получает векторы `V` обрезок текущего скриншота; это только инференс.",
+      "מכבה מעקב אחר גרדיאנטים בזמן ש־DeepID מפיק embeddings עבור `V` חיתוכי צילום המסך הנוכחי; זו הסקה בלבד."
+    ],
+    "emb = model(x).detach()#1": [
+      "Runs all reference-photo tensors through DeepID once and detaches the resulting N×160 reference matrix before caching it.",
+      "Один раз пропускает все тензоры эталонных фотографий через DeepID и отделяет полученную матрицу `N×160` перед кэшированием.",
+      "מעבירה פעם אחת את כל טנזורי תמונות הייחוס דרך DeepID ומנתקת את מטריצת הייחוס `N×160` שהתקבלה לפני שמירתה במטמון."
+    ],
+    "emb = model(x).detach()#2": [
+      "Runs the V crops of the current screenshot through DeepID in one tensor call and detaches the resulting V×160 embedding matrix.",
+      "Одним тензорным вызовом пропускает `V` обрезок текущего скриншота через DeepID и отделяет полученную матрицу векторов `V×160`.",
+      "מעבירה את `V` חיתוכי צילום המסך הנוכחי דרך DeepID בקריאת טנזור אחת ומנתקת את מטריצת ה־embedding בגודל `V×160`."
+    ],
+    "if device == \"cuda\":#1": [
+      "Checks whether reference initialization ran on CUDA; only then must the queued GPU work be synchronized before its embeddings are cached.",
+      "Проверяет, выполнялась ли инициализация эталонов на CUDA; только тогда нужно дождаться GPU перед кэшированием векторов.",
+      "בודקת האם אתחול הייחוסים רץ ב־CUDA; רק אז יש לסנכרן את עבודת ה־GPU שבתור לפני שמירת ה־embeddings במטמון."
+    ],
+    "if device == \"cuda\":#2": [
+      "Checks whether this single-image recognition used CUDA; only that asynchronous path needs synchronization before the elapsed time is calculated.",
+      "Проверяет, использовало ли распознавание одного изображения CUDA; только этот асинхронный путь нужно синхронизировать перед вычислением времени.",
+      "בודקת האם זיהוי התמונה היחידה השתמש ב־CUDA; רק מסלול אסינכרוני זה דורש סנכרון לפני חישוב הזמן שחלף."
+    ],
+    "torch.cuda.synchronize()#1": [
+      "Waits for the CUDA kernels that embedded all reference photos to finish before the N×160 matrix is cached.",
+      "Ждёт завершения CUDA-ядер, вычисляющих векторы всех эталонных фотографий, прежде чем кэшировать матрицу `N×160`.",
+      "ממתינה לסיום קרנלי CUDA שחישבו embeddings לכל תמונות הייחוס לפני שמירת מטריצת `N×160` במטמון."
+    ],
+    "torch.cuda.synchronize()#2": [
+      "Waits for this screenshot's CUDA embedding and similarity kernels before stopping the timer, so elapsed_ms includes the real GPU work.",
+      "Ждёт CUDA-ядер векторизации и сравнения текущего скриншота до остановки таймера, поэтому `elapsed_ms` включает реальную работу GPU.",
+      "ממתינה לקרנלי CUDA של ה־embedding וההשוואה עבור צילום המסך הנוכחי לפני עצירת הטיימר, ולכן `elapsed_ms` כולל את עבודת ה־GPU בפועל."
+    ],
+    "best_by_label: dict[str, dict[str, Any]] = {}#1": [
+      "Creates a per-crop table that will retain only the highest-scoring reference photograph for each known person.",
+      "Создаёт таблицу для текущей обрезки, в которой останется только эталонная фотография с максимальной оценкой для каждого человека.",
+      "יוצרת טבלה עבור החיתוך הנוכחי שתשמור רק את תמונת הייחוס בעלת הציון הגבוה ביותר לכל אדם מוכר."
+    ],
+    "best_by_label: dict[str, dict[str, Any]] = {}#2": [
+      "Creates the final cross-crop table that will retain each person's highest score across all variants of this one screenshot.",
+      "Создаёт итоговую таблицу между обрезками, где для каждого человека останется максимальная оценка среди всех вариантов одного скриншота.",
+      "יוצרת את הטבלה הסופית בין החיתוכים, שתשמור לכל אדם את הציון הגבוה ביותר מכל גרסאות צילום המסך היחיד."
+    ],
+    "return {#1": [
+      "Begins the early result dictionary returned when no identity candidates were produced; the following fields explicitly describe rejection and Unknown.",
+      "Начинает словарь досрочного результата, возвращаемый при отсутствии кандидатов; следующие поля явно задают отказ и `Unknown`.",
+      "מתחילה את מילון התוצאה המוקדמת שמוחזר כאשר לא הופקו מועמדים; השדות הבאים מציינים במפורש דחייה ו־`Unknown`."
+    ],
+    "return {#2": [
+      "Begins the normal final result dictionary after ranking, optional scene tie-break and threshold checks have completed.",
+      "Начинает обычный итоговый словарь после ранжирования, разрешённого tie-break сцены и проверки порогов.",
+      "מתחילה את מילון התוצאה הסופי הרגיל לאחר שהדירוג, שובר השוויון המותר של הסצנה ובדיקות הסף הושלמו."
+    ],
+    "\"image\": str(image_path),#1": [
+      "Stores the requested screenshot path in the early Unknown result so the rejected input remains identifiable.",
+      "Сохраняет путь запрошенного скриншота в досрочном результате `Unknown`, чтобы отклонённый вход можно было определить.",
+      "שומרת את נתיב צילום המסך שהתבקש בתוצאת `Unknown` המוקדמת, כדי שניתן יהיה לזהות את הקלט שנדחה."
+    ],
+    "\"image\": str(image_path),#2": [
+      "Stores the requested screenshot path in the completed recognition result for traceability.",
+      "Сохраняет путь запрошенного скриншота в завершённом результате распознавания для отслеживания.",
+      "שומרת את נתיב צילום המסך שהתבקש בתוצאת הזיהוי שהושלמה לצורך מעקב."
+    ],
+    "\"device\": device,#1": [
+      "Records the actual CPU or CUDA device in the early Unknown result; it reports where inference really ran.",
+      "Записывает фактическое устройство CPU или CUDA в досрочный результат `Unknown`; поле показывает, где реально выполнялся инференс.",
+      "מתעדת את התקן ה־CPU או CUDA בפועל בתוצאת `Unknown` המוקדמת; השדה מדווח היכן ההסקה באמת רצה."
+    ],
+    "\"device\": device,#2": [
+      "Records the actual CPU or CUDA device in the completed result so the backend is not inferred merely from the requested mode.",
+      "Записывает фактическое устройство CPU или CUDA в итоговый результат, чтобы backend определялся не только по запрошенному режиму.",
+      "מתעדת את התקן ה־CPU או CUDA בפועל בתוצאה הסופית, כך שה־backend אינו מוסק רק מן המצב שהתבקש."
+    ],
+    "img = Image.open(path).convert(\"RGB\")#1": [
+      "Opens the one screenshot path passed to _variants and converts its pixels to RGB before the full-frame and centered-crop variants are created.",
+      "Открывает единственный скриншот, переданный в `_variants`, и переводит пиксели в RGB до создания полного кадра и центральных обрезок.",
+      "פותחת את נתיב צילום המסך היחיד שהועבר ל־`_variants` וממירה את הפיקסלים ל־RGB לפני יצירת הפריים המלא והחיתוכים המרכזיים."
+    ],
+    "tensors.append(self._preprocess_pil(Image.open(path), device))#1": [
+      "Opens the current known-person reference photograph, preprocesses it for the selected device, and appends its 3×55×47 tensor to the one-time reference list.",
+      "Открывает текущую эталонную фотографию известного человека, подготавливает её для выбранного устройства и добавляет тензор `3×55×47` в одноразовый список эталонов.",
+      "פותחת את תמונת הייחוס הנוכחית של אדם מוכר, מעבדת אותה עבור ההתקן שנבחר ומוסיפה את הטנזור `3×55×47` לרשימת הייחוסים החד־פעמית."
+    ]
+  }[key];
+  if (exact) return say(exact[0], exact[1], exact[2]);
+
+  const conditionMeaning = {
+    "if not folder.exists():": ["Tests whether the candidate reference folder is absent; when it is, _image_paths returns an empty list instead of trying to enumerate it.", "Проверяет отсутствие папки с возможными эталонами; если папки нет, `_image_paths` возвращает пустой список и не пытается читать её.", "בודקת אם תיקיית הייחוס האפשרית אינה קיימת; אם אינה קיימת, `_image_paths` מחזירה רשימה ריקה ואינה מנסה לסרוק אותה."],
+    "if self._torch is not None:": ["Checks whether PyTorch, torch.nn and torch.nn.functional were already imported and cached; if so, the method reuses them without importing again.", "Проверяет, были ли PyTorch, `torch.nn` и `torch.nn.functional` уже импортированы и закэшированы; если да, повторный импорт не выполняется.", "בודקת אם PyTorch,‏ `torch.nn` ו־`torch.nn.functional` כבר יובאו ונשמרו במטמון; אם כן, נעשה בהם שימוש חוזר ללא ייבוא נוסף."],
+    "if mode.lower() in (\"gpu\", \"cuda\") and torch.cuda.is_available():": ["Selects CUDA only when the caller requested GPU/CUDA and PyTorch confirms a usable CUDA device; both requirements must be true.", "Выбирает CUDA только когда вызывающий код запросил GPU/CUDA и PyTorch подтвердил рабочее CUDA-устройство; должны выполняться оба условия.", "בוחרת CUDA רק כאשר הקוד הקורא ביקש GPU/CUDA וגם PyTorch אישר התקן CUDA שמיש; שני התנאים חייבים להתקיים."],
+    "if mode.lower() in (\"cpu\",):": ["Recognizes an explicit CPU request and returns the CPU backend even if CUDA is available.", "Распознаёт явный запрос режима CPU и выбирает процессор, даже если CUDA доступна.", "מזהה בקשה מפורשת למצב CPU ובוחרת במעבד גם כאשר CUDA זמינה."],
+    "if self._weights is not None:": ["Checks whether the binary DeepID weights have already been parsed; when cached, it returns them and avoids rereading the file.", "Проверяет, были ли бинарные веса DeepID уже разобраны; при наличии кэша возвращает их без повторного чтения файла.", "בודקת אם משקלי DeepID הבינריים כבר נותחו; כאשר הם במטמון היא מחזירה אותם בלי לקרוא שוב את הקובץ."],
+    "if magic != b\"DIDW1\\0\\0\\0\":" : ["Validates the first eight bytes of the weight file against the DIDW1 signature; a mismatch means this is not the expected DeepID weight format.", "Сравнивает первые восемь байтов файла весов с сигнатурой `DIDW1`; несовпадение означает неверный формат весов DeepID.", "מאמתת את שמונת הבתים הראשונים של קובץ המשקלים מול חתימת `DIDW1`; אי־התאמה פירושה שזה אינו פורמט משקלי DeepID הצפוי."],
+    "if device in self.models:": ["Checks the model cache by actual device name; an existing CPU or CUDA model is returned instead of rebuilding and transferring all weights.", "Проверяет кэш моделей по фактическому устройству; готовая CPU- или CUDA-модель возвращается без повторной сборки и переноса весов.", "בודקת את מטמון המודלים לפי שם ההתקן בפועל; מודל CPU או CUDA קיים מוחזר בלי לבנות ולהעביר שוב את כל המשקלים."],
+    "if side < 60:": ["Rejects a centered crop whose calculated side is below 60 source pixels, because that crop would contain too little facial detail before resizing.", "Отбрасывает центральную обрезку со стороной меньше 60 исходных пикселей: до масштабирования в ней будет слишком мало деталей лица.", "דוחה חיתוך מרכזי שאורך צלעו המחושב קטן מ־60 פיקסלים מקוריים, משום שיהיו בו מעט מדי פרטי פנים לפני שינוי הגודל."],
+    "if device in self.ref_emb:": ["Checks whether the normalized reference matrix for this exact CPU or CUDA device is already cached; if so, one-time initialization ends immediately.", "Проверяет, закэширована ли нормализованная матрица эталонов именно для этого CPU или CUDA; если да, одноразовая инициализация сразу завершается.", "בודקת אם מטריצת הייחוס המנורמלת כבר שמורה במטמון עבור התקן CPU או CUDA זה; אם כן, האתחול החד־פעמי מסתיים מיד."],
+    "if not self.ref_items:": ["Builds the reference-file list only while it is empty; later calls reuse the label/path pairs already discovered.", "Формирует список файлов эталонов только пока он пуст; последующие вызовы используют уже найденные пары имя/путь.", "בונה את רשימת קובצי הייחוס רק כל עוד היא ריקה; קריאות מאוחרות משתמשות בזוגות התווית/נתיב שכבר נמצאו."],
+    "if key in seen_paths:": ["Detects that the resolved reference path was already found through another allowed folder and skips adding the same photograph twice.", "Определяет, что абсолютный путь эталона уже найден через другую допустимую папку, и не добавляет одну фотографию дважды.", "מזהה שנתיב הייחוס המוחלט כבר נמצא דרך תיקייה מותרת אחרת ומונעת הוספה כפולה של אותה תמונה."],
+    "if not items:": ["Stops initialization with FileNotFoundError when none of the Adi, Faraj or Slava reference folders supplied any image.", "Останавливает инициализацию с `FileNotFoundError`, если ни в одной папке Ади, Фараджа или Славы не найдено изображений.", "עוצרת את האתחול עם `FileNotFoundError` אם אף תיקיית ייחוס של Adi, Faraj או Slava לא סיפקה תמונה."],
+    "if score > best_by_label.get(label, {}).get(\"score\", -1.0):": ["For the current screenshot crop, replaces a person's saved candidate only when this reference photograph has a higher cosine score than that person's previous reference.", "Для текущей обрезки скриншота заменяет сохранённого кандидата человека только если эта эталонная фотография дала большее косинусное сходство.", "עבור חיתוך צילום המסך הנוכחי, מחליפה מועמד שמור של אדם רק אם תמונת ייחוס זו קיבלה ציון cosine גבוה יותר מן הייחוס הקודם שלו."],
+    "if attempt[\"score\"] > best_by_label.get(label, {}).get(\"score\", -1.0):": ["Across all crops of this screenshot, retains this attempt only when it improves the saved best score for the same person.", "Среди всех обрезок одного скриншота сохраняет текущую попытку только если она улучшает максимальную оценку того же человека.", "בכל חיתוכי צילום המסך, שומרת ניסיון זה רק כאשר הוא משפר את הציון המיטבי שנשמר לאותו אדם."],
+    "if not ranked:": ["Handles the defensive case where no person produced any candidate after comparison; the method returns a rejected Unknown result.", "Обрабатывает защитный случай, когда после сравнения нет ни одного кандидата; метод возвращает отклонённый результат `Unknown`.", "מטפלת במקרה ההגנתי שבו אף אדם לא הפיק מועמד לאחר ההשוואה; המתודה מחזירה תוצאת `Unknown` שנדחתה."],
+    "if scene_hint in best_by_label:": ["Uses the simulator hint only when that hinted identity also has a genuine DeepID candidate score; an arbitrary missing identity cannot be injected.", "Рассматривает подсказку симулятора только если у подсказанного имени есть реальная оценка DeepID; отсутствующее имя нельзя подставить произвольно.", "משתמשת ברמז הסימולטור רק כאשר לזהות המרומזת יש גם ציון מועמד אמיתי של DeepID; אי אפשר להזריק זהות חסרה באופן שרירותי."],
+    "if hint[\"score\"] >= self.min_score and (best[\"label\"] == scene_hint or best[\"score\"] - hint[\"score\"] <= 0.06):": ["Allows the scene hint only if its own score reaches min_score and it either already won or trails the DeepID winner by at most 0.06; otherwise the ranking is untouched.", "Разрешает подсказку сцены только если её оценка достигла `min_score` и она уже победила либо отстаёт от победителя DeepID не более чем на `0,06`; иначе ранжирование не меняется.", "מאפשרת את רמז הסצנה רק אם ציונו מגיע ל־`min_score` והוא כבר ניצח או מפגר אחרי מנצח DeepID בלא יותר מ־`0.06`; אחרת הדירוג אינו משתנה."]
+  }[text];
+  if (conditionMeaning) return say(conditionMeaning[0], conditionMeaning[1], conditionMeaning[2]);
+
+  const fieldMeaning = {
+    "\"label\": label,": ["Stores the known person's label in this per-reference candidate object.", "Записывает имя известного человека в объект кандидата для текущего эталона.", "שומרת את תווית האדם המוכר באובייקט המועמד של הייחוס הנוכחי."],
+    "\"score\": score,": ["Stores this crop/reference cosine similarity as the candidate score used for later ranking.", "Записывает косинусное сходство текущей пары обрезка/эталон как оценку кандидата для дальнейшего ранжирования.", "שומרת את דמיון ה־cosine של זוג החיתוך/ייחוס הנוכחי כציון המועמד לדירוג בהמשך."],
+    "\"variant\": variant_name,": ["Records which full-frame or centered-crop variant produced this candidate score.", "Записывает, какой вариант — полный кадр или конкретная центральная обрезка — дал эту оценку.", "מתעדת איזו גרסה — פריים מלא או חיתוך מרכזי מסוים — הפיקה את הציון הזה."],
+    "\"best_score\": round(float(best[\"score\"]), 6),": ["Returns the winner's cosine score rounded to six decimal places for stable JSON display.", "Возвращает косинусную оценку победителя, округлённую до шести знаков для стабильного отображения в JSON.", "מחזירה את ציון ה־cosine של המנצח מעוגל לשש ספרות לצורך תצוגת JSON יציבה."],
+    "\"runner_up_label\": runner.get(\"label\", \"Unknown\"),": ["Returns the second-place identity, or Unknown when no runner-up label exists.", "Возвращает имя второго места либо `Unknown`, если второго кандидата нет.", "מחזירה את זהות המקום השני, או `Unknown` כאשר אין תווית למועמד שני."],
+    "\"runner_up_score\": round(float(runner.get(\"score\", -1.0)), 6),": ["Returns the runner-up score rounded to six decimals, using −1.0 only when no runner-up exists.", "Возвращает оценку второго места с округлением до шести знаков; `−1,0` используется только при отсутствии второго кандидата.", "מחזירה את ציון המקום השני מעוגל לשש ספרות, ומשתמשת ב־`−1.0` רק כאשר אין מועמד שני."],
+    "\"margin\": round(margin, 6),": ["Returns the confidence margin—winner score minus runner-up score—rounded to six decimals.", "Возвращает отрыв уверенности — оценка победителя минус оценка второго места — с округлением до шести знаков.", "מחזירה את פער הביטחון — ציון המנצח פחות ציון המקום השני — מעוגל לשש ספרות."],
+    "\"best_variant\": best.get(\"variant\", \"none\"),": ["Reports which crop of the single screenshot produced the accepted or highest-ranked score; none is the defensive fallback.", "Сообщает, какая обрезка одного скриншота дала принятую или максимальную оценку; `none` — защитное значение.", "מדווחת איזה חיתוך של צילום המסך היחיד הפיק את הציון שהתקבל או דורג ראשון; `none` הוא ערך גיבוי."],
+    "\"source\": source,": ["Reports whether the winner came directly from DeepID ranking or from the restricted scene_hint_tiebreak path.", "Сообщает, выбран ли победитель непосредственно ранжированием DeepID или ограниченным механизмом `scene_hint_tiebreak`.", "מדווחת האם המנצח הגיע ישירות מדירוג DeepID או ממסלול `scene_hint_tiebreak` המוגבל."]
+  }[text];
+  if (fieldMeaning) return say(fieldMeaning[0], fieldMeaning[1], fieldMeaning[2]);
+
+  const storageMeaning = {
+    "self.models[device] = model": ["Caches the fully built and evaluation-mode DeepID model under its actual device name so later CPU and CUDA requests reuse the correct separate instance.", "Кэширует полностью собранную модель DeepID в режиме оценки под именем фактического устройства, чтобы CPU- и CUDA-запросы повторно использовали свои отдельные экземпляры.", "שומרת במטמון את מודל DeepID הבנוי במלואו ובמצב evaluation תחת שם ההתקן בפועל, כדי שבקשות CPU ו־CUDA ישתמשו מחדש במופעים הנפרדים המתאימים."],
+    "self.ref_emb[device] = emb": ["Caches the normalized N×160 reference-embedding matrix on the same CPU or CUDA device used to compute it.", "Кэширует нормализованную матрицу эталонных векторов `N×160` на том же CPU или CUDA, где она была вычислена.", "שומרת במטמון את מטריצת embeddings הייחוס המנורמלת `N×160` באותו התקן CPU או CUDA שבו חושבה."],
+    "best_by_label[label] = {": ["Begins replacing this person's per-crop candidate with a dictionary describing the newly higher-scoring reference match.", "Начинает замену кандидата этого человека для текущей обрезки словарём, описывающим новое эталонное совпадение с большей оценкой.", "מתחילה להחליף את מועמד האדם עבור החיתוך הנוכחי במילון המתאר התאמת ייחוס חדשה בעלת ציון גבוה יותר."],
+    "best_by_label[label] = attempt": ["Replaces this person's cross-crop winner with the current attempt because the preceding condition proved its score is higher.", "Заменяет лучший результат человека среди обрезок текущей попыткой, поскольку предыдущее условие подтвердило более высокую оценку.", "מחליפה את התוצאה המיטבית של האדם בין החיתוכים בניסיון הנוכחי, משום שהתנאי הקודם הוכיח שציונו גבוה יותר."]
+  }[text];
+  if (storageMeaning) return say(storageMeaning[0], storageMeaning[1], storageMeaning[2]);
+
+  const returnMeaning = {
+    "return self._torch, self._nn, self._F": ["Returns the already cached PyTorch module, neural-layer namespace and functional API, avoiding another import.", "Возвращает уже закэшированные модуль PyTorch, пространство нейросетевых слоёв и функциональный API без повторного импорта.", "מחזירה את מודול PyTorch, מרחב השמות של שכבות הרשת וה־API הפונקציונלי שכבר נשמרו במטמון, ללא ייבוא נוסף."],
+    "return torch, nn, F": ["Returns the newly imported PyTorch module, torch.nn namespace and functional API after saving the same three objects in the detector cache.", "Возвращает только что импортированные PyTorch, `torch.nn` и функциональный API после сохранения этих же объектов в кэше детектора.", "מחזירה את מודול PyTorch, מרחב `torch.nn` וה־API הפונקציונלי שיובאו כעת, לאחר שמירת אותם שלושה אובייקטים במטמון הגלאי."],
+    "return \"cuda\"": ["Reports CUDA as the actual execution device because GPU/CUDA was requested and availability was confirmed.", "Возвращает CUDA как фактическое устройство выполнения, поскольку режим GPU/CUDA запрошен и его доступность подтверждена.", "מחזירה CUDA כהתקן הביצוע בפועל, משום שהתבקש מצב GPU/CUDA וזמינותו אושרה."],
+    "return \"cpu\"": ["Reports CPU as the actual execution device because the caller explicitly requested processor execution.", "Возвращает CPU как фактическое устройство выполнения, поскольку вызывающий код явно запросил процессорный режим.", "מחזירה CPU כהתקן הביצוע בפועל, משום שהקוד הקורא ביקש במפורש הרצה במעבד."],
+    "return \"cuda\" if torch.cuda.is_available() else \"cpu\"": ["Implements automatic selection: returns CUDA when PyTorch sees a usable CUDA device, otherwise returns CPU.", "Реализует автоматический выбор: возвращает CUDA при наличии доступного CUDA-устройства в PyTorch, иначе CPU.", "מממשת בחירה אוטומטית: מחזירה CUDA כאשר PyTorch מזהה התקן CUDA שמיש, אחרת CPU."],
+    "return self._weights": ["Returns the previously parsed tensor dictionary from memory, skipping binary-file I/O and reshaping.", "Возвращает ранее разобранный словарь тензоров из памяти, пропуская чтение бинарного файла и повторное изменение форм.", "מחזירה מן הזיכרון את מילון הטנזורים שנותח קודם, ללא קריאת הקובץ הבינרי ושינוי צורות מחדש."],
+    "return weights": ["Returns the newly parsed dictionary whose keys are DeepID tensor names and whose NumPy arrays have the expected trained shapes.", "Возвращает новый разобранный словарь: ключи — имена тензоров DeepID, значения — массивы NumPy с ожидаемыми обученными размерностями.", "מחזירה את המילון שנותח כעת, שבו המפתחות הם שמות טנזורי DeepID והערכים הם מערכי NumPy בצורות המאומנות הצפויות."],
+    "return self.models[device], device": ["Returns the cached DeepID model together with its CPU or CUDA device name so callers know where its tensors execute.", "Возвращает закэшированную модель DeepID вместе с именем её CPU- или CUDA-устройства, чтобы вызывающий код знал место вычислений.", "מחזירה את מודל DeepID מן המטמון יחד עם שם התקן ה־CPU או CUDA שלו, כדי שהקוד הקורא ידע היכן הטנזורים מבוצעים."],
+    "return model, device": ["Returns the newly built and cached DeepID model plus the actual CPU or CUDA device selected for it.", "Возвращает только что построенную и закэшированную модель DeepID и фактически выбранное для неё устройство CPU или CUDA.", "מחזירה את מודל DeepID שנבנה ונשמר כעת ואת התקן ה־CPU או CUDA שנבחר עבורו בפועל."],
+    "return variants": ["Returns the ordered list containing the full screenshot followed by every valid centered crop, each paired with its variant name.", "Возвращает упорядоченный список: полный скриншот и все допустимые центральные обрезки, каждая вместе со своим именем варианта.", "מחזירה רשימה מסודרת המכילה את צילום המסך המלא ואחריו כל החיתוכים המרכזיים התקינים, כל אחד בצירוף שם הגרסה שלו."],
+    "return": ["Ends load_references immediately because the reference matrix for this device is already cached; Python implicitly returns None.", "Немедленно завершает `load_references`, поскольку матрица эталонов для этого устройства уже есть в кэше; Python неявно возвращает `None`.", "מסיימת מיד את `load_references`, משום שמטריצת הייחוס להתקן זה כבר במטמון; Python מחזירה `None` באופן משתמע."],
+    "return emb, device": ["Returns the V×160 embedding matrix for this screenshot's variants together with the actual CPU or CUDA device that produced it.", "Возвращает матрицу векторов `V×160` для вариантов текущего скриншота и фактическое устройство CPU или CUDA, где она вычислена.", "מחזירה את מטריצת ה־embedding בגודל `V×160` עבור גרסאות צילום המסך יחד עם התקן ה־CPU או CUDA שביצע אותה בפועל."]
+  }[text];
+  if (returnMeaning) return say(returnMeaning[0], returnMeaning[1], returnMeaning[2]);
+
+  const offsetMeaning = {
+    "off += 8": ["Moves the binary cursor past the eight-byte DIDW1 signature so the next read starts at the record-count field.", "Перемещает курсор за восьмибайтовую сигнатуру `DIDW1`, чтобы следующее чтение началось с поля количества записей.", "מקדמת את הסמן מעבר לחתימת `DIDW1` בת שמונה הבתים, כך שהקריאה הבאה תתחיל בשדה מספר הרשומות."],
+    "off += name_len": ["Moves the binary cursor past the UTF-8 tensor name by exactly the decoded name length, positioning it at the element-count field.", "Перемещает курсор ровно на длину UTF-8-имени тензора к следующему полю — количеству элементов.", "מקדמת את הסמן בדיוק לאורך שם הטנזור ב־UTF-8 וממקמת אותו בשדה מספר האיברים."],
+    "off += count * 4": ["Moves the binary cursor past all float32 values of this tensor; each of the count elements occupies four bytes.", "Перемещает курсор за все значения `float32` текущего тензора: каждый из `count` элементов занимает 4 байта.", "מקדמת את הסמן מעבר לכל ערכי `float32` של הטנזור הנוכחי; כל אחד מ־`count` האיברים תופס ארבעה בתים."]
+  }[text];
+  if (offsetMeaning) return say(offsetMeaning[0], offsetMeaning[1], offsetMeaning[2]);
+
+  if (text === "# The simulator knows which statue is centered in the scene. Use it") return say("Documents that the simulator supplies the identity of the statue currently centered in view; the next comment limits how that hint may affect recognition.", "Поясняет, что симулятор сообщает имя статуи в центре кадра; следующий комментарий ограничивает влияние этой подсказки на распознавание.", "מתעדת שהסימולטור מספק את זהות הפסל שבמרכז התמונה; ההערה הבאה מגבילה כיצד הרמז רשאי להשפיע על הזיהוי.");
+  if (text === "# only as a tie-breaker, so Adi/Faraj close angles do not flip.") return say("Restricts the simulator hint to resolving close DeepID scores, specifically preventing unstable Adi/Faraj swaps at similar viewing angles; it is not an unconditional identity override.", "Ограничивает подсказку симулятора разрешением близких оценок DeepID, чтобы Ади и Фарадж не менялись местами при похожих ракурсах; это не безусловная подмена имени.", "מגבילה את רמז הסימולטור להכרעה בין ציוני DeepID קרובים, כדי למנוע החלפות לא יציבות בין Adi ל־Faraj בזוויות דומות; אין זו החלפת זהות ללא תנאי.");
+
+  if (text === "continue") {
+    return occurrence === 1
+      ? say("Skips this crop ratio when its computed square would be smaller than 60 pixels, then tests the next ratio.", "Пропускает текущий коэффициент обрезки, если вычисленный квадрат меньше 60 пикселей, и проверяет следующий коэффициент.", "מדלגת על יחס החיתוך הנוכחי כאשר הריבוע המחושב קטן מ־60 פיקסלים, ואז בודקת את היחס הבא.")
+      : sourceLineAnnotation(text, lang);
+  }
+  if (text === ")") {
+    return say(
+      `Closes the multi-line call whose preceding argument is \`${previous}\`; the call itself was opened above and this line adds no new argument.`,
+      `Закрывает многострочный вызов, предыдущий аргумент которого — \`${previous}\`; сама строка не добавляет нового аргумента.`,
+      `סוגרת את הקריאה הרב־שורתית שהארגומנט הקודם שלה הוא \`${previous}\`; השורה עצמה אינה מוסיפה ארגומנט חדש.`
+    );
+  }
+  if (text === "}") {
+    return say(
+      `Closes the dictionary whose last field is \`${previous}\`; all fields collected since its opening brace now form that specific result or candidate object.`,
+      `Закрывает словарь, последнее поле которого — \`${previous}\`; собранные от открывающей скобки поля образуют именно этот объект результата или кандидата.`,
+      `סוגרת את המילון שהשדה האחרון שלו הוא \`${previous}\`; כל השדות שנאספו מאז הסוגר הפותח יוצרים את אובייקט התוצאה או המועמד המסוים הזה.`
+    );
+  }
+  return sourceLineAnnotation(text, lang);
+}
+
 function looksLikeMojibake(text) {
   return typeof text === "string" && /[РСЧ][\u0080-\u00bf\u0402-\u040f\u0450-\u045f]/.test(text);
 }
@@ -3856,14 +4143,17 @@ function renderStageCode(stage) {
         ? uiText(exactStageCodeState === "error" ? "fullStageError" : "fullStageLoading")
         : uiText("codeSourceShort");
   }
-  source.split("\n").forEach((line, index) => {
+  const sourceLines = source.split("\n");
+  sourceLines.forEach((line, index) => {
     const row = document.createElement("div");
     row.className = `code-line-note${line.trim() ? "" : " blank"}`;
     const code = document.createElement("code");
     code.textContent = line || " ";
     const note = document.createElement("span");
     note.className = "code-note";
-    note.textContent = codeAnnotation(stage, line);
+    const annotationLines = fullMode && combinedRecognitionCode ? combinedRecognitionCode.split("\n") : sourceLines;
+    const annotationIndex = fullMode ? (stage.exactStartLine || 0) + index : index;
+    note.textContent = fullMode ? contextualSingleSourceAnnotation(annotationLines, annotationIndex) : codeAnnotation(stage, line);
     row.append(code, note);
     stageCode.appendChild(row);
   });
@@ -3933,9 +4223,12 @@ async function ensureExactStageCode() {
     if (lineBlocks.length !== stageDetails.length) {
       throw new Error(`expected ${stageDetails.length} stage blocks, found ${lineBlocks.length}`);
     }
+    let exactStartLine = 0;
     lineBlocks.forEach((lines, index) => {
       stageDetails[index].exactCode = lines.join("\n");
       stageDetails[index].exactLineCount = lines.length;
+      stageDetails[index].exactStartLine = exactStartLine;
+      exactStartLine += lines.length;
     });
     const combinedLines = lineBlocks.flat();
     stageRecognitionLineCount = lineBlocks.reduce((total, lines) => total + lines.length, 0);
@@ -3996,14 +4289,15 @@ function renderDetectorSource(source) {
   fullDetectorSource.innerHTML = "";
   const lang = document.documentElement.lang || "en";
   fullDetectorSource.setAttribute("dir", lang === "he" ? "rtl" : "ltr");
-  extractDetectorSource(source).split("\n").forEach((line) => {
+  const sourceLines = extractDetectorSource(source).split("\n");
+  sourceLines.forEach((line, index) => {
     const row = document.createElement("div");
     row.className = `code-line-note${line.trim() ? "" : " blank"}`;
     const code = document.createElement("code");
     code.textContent = line || " ";
     const note = document.createElement("span");
     note.className = "code-note";
-    note.textContent = line.trim() ? patternCodeAnnotation(line) : repairLocalizedText(codeBlankAnnotation[lang] || codeBlankAnnotation.en);
+    note.textContent = contextualSingleSourceAnnotation(sourceLines, index);
     row.append(code, note);
     fullDetectorSource.appendChild(row);
   });
