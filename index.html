@@ -12,7 +12,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <title>Bee Face Recognition Project</title>
   <link rel="icon" type="image/png" href="assets/project-avatar.png">
-  <link rel="stylesheet" href="styles.css?v=stage-code-focus-20260809d">
+  <link rel="stylesheet" href="styles.css?v=sface-onnx-graph-20260809a">
 </head>
 <body>
   <header class="topbar">
@@ -196,6 +196,13 @@
             <section>
               <h4 data-i18n="schemeTitle">Scheme</h4>
               <div id="stageDiagram" class="stage-diagram"></div>
+              <section id="stageOnnxPanel" class="stage-onnx-panel hidden" aria-live="polite">
+                <div class="stage-onnx-head">
+                  <strong id="stageOnnxTitle"></strong>
+                  <span id="stageOnnxMeta"></span>
+                </div>
+                <div id="stageOnnxLayers" class="stage-onnx-layers"></div>
+              </section>
             </section>
             <section class="stage-stats">
               <h4 data-i18n="stageStatsTitle">Layers and neural connections</h4>
@@ -279,6 +286,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=stage-code-focus-20260809d"></script>
+  <script src="script.js?v=sface-onnx-graph-20260809a"></script>
 </body>
 </html>

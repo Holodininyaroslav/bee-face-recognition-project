@@ -545,6 +545,45 @@ html[dir="rtl"] .diagram-node.code-linked.code-active {
   line-height: 1;
 }
 
+.stage-onnx-panel {
+  margin-top: 14px;
+  border: 1px solid rgba(255, 194, 61, .55);
+  background: #08101d;
+}
+
+.stage-onnx-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 176, 0, .09);
+}
+
+.stage-onnx-head strong { color: var(--gold-2); }
+.stage-onnx-head span { color: var(--muted); font-weight: 800; }
+
+.stage-onnx-layers {
+  display: grid;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.stage-onnx-layer {
+  display: grid;
+  grid-template-columns: 82px minmax(220px, .8fr) minmax(260px, 1.2fr);
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(64, 80, 109, .55);
+}
+
+.stage-onnx-layer:last-child { border-bottom: 0; }
+.stage-onnx-layer .onnx-range { color: var(--cyan); font-weight: 900; }
+.stage-onnx-layer .onnx-op { color: var(--text); font-weight: 800; }
+.stage-onnx-layer .onnx-shape { color: var(--muted); }
+html[dir="rtl"] .stage-onnx-layer { direction: rtl; }
+
 .stage-stats dl {
   display: grid;
   gap: 10px;

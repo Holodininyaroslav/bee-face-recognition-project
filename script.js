@@ -578,6 +578,10 @@ const stageDetailKicker = document.getElementById("stageDetailKicker");
 const stageDetailTitle = document.getElementById("stageDetailTitle");
 const stageDetailSummary = document.getElementById("stageDetailSummary");
 const stageDiagram = document.getElementById("stageDiagram");
+const stageOnnxPanel = document.getElementById("stageOnnxPanel");
+const stageOnnxTitle = document.getElementById("stageOnnxTitle");
+const stageOnnxMeta = document.getElementById("stageOnnxMeta");
+const stageOnnxLayers = document.getElementById("stageOnnxLayers");
 const stageLayers = document.getElementById("stageLayers");
 const stageConnections = document.getElementById("stageConnections");
 const stageTensor = document.getElementById("stageTensor");
@@ -2185,7 +2189,7 @@ const currentRuntimeStageSources = [
   { path: "source/local_detector_v2/sface_identity_verifier.py", fromMatch: "^    def _prepare_cuda_detection_batch", toMatch: "^    def _decode_yunet_faces_cuda" },
   { path: "source/local_detector_v2/sface_identity_verifier.py", fromMatch: "^    def _decode_yunet_faces_cuda", toMatch: "^    def _align_faces_cuda" },
   { path: "source/local_detector_v2/sface_identity_verifier.py", fromMatch: "^    def _align_faces_cuda", toMatch: "^    def _score_vectors_cuda" },
-  { path: "source/local_detector_v2/sface_identity_verifier.py", fromMatch: "^    def _score_vectors_cuda", toMatch: "^    def _pad_to_detection_batch" },
+  { path: "source/local_detector_v2/sface_identity_verifier.py", fromMatch: "^    def _score_vectors_cuda", toMatch: "^    @staticmethod\\s*$" },
   { path: "source/local_detector_v2/sface_identity_verifier.py", fromMatch: "^    def verify_batch", to: null }
 ];
 
@@ -2390,27 +2394,27 @@ assert aligned_face.shape == (1, 3, 112, 112)`
   },
   {
     level: "05",
-    title: { en: "SFace embedding and GPU identity scores", ru: "SFace-вектор и оценки личности на GPU", he: "embedding של SFace וציוני זהות ב-GPU" },
+    title: { en: "Inside SFace: 92 ONNX layers and GPU identity scores", ru: "Внутри SFace: 92 слоя ONNX и оценки личности на GPU", he: "בתוך SFace: ‏92 שכבות ONNX וציוני זהות ב-GPU" },
     summary: {
-      en: "Runs SFace on CUDA, normalizes its identity vector, and compares it with all cached reference vectors using one GPU matrix operation.",
-      ru: "Запускает SFace на CUDA, нормализует вектор личности и одной матричной операцией GPU сравнивает его со всеми кэшированными эталонами.",
-      he: "מריץ את SFace ב-CUDA, מנרמל את וקטור הזהות ומשווה אותו לכל וקטורי הייחוס השמורים באמצעות פעולת מטריצה אחת ב-GPU."
+      en: "Shows the real 92-layer SFace ONNX inference from the aligned 112×112 face to the 128D embedding, then separates the following GPU reference comparison.",
+      ru: "Показывает реальный проход по 92 слоям SFace ONNX от выровненного лица 112×112 до вектора 128D, а затем отдельно — последующее сравнение с эталонами на GPU.",
+      he: "מציג את ההסקה האמיתית דרך 92 שכבות SFace ONNX, מפנים מיושרות 112×112 ועד embedding בגודל 128, ולאחר מכן בנפרד את ההשוואה לייחוסים ב-GPU."
     },
     diagram: {
-      en: ["Enter CUDA scoring", "Read Torch runtime", "Read reference vectors", "Validate CUDA state", "Load normalization operations", "L2-normalize embedding", "Create result accumulators", "Iterate identities", "Compute similarity matrix", "Find maximum per identity", "Store best scores", "Store reference indices", "Stack and return matrices"],
-      ru: ["Вход в CUDA-сравнение", "Получение среды Torch", "Получение векторов эталонов", "Проверка состояния CUDA", "Загрузка операций нормализации", "L2-нормализация вектора", "Создание накопителей результата", "Перебор личностей", "Вычисление матрицы сходства", "Поиск максимума личности", "Сохранение лучших оценок", "Сохранение индексов эталонов", "Сборка и возврат матриц"],
-      he: ["כניסה להשוואת CUDA", "קבלת סביבת Torch", "קבלת וקטורי הייחוס", "בדיקת מצב CUDA", "טעינת פעולות הנרמול", "נרמול L2 של ה-embedding", "יצירת אוגרי התוצאה", "מעבר על הזהויות", "חישוב מטריצת הדמיון", "מציאת המקסימום לכל זהות", "שמירת הציונים הטובים", "שמירת אינדקסי הייחוס", "איגוד והחזרת המטריצות"]
+      en: ["Input normalization", "Conv1 stem", "Conv2 depthwise + pointwise", "Conv3 downsample", "Conv4 feature block", "Conv5 downsample", "Conv6 feature block", "Conv7 downsample", "Conv8 feature block", "Conv9 feature block", "Conv10 feature block", "Conv11 feature block", "Conv12 feature block", "Conv13 downsample", "Conv14 final convolution", "128D embedding head"],
+      ru: ["Нормализация входа", "Начальный Conv1", "Conv2: depthwise + pointwise", "Conv3: уменьшение", "Conv4: блок признаков", "Conv5: уменьшение", "Conv6: блок признаков", "Conv7: уменьшение", "Conv8: блок признаков", "Conv9: блок признаков", "Conv10: блок признаков", "Conv11: блок признаков", "Conv12: блок признаков", "Conv13: уменьшение", "Conv14: финальная свёртка", "Голова вектора 128D"],
+      he: ["נרמול הקלט", "שכבת הפתיחה Conv1", "Conv2: עומק ונקודה", "Conv3: הקטנת רזולוציה", "Conv4: בלוק מאפיינים", "Conv5: הקטנת רזולוציה", "Conv6: בלוק מאפיינים", "Conv7: הקטנת רזולוציה", "Conv8: בלוק מאפיינים", "Conv9: בלוק מאפיינים", "Conv10: בלוק מאפיינים", "Conv11: בלוק מאפיינים", "Conv12: בלוק מאפיינים", "Conv13: הקטנת רזולוציה", "Conv14: קונבולוציה סופית", "ראש embedding בגודל 128"]
     },
     diagramNotes: {
-      en: ["Defines the exact 18-line stage function that receives SFace vectors and computes identity scores on CUDA.", "Reads the already initialized Torch CUDA runtime from the verifier object.", "Reads the cached CUDA reference-vector matrices for all known identities.", "Stops with an explicit error if either the Torch runtime or reference matrices are unavailable.", "Imports the Torch functional operation used for L2 normalization.", "Converts vectors to float and scales every row to unit L2 length, so the following dot products are cosine similarities.", "Creates separate lists that will collect the best score and matching reference index for every identity.", "Processes Adi, Faraj, and Slava one identity at a time while all reference vectors remain on CUDA.", "Transposes the selected identity's reference matrix and multiplies it by the normalized input vectors on the GPU.", "Reduces every row of similarities to its maximum value and the index where that maximum occurred.", "Appends this identity's maximum similarity scores to the score accumulator.", "Appends the indices of this identity's winning reference photos to the match accumulator.", "Stacks all per-identity columns and returns the final score matrix together with the reference-index matrix."],
-      ru: ["Объявляет точную 18-строчную функцию этапа: она получает SFace-векторы и вычисляет оценки личности на CUDA.", "Берёт из объекта verifier уже инициализированную среду Torch CUDA.", "Берёт кэшированные CUDA-матрицы эталонных векторов всех известных личностей.", "Немедленно выдаёт понятную ошибку, если среда Torch или матрицы эталонов недоступны.", "Импортирует функциональную операцию Torch, используемую для L2-нормализации.", "Преобразует векторы во float и приводит длину каждой строки к единице, поэтому последующие скалярные произведения являются cosine-сходством.", "Создаёт отдельные списки для лучших оценок и индексов совпавших эталонов каждой личности.", "По очереди обрабатывает Adi, Faraj и Slava; все эталонные векторы остаются на CUDA.", "Транспонирует матрицу эталонов выбранной личности и умножает на неё нормализованные входные векторы на GPU.", "Для каждой строки сходств находит максимальное значение и индекс позиции этого максимума.", "Добавляет максимальные оценки текущей личности в накопитель оценок.", "Добавляет индексы победивших эталонных фотографий текущей личности в накопитель совпадений.", "Объединяет столбцы всех личностей и возвращает итоговую матрицу оценок вместе с матрицей индексов эталонов."],
-      he: ["מגדיר את פונקציית השלב המדויקת בת 18 השורות: היא מקבלת וקטורי SFace ומחשבת ציוני זהות ב-CUDA.", "קורא מאובייקט המאמת את סביבת Torch CUDA שכבר אותחלה.", "קורא את מטריצות וקטורי הייחוס השמורות ב-CUDA עבור כל הזהויות הידועות.", "עוצר עם שגיאה מפורשת אם סביבת Torch או מטריצות הייחוס אינן זמינות.", "מייבא את הפעולה הפונקציונלית של Torch המשמשת לנרמול L2.", "ממיר את הווקטורים ל-float ומנרמל כל שורה לאורך L2 של אחת, כך שהמכפלות הבאות הן דמיון cosine.", "יוצר רשימות נפרדות לציונים הטובים ולאינדקסי הייחוס התואמים של כל זהות.", "מעבד לפי הסדר את Adi, Faraj ו-Slava כאשר כל וקטורי הייחוס נשארים ב-CUDA.", "משחלף את מטריצת הייחוס של הזהות הנבחרת ומכפיל בה את וקטורי הקלט המנורמלים ב-GPU.", "מצמצם כל שורת דמיון לערך המרבי ולאינדקס שבו נמצא ערך זה.", "מוסיף את ציוני המקסימום של הזהות הנוכחית לאוגר הציונים.", "מוסיף את אינדקסי תמונות הייחוס הזוכות של הזהות הנוכחית לאוגר ההתאמות.", "מאגד את העמודות של כל הזהויות ומחזיר את מטריצת הציונים הסופית יחד עם מטריצת אינדקסי הייחוס."]
+      en: ["ONNX layers 1–4 subtract and multiply constants to scale the 112×112 RGB tensor.", "Layers 5–7 apply a 3→32 convolution, batch normalization, and PReLU without changing spatial size.", "Layers 8–13 apply 32-channel depthwise convolution and a 32→64 pointwise convolution, each followed by BN and PReLU.", "Layers 14–19 use a strided depthwise convolution to change 64×112×112 into 128×56×56.", "Layers 20–25 refine 128 channels at 56×56 with depthwise and pointwise convolutions.", "Layers 26–31 reduce 128×56×56 to 256×28×28.", "Layers 32–37 refine 256 channels at 28×28.", "Layers 38–43 reduce 256×28×28 to 512×14×14.", "Layers 44–49 refine 512 channels at 14×14.", "Layers 50–55 perform the next depthwise/pointwise feature transformation at 14×14.", "Layers 56–61 perform another 512-channel feature transformation at 14×14.", "Layers 62–67 perform another 512-channel feature transformation at 14×14.", "Layers 68–73 perform the last 512-channel block before the final reduction.", "Layers 74–79 reduce 512×14×14 to 1024×7×7.", "Layers 80–85 refine the final 1024 feature maps at 7×7.", "Layers 86–92 apply BN, Dropout, Flatten, a 50176→128 Gemm, final BN, and Identity to produce the face vector."],
+      ru: ["Слои ONNX 1–4 вычитают и умножают константы, масштабируя RGB-тензор 112×112.", "Слои 5–7 выполняют свёртку 3→32, batch normalization и PReLU без изменения пространственного размера.", "Слои 8–13 выполняют depthwise-свёртку 32 каналов и pointwise-свёртку 32→64; после каждой идут BN и PReLU.", "Слои 14–19 уменьшают тензор 64×112×112 до 128×56×56 с помощью depthwise-свёртки с шагом.", "Слои 20–25 обрабатывают 128 каналов при размере 56×56 с помощью depthwise- и pointwise-свёрток.", "Слои 26–31 уменьшают 128×56×56 до 256×28×28.", "Слои 32–37 обрабатывают 256 каналов при размере 28×28.", "Слои 38–43 уменьшают 256×28×28 до 512×14×14.", "Слои 44–49 обрабатывают 512 каналов при размере 14×14.", "Слои 50–55 выполняют следующее depthwise/pointwise-преобразование признаков 14×14.", "Слои 56–61 выполняют ещё одно преобразование 512 каналов при размере 14×14.", "Слои 62–67 выполняют ещё одно преобразование 512 каналов при размере 14×14.", "Слои 68–73 выполняют последний 512-канальный блок перед финальным уменьшением.", "Слои 74–79 уменьшают 512×14×14 до 1024×7×7.", "Слои 80–85 обрабатывают финальные 1024 карты признаков при размере 7×7.", "Слои 86–92 выполняют BN, Dropout, Flatten, Gemm 50176→128, финальный BN и Identity, создавая вектор лица."],
+      he: ["שכבות ONNX ‏1–4 מחסרות ומכפילות קבועים כדי לנרמל את טנזור ה-RGB בגודל 112×112.", "שכבות 5–7 מבצעות קונבולוציה 3→32, נרמול אצווה ו-PReLU ללא שינוי הגודל המרחבי.", "שכבות 8–13 מבצעות קונבולוציית depthwise ב-32 ערוצים וקונבולוציית pointwise ‏32→64, ולאחר כל אחת BN ו-PReLU.", "שכבות 14–19 מקטינות 64×112×112 ל-128×56×56 באמצעות קונבולוציית depthwise עם stride.", "שכבות 20–25 מעבדות 128 ערוצים בגודל 56×56 באמצעות קונבולוציות depthwise ו-pointwise.", "שכבות 26–31 מקטינות 128×56×56 ל-256×28×28.", "שכבות 32–37 מעבדות 256 ערוצים בגודל 28×28.", "שכבות 38–43 מקטינות 256×28×28 ל-512×14×14.", "שכבות 44–49 מעבדות 512 ערוצים בגודל 14×14.", "שכבות 50–55 מבצעות טרנספורמציית depthwise/pointwise נוספת בגודל 14×14.", "שכבות 56–61 מבצעות טרנספורמציה נוספת של 512 ערוצים בגודל 14×14.", "שכבות 62–67 מבצעות טרנספורמציה נוספת של 512 ערוצים בגודל 14×14.", "שכבות 68–73 מבצעות את בלוק 512 הערוצים האחרון לפני ההקטנה הסופית.", "שכבות 74–79 מקטינות 512×14×14 ל-1024×7×7.", "שכבות 80–85 מעבדות את 1024 מפות המאפיינים הסופיות בגודל 7×7.", "שכבות 86–92 מבצעות BN, ‏Dropout, ‏Flatten, ‏Gemm ‏50176→128, ‏BN סופי ו-Identity ליצירת וקטור הפנים."]
     },
-    layers: { en: "SFace ONNX + L2 normalization + matrix scoring", ru: "SFace ONNX + L2-нормализация + матричная оценка", he: "SFace ONNX, נרמול L2 וחישוב מטריציוני" },
-    connections: { en: "1 embedding compared with every cached reference", ru: "Один вектор сравнивается со всеми эталонами", he: "embedding אחד מושווה לכל הייחוסים" },
-    tensor: "1×3×112×112 → 1×128 → 1×N scores",
-    cudaShort: { en: "Embedding and reference comparison both stay on CUDA", ru: "И вектор, и сравнение с эталонами остаются на CUDA", he: "גם ה-embedding וגם ההשוואה נשארים ב-CUDA" },
-    cuda: { en: "Only the final small score and index matrices are copied to host memory after all neural and comparison work has completed.", ru: "Только итоговые маленькие матрицы оценок и индексов копируются в RAM после завершения всей нейросетевой работы и сравнения.", he: "רק מטריצות הציונים והאינדקסים הקטנות מועתקות לזיכרון המארח לאחר שכל עבודת הרשת וההשוואה הסתיימה." },
+    layers: { en: "92 ONNX layers: 27 Conv, 29 BatchNorm, 27 PReLU, and a 128D head", ru: "92 слоя ONNX: 27 Conv, 29 BatchNorm, 27 PReLU и голова 128D", he: "92 שכבות ONNX: ‏27 Conv, ‏29 BatchNorm, ‏27 PReLU וראש 128D" },
+    connections: { en: "Sequential depthwise/pointwise convolution chain; reference scoring follows the network", ru: "Последовательная цепочка depthwise/pointwise-свёрток; сравнение с эталонами идёт после сети", he: "שרשרת קונבולוציות depthwise/pointwise; ההשוואה לייחוסים מתבצעת אחרי הרשת" },
+    tensor: "1×3×112×112 → 32×112×112 → 128×56×56 → 256×28×28 → 512×14×14 → 1024×7×7 → 50176 → 128",
+    cudaShort: { en: "All 92 SFace layers execute through CUDAExecutionProvider", ru: "Все 92 слоя SFace выполняются через CUDAExecutionProvider", he: "כל 92 שכבות SFace רצות דרך CUDAExecutionProvider" },
+    cuda: { en: "The diagram above is the actual SFace ONNX graph grouped into 16 readable blocks. The exact 17-line Python block below begins only after SFace has produced the 128D vector: it L2-normalizes that vector and compares it with cached references on CUDA.", ru: "Схема выше — фактический граф SFace ONNX, объединённый в 16 понятных блоков. Точный 17-строчный Python-блок ниже начинается только после того, как SFace создала вектор 128D: он L2-нормализует этот вектор и сравнивает его с кэшированными эталонами на CUDA.", he: "התרשים למעלה הוא גרף SFace ONNX האמיתי, מחולק ל-16 בלוקים ברורים. בלוק Python המדויק בן 17 השורות למטה מתחיל רק לאחר ש-SFace יצר וקטור 128D: הוא מנרמל אותו ב-L2 ומשווה אותו לייחוסים השמורים ב-CUDA." },
     code: `embedding = verifier._run_ort_cuda(verifier.cuda_session, aligned_face)[0]
 scores, matches = verifier._score_vectors_cuda(embedding)`
   },
@@ -2514,7 +2518,10 @@ Object.assign(detailUi.en, {
   codeSourceShort: "Short single-image CUDA sketch",
   codeSourceFull: "Exact CUDA detector source",
   focusedCodeSource: "Exact detector source · selected operation · lines {start}–{end}",
-  focusCodeAction: "Show the exact source lines for this operation"
+  focusCodeAction: "Show the exact source lines for this operation",
+  focusOnnxAction: "Show the exact ONNX layers in this neural-network block",
+  onnxGraphTitle: "Actual SFace ONNX layers",
+  onnxGraphMeta: "layers {start}–{end} of 92"
 });
 Object.assign(detailUi.ru, {
   cudaLabel: "Роль CUDA",
@@ -2523,7 +2530,10 @@ Object.assign(detailUi.ru, {
   codeSourceShort: "Короткая схема одиночного CUDA-пути",
   codeSourceFull: "Точный исходник CUDA-детектора",
   focusedCodeSource: "Точный исходник детектора · выбранная операция · строки {start}–{end}",
-  focusCodeAction: "Показать точные строки этой операции"
+  focusCodeAction: "Показать точные строки этой операции",
+  focusOnnxAction: "Показать точные слои ONNX этого блока нейросети",
+  onnxGraphTitle: "Фактические слои SFace ONNX",
+  onnxGraphMeta: "слои {start}–{end} из 92"
 });
 Object.assign(detailUi.he, {
   cudaLabel: "תפקיד CUDA",
@@ -2532,8 +2542,61 @@ Object.assign(detailUi.he, {
   codeSourceShort: "תרשים קצר של מסלול CUDA לתמונה יחידה",
   codeSourceFull: "מקור גלאי CUDA המדויק",
   focusedCodeSource: "מקור הגלאי המדויק · הפעולה שנבחרה · שורות {start}–{end}",
-  focusCodeAction: "הצגת שורות המקור המדויקות של פעולה זו"
+  focusCodeAction: "הצגת שורות המקור המדויקות של פעולה זו",
+  focusOnnxAction: "הצגת שכבות ONNX המדויקות בבלוק הרשת הזה",
+  onnxGraphTitle: "שכבות SFace ONNX בפועל",
+  onnxGraphMeta: "שכבות {start}–{end} מתוך 92"
 });
+
+const sfaceOnnxFeatureBlocks = [
+  { start: 8, input: "1×32×112×112", depthwise: "1×32×112×112", output: "1×64×112×112" },
+  { start: 14, input: "1×64×112×112", depthwise: "1×64×56×56", output: "1×128×56×56" },
+  { start: 20, input: "1×128×56×56", depthwise: "1×128×56×56", output: "1×128×56×56" },
+  { start: 26, input: "1×128×56×56", depthwise: "1×128×28×28", output: "1×256×28×28" },
+  { start: 32, input: "1×256×28×28", depthwise: "1×256×28×28", output: "1×256×28×28" },
+  { start: 38, input: "1×256×28×28", depthwise: "1×256×14×14", output: "1×512×14×14" },
+  { start: 44, input: "1×512×14×14", depthwise: "1×512×14×14", output: "1×512×14×14" },
+  { start: 50, input: "1×512×14×14", depthwise: "1×512×14×14", output: "1×512×14×14" },
+  { start: 56, input: "1×512×14×14", depthwise: "1×512×14×14", output: "1×512×14×14" },
+  { start: 62, input: "1×512×14×14", depthwise: "1×512×14×14", output: "1×512×14×14" },
+  { start: 68, input: "1×512×14×14", depthwise: "1×512×14×14", output: "1×512×14×14" },
+  { start: 74, input: "1×512×14×14", depthwise: "1×512×7×7", output: "1×1024×7×7" },
+  { start: 80, input: "1×1024×7×7", depthwise: "1×1024×7×7", output: "1×1024×7×7" }
+];
+
+function sfaceOnnxRows(stepIndex) {
+  if (stepIndex === 0) return [
+    { layer: 1, op: "Const (scalar_op1)", shape: "normalization constant" },
+    { layer: 2, op: "NaryEltwise (subtract)", shape: "1×3×112×112 → 1×3×112×112" },
+    { layer: 3, op: "Const (scalar_op2)", shape: "normalization constant" },
+    { layer: 4, op: "NaryEltwise (multiply)", shape: "1×3×112×112 → 1×3×112×112" }
+  ];
+  if (stepIndex === 1) return [
+    { layer: 5, op: "Convolution (conv_1)", shape: "1×3×112×112 → 1×32×112×112" },
+    { layer: 6, op: "BatchNorm", shape: "1×32×112×112" },
+    { layer: 7, op: "PReLU", shape: "1×32×112×112" }
+  ];
+  if (stepIndex >= 2 && stepIndex <= 14) {
+    const block = sfaceOnnxFeatureBlocks[stepIndex - 2];
+    return [
+      { layer: block.start, op: "Convolution (depthwise)", shape: `${block.input} → ${block.depthwise}` },
+      { layer: block.start + 1, op: "BatchNorm", shape: block.depthwise },
+      { layer: block.start + 2, op: "PReLU", shape: block.depthwise },
+      { layer: block.start + 3, op: "Convolution (pointwise 1×1)", shape: `${block.depthwise} → ${block.output}` },
+      { layer: block.start + 4, op: "BatchNorm", shape: block.output },
+      { layer: block.start + 5, op: "PReLU", shape: block.output }
+    ];
+  }
+  return [
+    { layer: 86, op: "BatchNorm", shape: "1×1024×7×7" },
+    { layer: 87, op: "Dropout", shape: "1×1024×7×7" },
+    { layer: 88, op: "Flatten", shape: "1×1024×7×7 → 1×50176" },
+    { layer: 89, op: "Flatten (weight path)", shape: "prepares Gemm weights" },
+    { layer: 90, op: "Gemm (pre_fc1)", shape: "1×50176 → 1×128" },
+    { layer: 91, op: "BatchNorm (fc1)", shape: "1×128" },
+    { layer: 92, op: "Identity", shape: "1×128 face embedding" }
+  ];
+}
 
 Object.assign(translations.en, {
   simpleNote: "Upload one screenshot, choose CUDA or CPU, and press Recognize.",
@@ -4809,6 +4872,42 @@ async function focusStageFiveCode(stepIndex, shouldScroll = true) {
   }
 }
 
+function focusStageFiveOnnx(stepIndex, shouldScroll = true) {
+  if (stageDetails[currentStageIndex]?.level !== "05" || !stageOnnxPanel || !stageOnnxLayers) return;
+  const rows = sfaceOnnxRows(stepIndex);
+  const labels = localized(stageDetails[currentStageIndex].diagram);
+  const start = rows[0].layer;
+  const end = rows[rows.length - 1].layer;
+  activeStageFiveCodeStep = stepIndex;
+  stageOnnxTitle.textContent = `${uiText("onnxGraphTitle")} · ${labels[stepIndex]}`;
+  stageOnnxMeta.textContent = uiText("onnxGraphMeta")
+    .replace("{start}", String(start))
+    .replace("{end}", String(end));
+  stageOnnxLayers.innerHTML = "";
+  rows.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = "stage-onnx-layer";
+    const range = document.createElement("span");
+    range.className = "onnx-range";
+    range.textContent = `#${item.layer}`;
+    const operation = document.createElement("span");
+    operation.className = "onnx-op";
+    operation.textContent = item.op;
+    const shape = document.createElement("span");
+    shape.className = "onnx-shape";
+    shape.textContent = item.shape;
+    row.append(range, operation, shape);
+    stageOnnxLayers.appendChild(row);
+  });
+  stageOnnxPanel.classList.remove("hidden");
+  document.querySelectorAll(".diagram-node.code-linked").forEach((node) => {
+    const selected = Number(node.dataset.codeStep) === stepIndex;
+    node.classList.toggle("code-active", selected);
+    node.setAttribute("aria-pressed", selected ? "true" : "false");
+  });
+  if (shouldScroll) stageOnnxPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
 function buildStageDiagram(labels, notes, data) {
   stageDiagram.innerHTML = "";
   labels.forEach((label, index) => {
@@ -4820,9 +4919,9 @@ function buildStageDiagram(labels, notes, data) {
       node.classList.add("code-linked");
       node.dataset.codeStep = String(index);
       node.setAttribute("aria-pressed", activeStageFiveCodeStep === index ? "true" : "false");
-      node.setAttribute("aria-label", `${label}. ${uiText("focusCodeAction")}`);
-      node.title = uiText("focusCodeAction");
-      node.addEventListener("click", () => focusStageFiveCode(index));
+      node.setAttribute("aria-label", `${label}. ${uiText("focusOnnxAction")}`);
+      node.title = uiText("focusOnnxAction");
+      node.addEventListener("click", () => focusStageFiveOnnx(index));
     }
     const title = document.createElement("strong");
     title.textContent = label;
@@ -4852,6 +4951,7 @@ function renderStageDetail(index, shouldScroll = true) {
   currentStageIndex = (index + total) % total;
   if (previousStageIndex !== currentStageIndex) activeStageFiveCodeStep = -1;
   const data = stageDetails[currentStageIndex];
+  if (stageOnnxPanel) stageOnnxPanel.classList.toggle("hidden", data.level !== "05" || activeStageFiveCodeStep < 0);
   stageDetailKicker.textContent = `${uiText("stageLabel")} ${data.level}`;
   stageDetailTitle.textContent = localized(data.title);
   stageDetailSummary.textContent = localized(data.summary);
@@ -4873,7 +4973,7 @@ function renderStageDetail(index, shouldScroll = true) {
     step.classList.toggle("active", Number(step.dataset.stage) === currentStageIndex);
   });
   if (data.level === "05" && activeStageFiveCodeStep >= 0) {
-    focusStageFiveCode(activeStageFiveCodeStep, false);
+    focusStageFiveOnnx(activeStageFiveCodeStep, false);
   }
   if (shouldScroll) stageDetail.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -4882,6 +4982,7 @@ function hideStageDetail() {
   if (!stageDetail) return;
   currentStageIndex = -1;
   activeStageFiveCodeStep = -1;
+  stageOnnxPanel?.classList.add("hidden");
   stageDetail.classList.add("hidden");
   document.querySelectorAll(".pipeline-step").forEach((step) => step.classList.remove("active"));
 }
