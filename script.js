@@ -2414,7 +2414,7 @@ assert aligned_face.shape == (1, 3, 112, 112)`
     connections: { en: "Sequential depthwise/pointwise convolution chain; reference scoring follows the network", ru: "Последовательная цепочка depthwise/pointwise-свёрток; сравнение с эталонами идёт после сети", he: "שרשרת קונבולוציות depthwise/pointwise; ההשוואה לייחוסים מתבצעת אחרי הרשת" },
     tensor: "1×3×112×112 → 32×112×112 → 128×56×56 → 256×28×28 → 512×14×14 → 1024×7×7 → 50176 → 128",
     cudaShort: { en: "All 92 SFace layers execute through CUDAExecutionProvider", ru: "Все 92 слоя SFace выполняются через CUDAExecutionProvider", he: "כל 92 שכבות SFace רצות דרך CUDAExecutionProvider" },
-    cuda: { en: "The diagram above is the actual SFace ONNX graph grouped into 16 readable blocks. The exact 17-line Python block below begins only after SFace has produced the 128D vector: it L2-normalizes that vector and compares it with cached references on CUDA.", ru: "Схема выше — фактический граф SFace ONNX, объединённый в 16 понятных блоков. Точный 17-строчный Python-блок ниже начинается только после того, как SFace создала вектор 128D: он L2-нормализует этот вектор и сравнивает его с кэшированными эталонами на CUDA.", he: "התרשים למעלה הוא גרף SFace ONNX האמיתי, מחולק ל-16 בלוקים ברורים. בלוק Python המדויק בן 17 השורות למטה מתחיל רק לאחר ש-SFace יצר וקטור 128D: הוא מנרמל אותו ב-L2 ומשווה אותו לייחוסים השמורים ב-CUDA." },
+    cuda: { en: "Open the complete stage to see all 92 deserialized ONNX nodes followed by the exact 16 physical lines of the post-network Python function (15 non-empty). Clicking a block highlights its ONNX range; clicking an individual Conv, PReLU, BatchNorm, Flatten, or Gemm row highlights that exact node.", ru: "Откройте полный этап: в нём показаны все 92 десериализованных узла ONNX, а после них — точные 16 физических строк Python-функции после сети (15 непустых). Нажатие на блок выделяет его диапазон ONNX; нажатие на отдельную строку Conv, PReLU, BatchNorm, Flatten или Gemm выделяет именно этот узел.", he: "פתחו את השלב המלא כדי לראות את כל 92 צומתי ONNX שעברו deserialization, ואחריהם 16 השורות הפיזיות המדויקות של פונקציית Python שלאחר הרשת (15 לא ריקות). לחיצה על בלוק מדגישה את טווח ONNX שלו; לחיצה על שורת Conv, PReLU, BatchNorm, Flatten או Gemm מדגישה את הצומת המדויק." },
     code: `embedding = verifier._run_ort_cuda(verifier.cuda_session, aligned_face)[0]
 scores, matches = verifier._score_vectors_cuda(embedding)`
   },
@@ -2520,8 +2520,11 @@ Object.assign(detailUi.en, {
   focusedCodeSource: "Exact detector source · selected operation · lines {start}–{end}",
   focusCodeAction: "Show the exact source lines for this operation",
   focusOnnxAction: "Show the exact ONNX layers in this neural-network block",
+  focusOnnxLayerAction: "Open the complete stage and highlight this exact ONNX node",
   onnxGraphTitle: "Actual SFace ONNX layers",
-  onnxGraphMeta: "layers {start}–{end} of 92"
+  onnxGraphMeta: "layers {start}–{end} of 92",
+  stageFiveFullSource: "Complete stage 05 · 92 ONNX nodes + exact post-network Python",
+  stageFiveOpenFull: "Open complete stage 05 code and ONNX graph"
 });
 Object.assign(detailUi.ru, {
   cudaLabel: "Роль CUDA",
@@ -2532,8 +2535,11 @@ Object.assign(detailUi.ru, {
   focusedCodeSource: "Точный исходник детектора · выбранная операция · строки {start}–{end}",
   focusCodeAction: "Показать точные строки этой операции",
   focusOnnxAction: "Показать точные слои ONNX этого блока нейросети",
+  focusOnnxLayerAction: "Открыть весь пятый этап и выделить именно этот узел ONNX",
   onnxGraphTitle: "Фактические слои SFace ONNX",
-  onnxGraphMeta: "слои {start}–{end} из 92"
+  onnxGraphMeta: "слои {start}–{end} из 92",
+  stageFiveFullSource: "Полный этап 05 · 92 узла ONNX + точный Python-код после сети",
+  stageFiveOpenFull: "Открыть полный код и граф ONNX этапа 05"
 });
 Object.assign(detailUi.he, {
   cudaLabel: "תפקיד CUDA",
@@ -2544,8 +2550,11 @@ Object.assign(detailUi.he, {
   focusedCodeSource: "מקור הגלאי המדויק · הפעולה שנבחרה · שורות {start}–{end}",
   focusCodeAction: "הצגת שורות המקור המדויקות של פעולה זו",
   focusOnnxAction: "הצגת שכבות ONNX המדויקות בבלוק הרשת הזה",
+  focusOnnxLayerAction: "פתיחת שלב 05 המלא והדגשת צומת ONNX המדויק הזה",
   onnxGraphTitle: "שכבות SFace ONNX בפועל",
-  onnxGraphMeta: "שכבות {start}–{end} מתוך 92"
+  onnxGraphMeta: "שכבות {start}–{end} מתוך 92",
+  stageFiveFullSource: "שלב 05 המלא · 92 צומתי ONNX וקוד Python מדויק לאחר הרשת",
+  stageFiveOpenFull: "פתיחת הקוד המלא וגרף ONNX של שלב 05"
 });
 
 const sfaceOnnxFeatureBlocks = [
@@ -2566,36 +2575,94 @@ const sfaceOnnxFeatureBlocks = [
 
 function sfaceOnnxRows(stepIndex) {
   if (stepIndex === 0) return [
-    { layer: 1, op: "Const (scalar_op1)", shape: "normalization constant" },
-    { layer: 2, op: "NaryEltwise (subtract)", shape: "1×3×112×112 → 1×3×112×112" },
-    { layer: 3, op: "Const (scalar_op2)", shape: "normalization constant" },
-    { layer: 4, op: "NaryEltwise (multiply)", shape: "1×3×112×112 → 1×3×112×112" }
+    { layer: 1, name: "scalar_op1", op: "Const", input: "constant", output: "1×1" },
+    { layer: 2, name: "onnx_node!_minusscalar0", op: "NaryEltwise (subtract)", input: "1×3×112×112 + 1×1", output: "1×3×112×112" },
+    { layer: 3, name: "scalar_op2", op: "Const", input: "constant", output: "1×1" },
+    { layer: 4, name: "onnx_node!_mulscalar0", op: "NaryEltwise (multiply)", input: "1×3×112×112 + 1×1", output: "1×3×112×112" }
   ];
   if (stepIndex === 1) return [
-    { layer: 5, op: "Convolution (conv_1)", shape: "1×3×112×112 → 1×32×112×112" },
-    { layer: 6, op: "BatchNorm", shape: "1×32×112×112" },
-    { layer: 7, op: "PReLU", shape: "1×32×112×112" }
+    { layer: 5, name: "onnx_node!conv_1_conv2d", op: "Convolution", input: "1×3×112×112", output: "1×32×112×112" },
+    { layer: 6, name: "onnx_node!conv_1_batchnorm", op: "BatchNorm", input: "1×32×112×112", output: "1×32×112×112" },
+    { layer: 7, name: "onnx_node!conv_1_relu", op: "PReLU", input: "1×32×112×112", output: "1×32×112×112" }
   ];
   if (stepIndex >= 2 && stepIndex <= 14) {
     const block = sfaceOnnxFeatureBlocks[stepIndex - 2];
+    const number = stepIndex;
     return [
-      { layer: block.start, op: "Convolution (depthwise)", shape: `${block.input} → ${block.depthwise}` },
-      { layer: block.start + 1, op: "BatchNorm", shape: block.depthwise },
-      { layer: block.start + 2, op: "PReLU", shape: block.depthwise },
-      { layer: block.start + 3, op: "Convolution (pointwise 1×1)", shape: `${block.depthwise} → ${block.output}` },
-      { layer: block.start + 4, op: "BatchNorm", shape: block.output },
-      { layer: block.start + 5, op: "PReLU", shape: block.output }
+      { layer: block.start, name: `onnx_node!conv_${number}_dw_conv2d`, op: "Convolution (depthwise)", input: block.input, output: block.depthwise },
+      { layer: block.start + 1, name: `onnx_node!conv_${number}_dw_batchnorm`, op: "BatchNorm", input: block.depthwise, output: block.depthwise },
+      { layer: block.start + 2, name: `onnx_node!conv_${number}_dw_relu`, op: "PReLU", input: block.depthwise, output: block.depthwise },
+      { layer: block.start + 3, name: `onnx_node!conv_${number}_conv2d`, op: "Convolution (pointwise 1×1)", input: block.depthwise, output: block.output },
+      { layer: block.start + 4, name: `onnx_node!conv_${number}_batchnorm`, op: "BatchNorm", input: block.output, output: block.output },
+      { layer: block.start + 5, name: `onnx_node!conv_${number}_relu`, op: "PReLU", input: block.output, output: block.output }
     ];
   }
   return [
-    { layer: 86, op: "BatchNorm", shape: "1×1024×7×7" },
-    { layer: 87, op: "Dropout", shape: "1×1024×7×7" },
-    { layer: 88, op: "Flatten", shape: "1×1024×7×7 → 1×50176" },
-    { layer: 89, op: "Flatten (weight path)", shape: "prepares Gemm weights" },
-    { layer: 90, op: "Gemm (pre_fc1)", shape: "1×50176 → 1×128" },
-    { layer: 91, op: "BatchNorm (fc1)", shape: "1×128" },
-    { layer: 92, op: "Identity", shape: "1×128 face embedding" }
+    { layer: 86, name: "onnx_node!bn1", op: "BatchNorm", input: "1×1024×7×7", output: "1×1024×7×7" },
+    { layer: 87, name: "onnx_node!dropout5", op: "Dropout", input: "1×1024×7×7", output: "1×1024×7×7" },
+    { layer: 88, name: "onnx_node!flatten_254/flatten", op: "Flatten", input: "1×1024×7×7", output: "1×1024×7×7" },
+    { layer: 89, name: "onnx_node!flatten_254", op: "Flatten", input: "1×1024×7×7", output: "1×50176" },
+    { layer: 90, name: "onnx_node!pre_fc1", op: "Gemm", input: "1×50176", output: "1×128" },
+    { layer: 91, name: "onnx_node!fc1", op: "BatchNorm", input: "1×128", output: "1×128" },
+    { layer: 92, name: "fc1", op: "Identity", input: "1×128", output: "1×128" }
   ];
+}
+
+const sfaceOnnxAllRows = Array.from({ length: 16 }, (_, index) => sfaceOnnxRows(index)).flat();
+
+function sfaceOnnxListingLine(item) {
+  return `ONNX[${String(item.layer).padStart(3, "0")}] ${item.op.padEnd(28)} ${item.name} : ${item.input} -> ${item.output}`;
+}
+
+function sfaceOnnxLineAnnotation(item) {
+  const lang = document.documentElement.lang || "en";
+  const say = (en, ru, he) => lang === "ru" ? ru : lang === "he" ? he : en;
+  const dimensions = `${item.input} → ${item.output}`;
+  if (item.op === "Const") return say(
+    `Loads the learned scalar constant ${item.name} used by the following input-normalization arithmetic; output shape: ${item.output}.`,
+    `Загружает обученную скалярную константу ${item.name}, которую использует следующая операция нормализации входа; форма выхода: ${item.output}.`,
+    `טוענת את הקבוע הסקלרי המאומן ${item.name}, שבו משתמשת פעולת נרמול הקלט הבאה; צורת הפלט: ${item.output}.`
+  );
+  if (item.op.startsWith("NaryEltwise")) return say(
+    `Applies the stated element-wise normalization operation with broadcasting. Tensor shapes: ${dimensions}.`,
+    `Выполняет указанную поэлементную операцию нормализации с broadcasting. Формы тензоров: ${dimensions}.`,
+    `מבצעת את פעולת הנרמול האיברית המצוינת עם broadcasting. צורות הטנזורים: ${dimensions}.`
+  );
+  if (item.op.startsWith("Convolution")) return say(
+    `${item.op} applies the learned convolution kernel in node ${item.name}. Every output value is a weighted sum of an input neighbourhood plus bias; tensor shapes: ${dimensions}.`,
+    `${item.op} применяет обученное ядро свёртки узла ${item.name}. Каждое выходное значение является взвешенной суммой входной окрестности со смещением; формы: ${dimensions}.`,
+    `${item.op} מפעילה את kernel הקונבולוציה המאומן בצומת ${item.name}. כל ערך פלט הוא סכום משוקלל של סביבת קלט בתוספת bias; הצורות: ${dimensions}.`
+  );
+  if (item.op === "BatchNorm") return say(
+    `Applies the learned BatchNorm scale and offset of ${item.name} channel by channel; the tensor shape remains ${item.output}.`,
+    `Поканально применяет обученные масштаб и смещение BatchNorm узла ${item.name}; форма тензора остаётся ${item.output}.`,
+    `מפעילה לכל ערוץ את מקדם הקנה וההיסט המאומנים של BatchNorm בצומת ${item.name}; צורת הטנזור נשארת ${item.output}.`
+  );
+  if (item.op === "PReLU") return say(
+    `Applies PReLU in ${item.name}: positive values pass unchanged, while every negative value is multiplied by the learned channel slope. Shape: ${item.output}.`,
+    `Применяет PReLU в ${item.name}: положительные значения проходят без изменения, а каждое отрицательное умножается на обученный коэффициент своего канала. Форма: ${item.output}.`,
+    `מפעילה PReLU בצומת ${item.name}: ערכים חיוביים עוברים ללא שינוי, וכל ערך שלילי מוכפל בשיפוע המאומן של הערוץ. הצורה: ${item.output}.`
+  );
+  if (item.op === "Dropout") return say(
+    `Passes the activation through the exported inference-mode Dropout node ${item.name}; during inference no random units are removed. Shape: ${item.output}.`,
+    `Проводит активации через экспортированный узел Dropout ${item.name} в режиме инференса; при распознавании случайное отключение нейронов не выполняется. Форма: ${item.output}.`,
+    `מעבירה את האקטיבציה דרך צומת Dropout המיוצא ${item.name} במצב הסקה; בזמן הסקה אין השמטה אקראית של יחידות. הצורה: ${item.output}.`
+  );
+  if (item.op === "Flatten") return say(
+    `Executes the exact exported Flatten node ${item.name}. Its recorded tensor transformation is ${dimensions}.`,
+    `Выполняет точный экспортированный узел Flatten ${item.name}. Зафиксированное преобразование тензора: ${dimensions}.`,
+    `מבצעת את צומת Flatten המיוצא המדויק ${item.name}. שינוי צורת הטנזור הרשום הוא ${dimensions}.`
+  );
+  if (item.op === "Gemm") return say(
+    `Performs the learned matrix multiplication in ${item.name}: a 1×50176 flattened feature row is multiplied by the 50176×128 weight matrix and bias is added, producing the 1×128 face embedding.`,
+    `Выполняет обученное матричное умножение в ${item.name}: строка признаков 1×50176 умножается на матрицу весов 50176×128, затем прибавляется bias и получается вектор лица 1×128.`,
+    `מבצעת את כפל המטריצות המאומן בצומת ${item.name}: שורת מאפיינים 1×50176 מוכפלת במטריצת משקלים 50176×128, מתווסף bias ומתקבל embedding פנים 1×128.`
+  );
+  return say(
+    `Returns the final 1×128 embedding through the Identity output node ${item.name} without changing its values.`,
+    `Передаёт итоговый вектор 1×128 через выходной узел Identity ${item.name}, не изменяя его значения.`,
+    `מעבירה את ה-embedding הסופי 1×128 דרך צומת הפלט Identity ‏${item.name} ללא שינוי הערכים.`
+  );
 }
 
 Object.assign(translations.en, {
@@ -4630,16 +4697,84 @@ function uiText(key) {
   return repairLocalizedText(detailUi[lang]?.[key] || translations[lang]?.[key] || detailUi.en[key] || translations.en[key] || key);
 }
 
+function renderStageFiveFullCode(stage, focusStart = -1, focusEnd = -1, shouldScroll = false) {
+  const lang = document.documentElement.lang || "en";
+  stageCode.innerHTML = "";
+  stageCode.setAttribute("dir", lang === "he" ? "rtl" : "ltr");
+  stageCode.classList.add("full-code", "stage-five-complete");
+  stageCodeModeButton.textContent = uiText("showShortCode");
+  const scoringLines = stage.exactCode ? stage.exactCode.replace(/\s+$/, "").split("\n") : [];
+  stageCodeSource.textContent = `${uiText("stageFiveFullSource")} · 92 + ${scoringLines.length}`;
+
+  const renderedRows = new Map();
+  sfaceOnnxAllRows.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = "code-line-note onnx-source-line";
+    row.dataset.onnxLayer = String(item.layer);
+    const code = document.createElement("code");
+    code.textContent = sfaceOnnxListingLine(item);
+    const note = document.createElement("span");
+    note.className = "code-note";
+    note.textContent = sfaceOnnxLineAnnotation(item);
+    row.append(code, note);
+    if (item.layer >= focusStart && item.layer <= focusEnd) row.classList.add("code-focus");
+    if (item.layer === focusStart) row.classList.add("code-focus-start");
+    if (item.layer === focusEnd) row.classList.add("code-focus-end");
+    renderedRows.set(item.layer, row);
+    stageCode.appendChild(row);
+  });
+
+  const boundary = document.createElement("div");
+  boundary.className = "code-line-note code-boundary";
+  const boundaryCode = document.createElement("code");
+  boundaryCode.textContent = "# --- SFace ONNX output 1×128; post-network CUDA reference scoring begins ---";
+  const boundaryNote = document.createElement("span");
+  boundaryNote.className = "code-note";
+  boundaryNote.textContent = lang === "ru"
+    ? "Граница двух разных частей: выше находится точный десериализованный граф бинарной модели ONNX, ниже — точный Python-код сравнения готового вектора с эталонами."
+    : lang === "he"
+      ? "גבול בין שני חלקים שונים: למעלה נמצא הגרף המדויק שעבר deserialization ממודל ONNX הבינרי, ולמטה קוד Python המדויק שמשווה את הווקטור המוכן לייחוסים."
+      : "Boundary between two different parts: above is the exact graph deserialized from the binary ONNX model; below is the exact Python that compares the completed embedding with references.";
+  boundary.append(boundaryCode, boundaryNote);
+  stageCode.appendChild(boundary);
+
+  scoringLines.forEach((line, index) => {
+    const row = document.createElement("div");
+    row.className = `code-line-note python-scoring-line${line.trim() ? "" : " blank"}`;
+    const code = document.createElement("code");
+    code.textContent = line || " ";
+    const note = document.createElement("span");
+    note.className = "code-note";
+    const annotationLines = combinedRecognitionCode ? combinedRecognitionCode.split("\n") : scoringLines;
+    const annotationIndex = combinedRecognitionCode ? (stage.exactStartLine || 0) + index : index;
+    note.textContent = contextualSingleSourceAnnotation(annotationLines, annotationIndex);
+    row.append(code, note);
+    stageCode.appendChild(row);
+  });
+
+  const firstFocused = renderedRows.get(focusStart);
+  if (firstFocused) {
+    requestAnimationFrame(() => {
+      stageCode.scrollTop = Math.max(0, firstFocused.offsetTop - stageCode.offsetTop - 18);
+      if (shouldScroll) stageCode.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
+}
+
 function renderStageCode(stage) {
   stageCode.innerHTML = "";
   const lang = document.documentElement.lang || "en";
   const requestedFullMode = stageCodeMode === "full";
+  if (stage.level === "05" && requestedFullMode) {
+    renderStageFiveFullCode(stage);
+    return;
+  }
   const fullMode = requestedFullMode && Boolean(stage.exactCode);
   const source = fullMode ? stage.exactCode : stage.code;
   stageCode.setAttribute("dir", lang === "he" ? "rtl" : "ltr");
   stageCode.classList.toggle("full-code", Boolean(fullMode));
   if (stageCodeModeButton) {
-    stageCodeModeButton.textContent = uiText(requestedFullMode ? "showShortCode" : "openFullCode");
+    stageCodeModeButton.textContent = uiText(requestedFullMode ? "showShortCode" : stage.level === "05" ? "stageFiveOpenFull" : "openFullCode");
   }
   if (stageCodeSource) {
     stageCodeSource.textContent = fullMode
@@ -4947,7 +5082,7 @@ async function focusStageFiveCode(stepIndex, shouldScroll = true) {
   }
 }
 
-function focusStageFiveOnnx(stepIndex, shouldScroll = true) {
+async function focusStageFiveOnnx(stepIndex, shouldScroll = true, exactLayer = null) {
   if (stageDetails[currentStageIndex]?.level !== "05" || !stageOnnxPanel || !stageOnnxLayers) return;
   const rows = sfaceOnnxRows(stepIndex);
   const labels = localized(stageDetails[currentStageIndex].diagram);
@@ -4960,17 +5095,21 @@ function focusStageFiveOnnx(stepIndex, shouldScroll = true) {
     .replace("{end}", String(end));
   stageOnnxLayers.innerHTML = "";
   rows.forEach((item) => {
-    const row = document.createElement("div");
+    const row = document.createElement("button");
+    row.type = "button";
     row.className = "stage-onnx-layer";
+    row.title = uiText("focusOnnxLayerAction");
+    row.setAttribute("aria-label", `${item.op} ${item.name}. ${uiText("focusOnnxLayerAction")}`);
+    row.addEventListener("click", () => focusStageFiveOnnx(stepIndex, true, item.layer));
     const range = document.createElement("span");
     range.className = "onnx-range";
     range.textContent = `#${item.layer}`;
     const operation = document.createElement("span");
     operation.className = "onnx-op";
-    operation.textContent = item.op;
+    operation.textContent = `${item.op} · ${item.name}`;
     const shape = document.createElement("span");
     shape.className = "onnx-shape";
-    shape.textContent = item.shape;
+    shape.textContent = `${item.input} → ${item.output}`;
     row.append(range, operation, shape);
     stageOnnxLayers.appendChild(row);
   });
@@ -4980,7 +5119,12 @@ function focusStageFiveOnnx(stepIndex, shouldScroll = true) {
     node.classList.toggle("code-active", selected);
     node.setAttribute("aria-pressed", selected ? "true" : "false");
   });
-  if (shouldScroll) stageOnnxPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+  stageCodeMode = "full";
+  await ensureExactStageCode();
+  if (stageDetails[currentStageIndex]?.level !== "05") return;
+  const focusStart = exactLayer == null ? start : exactLayer;
+  const focusEnd = exactLayer == null ? end : exactLayer;
+  renderStageFiveFullCode(stageDetails[currentStageIndex], focusStart, focusEnd, shouldScroll);
 }
 
 function buildStageDiagram(labels, notes, data) {

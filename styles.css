@@ -574,15 +574,40 @@ html[dir="rtl"] .diagram-node.code-linked.code-active {
   display: grid;
   grid-template-columns: 82px minmax(220px, .8fr) minmax(260px, 1.2fr);
   gap: 12px;
+  width: 100%;
   padding: 10px 14px;
   border-bottom: 1px solid rgba(64, 80, 109, .55);
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .stage-onnx-layer:last-child { border-bottom: 0; }
+.stage-onnx-layer:hover,
+.stage-onnx-layer:focus-visible {
+  background: rgba(255, 176, 0, .1);
+  outline: 2px solid rgba(255, 194, 61, .65);
+  outline-offset: -2px;
+}
 .stage-onnx-layer .onnx-range { color: var(--cyan); font-weight: 900; }
 .stage-onnx-layer .onnx-op { color: var(--text); font-weight: 800; }
 .stage-onnx-layer .onnx-shape { color: var(--muted); }
 html[dir="rtl"] .stage-onnx-layer { direction: rtl; }
+
+.code-line-note.code-boundary {
+  border-top: 3px solid var(--gold-2);
+  border-bottom: 3px solid var(--gold-2);
+  background: rgba(255, 176, 0, .12);
+}
+
+.code-line-note.onnx-source-line code {
+  color: #dff8ff;
+}
 
 .stage-stats dl {
   display: grid;
