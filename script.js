@@ -2397,14 +2397,14 @@ assert aligned_face.shape == (1, 3, 112, 112)`
       he: "מריץ את SFace ב-CUDA, מנרמל את וקטור הזהות ומשווה אותו לכל וקטורי הייחוס השמורים באמצעות פעולת מטריצה אחת ב-GPU."
     },
     diagram: {
-      en: ["Aligned 112×112 tensor", "Select SFace CUDA session", "Start inference timer", "Contiguous CUDA input", "Create I/O binding", "Wrap input as OrtValue", "Bind CUDA input", "Bind CUDA outputs", "Execute SFace", "Return embedding on CUDA", "Synchronize and measure", "Normalize and compare", "Select best references"],
-      ru: ["Выровненный тензор 112×112", "Выбор CUDA-сессии SFace", "Запуск таймера инференса", "Непрерывный CUDA-тензор", "Создание I/O binding", "Упаковка входа в OrtValue", "Привязка CUDA-входа", "Привязка CUDA-выходов", "Выполнение SFace", "Возврат вектора в CUDA", "Синхронизация и замер", "Нормализация и сравнение", "Выбор лучших эталонов"],
-      he: ["טנזור מיושר 112×112", "בחירת סשן CUDA של SFace", "הפעלת טיימר ההסקה", "קלט CUDA רציף", "יצירת I/O binding", "עטיפת הקלט כ-OrtValue", "קישור קלט CUDA", "קישור פלטי CUDA", "הרצת SFace", "החזרת embedding ב-CUDA", "סנכרון ומדידה", "נרמול והשוואה", "בחירת הייחוסים הטובים ביותר"]
+      en: ["Enter CUDA scoring", "Read Torch runtime", "Read reference vectors", "Validate CUDA state", "Load normalization operations", "L2-normalize embedding", "Create result accumulators", "Iterate identities", "Compute similarity matrix", "Find maximum per identity", "Store best scores", "Store reference indices", "Stack and return matrices"],
+      ru: ["Вход в CUDA-сравнение", "Получение среды Torch", "Получение векторов эталонов", "Проверка состояния CUDA", "Загрузка операций нормализации", "L2-нормализация вектора", "Создание накопителей результата", "Перебор личностей", "Вычисление матрицы сходства", "Поиск максимума личности", "Сохранение лучших оценок", "Сохранение индексов эталонов", "Сборка и возврат матриц"],
+      he: ["כניסה להשוואת CUDA", "קבלת סביבת Torch", "קבלת וקטורי הייחוס", "בדיקת מצב CUDA", "טעינת פעולות הנרמול", "נרמול L2 של ה-embedding", "יצירת אוגרי התוצאה", "מעבר על הזהויות", "חישוב מטריצת הדמיון", "מציאת המקסימום לכל זהות", "שמירת הציונים הטובים", "שמירת אינדקסי הייחוס", "איגוד והחזרת המטריצות"]
     },
     diagramNotes: {
-      en: ["Receives the aligned B×3×112×112 face tensor produced by the preceding CUDA alignment stage.", "Chooses the FP32 SFace CUDA session for a single screenshot and verifies that the session exists.", "Records the start time immediately before SFace inference.", "Makes the input tensor contiguous so ONNX Runtime can read its CUDA memory layout directly.", "Creates an ONNX Runtime I/O-binding object for device-to-device input and output binding.", "Wraps the existing CUDA tensor as an OrtValue through DLPack without converting it to a CPU NumPy array.", "Connects the SFace model input name to that CUDA OrtValue.", "Requests every SFace output directly in CUDA device memory.", "Runs the SFace ONNX graph with CUDA I/O binding.", "Converts the CUDA output OrtValues back to Torch tensors through DLPack without a CPU copy.", "Takes the embedding output, waits for CUDA completion, and records the measured SFace time.", "L2-normalizes the embedding and multiplies it by every identity's cached reference matrix on CUDA.", "For each identity, keeps the maximum similarity and its reference index, then stacks the score and index matrices."],
-      ru: ["Получает выровненный тензор лиц B×3×112×112, созданный предыдущим CUDA-этапом выравнивания.", "Выбирает FP32 CUDA-сессию SFace для одного снимка и проверяет, что сессия существует.", "Фиксирует начальное время непосредственно перед инференсом SFace.", "Делает входной тензор непрерывным, чтобы ONNX Runtime напрямую прочитал его раскладку в памяти CUDA.", "Создаёт объект I/O binding ONNX Runtime для привязки входа и выхода внутри памяти устройства.", "Через DLPack оборачивает существующий CUDA-тензор в OrtValue без преобразования в CPU-массив NumPy.", "Связывает имя входа модели SFace с этим CUDA OrtValue.", "Запрашивает размещение каждого выхода SFace непосредственно в памяти CUDA.", "Выполняет ONNX-граф SFace с CUDA I/O binding.", "Через DLPack возвращает CUDA OrtValue в виде Torch-тензоров без копирования на CPU.", "Берёт выходной вектор, ждёт завершения CUDA и фиксирует измеренное время SFace.", "L2-нормализует вектор и умножает его на кэшированную матрицу всех эталонов каждой личности на CUDA.", "Для каждой личности сохраняет максимальное сходство и индекс соответствующего эталона, затем собирает матрицы оценок и индексов."],
-      he: ["מקבל את טנזור הפנים המיושר B×3×112×112 שנוצר בשלב היישור הקודם ב-CUDA.", "בוחר את סשן SFace CUDA ב-FP32 עבור צילום מסך יחיד ומוודא שהסשן קיים.", "שומר את זמן ההתחלה מיד לפני הסקת SFace.", "הופך את טנזור הקלט לרציף כדי ש-ONNX Runtime יקרא ישירות את פריסתו בזיכרון CUDA.", "יוצר אובייקט I/O binding של ONNX Runtime לקישור קלט ופלט בתוך זיכרון ההתקן.", "עוטף באמצעות DLPack את טנזור CUDA הקיים כ-OrtValue ללא המרה למערך NumPy ב-CPU.", "מקשר את שם הקלט של מודל SFace אל CUDA OrtValue זה.", "מבקש שכל פלטי SFace ייכתבו ישירות בזיכרון CUDA.", "מריץ את גרף ONNX של SFace באמצעות CUDA I/O binding.", "ממיר באמצעות DLPack את פלטי OrtValue לטנזורי Torch ב-CUDA ללא העתקה ל-CPU.", "לוקח את וקטור הפלט, ממתין לסיום CUDA ושומר את זמן SFace שנמדד.", "מבצע נרמול L2 ל-embedding ומכפיל אותו במטריצת הייחוסים השמורה של כל זהות ב-CUDA.", "לכל זהות שומר את הדמיון המרבי ואת אינדקס הייחוס המתאים, ואז מאגד את מטריצות הציונים והאינדקסים."]
+      en: ["Defines the exact 18-line stage function that receives SFace vectors and computes identity scores on CUDA.", "Reads the already initialized Torch CUDA runtime from the verifier object.", "Reads the cached CUDA reference-vector matrices for all known identities.", "Stops with an explicit error if either the Torch runtime or reference matrices are unavailable.", "Imports the Torch functional operation used for L2 normalization.", "Converts vectors to float and scales every row to unit L2 length, so the following dot products are cosine similarities.", "Creates separate lists that will collect the best score and matching reference index for every identity.", "Processes Adi, Faraj, and Slava one identity at a time while all reference vectors remain on CUDA.", "Transposes the selected identity's reference matrix and multiplies it by the normalized input vectors on the GPU.", "Reduces every row of similarities to its maximum value and the index where that maximum occurred.", "Appends this identity's maximum similarity scores to the score accumulator.", "Appends the indices of this identity's winning reference photos to the match accumulator.", "Stacks all per-identity columns and returns the final score matrix together with the reference-index matrix."],
+      ru: ["Объявляет точную 18-строчную функцию этапа: она получает SFace-векторы и вычисляет оценки личности на CUDA.", "Берёт из объекта verifier уже инициализированную среду Torch CUDA.", "Берёт кэшированные CUDA-матрицы эталонных векторов всех известных личностей.", "Немедленно выдаёт понятную ошибку, если среда Torch или матрицы эталонов недоступны.", "Импортирует функциональную операцию Torch, используемую для L2-нормализации.", "Преобразует векторы во float и приводит длину каждой строки к единице, поэтому последующие скалярные произведения являются cosine-сходством.", "Создаёт отдельные списки для лучших оценок и индексов совпавших эталонов каждой личности.", "По очереди обрабатывает Adi, Faraj и Slava; все эталонные векторы остаются на CUDA.", "Транспонирует матрицу эталонов выбранной личности и умножает на неё нормализованные входные векторы на GPU.", "Для каждой строки сходств находит максимальное значение и индекс позиции этого максимума.", "Добавляет максимальные оценки текущей личности в накопитель оценок.", "Добавляет индексы победивших эталонных фотографий текущей личности в накопитель совпадений.", "Объединяет столбцы всех личностей и возвращает итоговую матрицу оценок вместе с матрицей индексов эталонов."],
+      he: ["מגדיר את פונקציית השלב המדויקת בת 18 השורות: היא מקבלת וקטורי SFace ומחשבת ציוני זהות ב-CUDA.", "קורא מאובייקט המאמת את סביבת Torch CUDA שכבר אותחלה.", "קורא את מטריצות וקטורי הייחוס השמורות ב-CUDA עבור כל הזהויות הידועות.", "עוצר עם שגיאה מפורשת אם סביבת Torch או מטריצות הייחוס אינן זמינות.", "מייבא את הפעולה הפונקציונלית של Torch המשמשת לנרמול L2.", "ממיר את הווקטורים ל-float ומנרמל כל שורה לאורך L2 של אחת, כך שהמכפלות הבאות הן דמיון cosine.", "יוצר רשימות נפרדות לציונים הטובים ולאינדקסי הייחוס התואמים של כל זהות.", "מעבד לפי הסדר את Adi, Faraj ו-Slava כאשר כל וקטורי הייחוס נשארים ב-CUDA.", "משחלף את מטריצת הייחוס של הזהות הנבחרת ומכפיל בה את וקטורי הקלט המנורמלים ב-GPU.", "מצמצם כל שורת דמיון לערך המרבי ולאינדקס שבו נמצא ערך זה.", "מוסיף את ציוני המקסימום של הזהות הנוכחית לאוגר הציונים.", "מוסיף את אינדקסי תמונות הייחוס הזוכות של הזהות הנוכחית לאוגר ההתאמות.", "מאגד את העמודות של כל הזהויות ומחזיר את מטריצת הציונים הסופית יחד עם מטריצת אינדקסי הייחוס."]
     },
     layers: { en: "SFace ONNX + L2 normalization + matrix scoring", ru: "SFace ONNX + L2-нормализация + матричная оценка", he: "SFace ONNX, נרמול L2 וחישוב מטריציוני" },
     connections: { en: "1 embedding compared with every cached reference", ru: "Один вектор сравнивается со всеми эталонами", he: "embedding אחד מושווה לכל הייחוסים" },
@@ -4728,41 +4728,27 @@ function stageFiveCodeRange(lines, stepIndex) {
     end: matchingLineIndex(lines, endText, endOccurrence)
   });
   const ranges = [
-    () => single("aligned_faces = self._align_faces_cuda(detection_images, selected_faces, valid_mask)"),
-    () => span(
-      "session = self.cuda_large_session if len(image_paths) >= 100 else self.cuda_session",
-      "assert session is not None"
-    ),
-    () => single("sface_started = time.perf_counter()"),
-    () => single("input_tensor = input_tensor.contiguous()"),
-    () => single("binding = session.io_binding()"),
-    () => single("input_value = ort.OrtValue.from_dlpack(input_tensor)"),
-    () => single("binding.bind_ortvalue_input(session.get_inputs()[0].name, input_value)"),
-    () => span(
-      "names = output_names or [item.name for item in session.get_outputs()]",
-      "binding.bind_output(name, \"cuda\", 0)"
-    ),
-    () => single("session.run_with_iobinding(binding)"),
-    () => single("return [torch.utils.dlpack.from_dlpack(value) for value in binding.get_outputs()]"),
-    () => span(
-      "vectors = self._run_ort_cuda(session, aligned_faces)[0]",
-      "sface_inference_ms = (time.perf_counter() - sface_started) * 1000.0"
-    ),
-    () => span(
-      "normalized = functional.normalize(vectors.float(), dim=1)",
-      "similarities = normalized @ references[label].transpose(0, 1)"
-    ),
-    () => span(
-      "scores, indices = similarities.max(dim=1)",
-      "return torch.stack(label_scores, dim=1), torch.stack(label_matches, dim=1)"
-    )
+    () => single("def _score_vectors_cuda(self, vectors):"),
+    () => single("torch = self._torch"),
+    () => single("references = self._cuda_reference_vectors"),
+    () => span("if torch is None or references is None:", 'raise RuntimeError("CUDA reference vectors are not initialized")'),
+    () => single("import torch.nn.functional as functional"),
+    () => single("normalized = functional.normalize(vectors.float(), dim=1)"),
+    () => span("label_scores = []", "label_matches = []"),
+    () => single("for label in self.labels:"),
+    () => single("similarities = normalized @ references[label].transpose(0, 1)"),
+    () => single("scores, indices = similarities.max(dim=1)"),
+    () => single("label_scores.append(scores)"),
+    () => single("label_matches.append(indices)"),
+    () => single("return torch.stack(label_scores, dim=1), torch.stack(label_matches, dim=1)")
   ];
   return ranges[stepIndex]?.() || { start: -1, end: -1 };
 }
 
 function renderFocusedStageFiveSource(stepIndex, shouldScroll = true) {
-  if (!combinedRecognitionCode) return false;
-  const sourceLines = combinedRecognitionCode.split("\n");
+  const stage = stageDetails[currentStageIndex];
+  if (!stage?.exactCode) return false;
+  const sourceLines = stage.exactCode.split("\n");
   const range = stageFiveCodeRange(sourceLines, stepIndex);
   if (range.start < 0 || range.end < range.start) {
     console.error(`Could not resolve stage 05 code range for step ${stepIndex + 1}`);
@@ -4787,7 +4773,9 @@ function renderFocusedStageFiveSource(stepIndex, shouldScroll = true) {
     code.textContent = line || " ";
     const note = document.createElement("span");
     note.className = "code-note";
-    note.textContent = contextualSingleSourceAnnotation(sourceLines, index);
+    const annotationLines = combinedRecognitionCode ? combinedRecognitionCode.split("\n") : sourceLines;
+    const annotationIndex = combinedRecognitionCode ? (stage.exactStartLine || 0) + index : index;
+    note.textContent = contextualSingleSourceAnnotation(annotationLines, annotationIndex);
     row.append(code, note);
     if (index >= range.start && index <= range.end) row.classList.add("code-focus");
     if (index === range.start) row.classList.add("code-focus-start");
