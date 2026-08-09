@@ -4027,6 +4027,81 @@ function cudaSingleSourceAnnotation(text, lang) {
   };
   if (imports[text]) return imports[text][lang === "ru" ? 1 : lang === "he" ? 2 : 0];
   const assignments = {
+    "def _score_vectors_cuda(self, vectors):": [
+      "Declares the post-network CUDA scoring method. It receives V SFace embeddings with shape V×128; SFace inference itself has already finished before this method starts.",
+      "Объявляет метод CUDA-сравнения, выполняемый после нейросети. Он получает V готовых SFace-векторов формы V×128; инференс SFace уже завершён до входа в этот метод.",
+      "מגדירה את מתודת דירוג CUDA שרצה לאחר הרשת. היא מקבלת V embeddings מוכנים של SFace בצורה V×128; ההסקה של SFace כבר הסתיימה לפני הכניסה למתודה."
+    ],
+    "torch = self._torch": [
+      "Creates a short local alias named torch for the already initialized and cached PyTorch module; it performs no computation and no device transfer.",
+      "Создаёт короткое локальное имя `torch` для уже инициализированного и закэшированного модуля PyTorch; вычисления и переноса данных здесь нет.",
+      "יוצרת כינוי מקומי קצר בשם `torch` למודול PyTorch שכבר אותחל ונשמר במטמון; אין כאן חישוב או העברת נתונים."
+    ],
+    "references = self._cuda_reference_vectors": [
+      "Reads the cached dictionary of CUDA reference matrices. For each identity, references[label] has shape R_label×128 and contains that person's precomputed SFace embeddings.",
+      "Получает закэшированный словарь CUDA-матриц эталонов. Для каждого человека `references[label]` имеет форму R_label×128 и содержит заранее вычисленные SFace-векторы его фотографий.",
+      "קוראת את מילון מטריצות הייחוס השמור ב-CUDA. לכל זהות, `references[label]` הוא בצורה R_label×128 ומכיל embeddings של SFace שחושבו מראש מתמונות אותו אדם."
+    ],
+    "if torch is None or references is None:": [
+      "Checks that both prerequisites exist: the cached PyTorch runtime and the CUDA reference matrices. The error branch runs when either one is missing.",
+      "Проверяет наличие двух обязательных объектов: закэшированной среды PyTorch и CUDA-матриц эталонов. Ветка ошибки выполняется, если отсутствует хотя бы один из них.",
+      "בודקת ששני התנאים המוקדמים קיימים: סביבת PyTorch שבמטמון ומטריצות הייחוס ב-CUDA. ענף השגיאה רץ אם אחד מהם חסר."
+    ],
+    "raise RuntimeError(\"CUDA reference vectors are not initialized\")": [
+      "Stops scoring immediately with a clear RuntimeError because comparison cannot run without initialized CUDA reference vectors.",
+      "Немедленно останавливает сравнение с понятной ошибкой `RuntimeError`, поскольку без инициализированных CUDA-векторов эталонов вычисление невозможно.",
+      "עוצרת מיד את הדירוג עם `RuntimeError` ברור, משום שאי אפשר לבצע השוואה ללא וקטורי ייחוס מאותחלים ב-CUDA."
+    ],
+    "import torch.nn.functional as functional": [
+      "Imports PyTorch's stateless functional operations under the local name functional; the next operation uses functional.normalize.",
+      "Импортирует функциональные операции PyTorch под локальным именем `functional`; следующая вычислительная строка использует `functional.normalize`.",
+      "מייבאת את הפעולות הפונקציונליות חסרות-המצב של PyTorch בשם המקומי `functional`; פעולת החישוב הבאה משתמשת ב-`functional.normalize`."
+    ],
+    "normalized = functional.normalize(vectors.float(), dim=1)": [
+      "Converts the V×128 input embeddings to float32 and divides every row by its L2 norm along dimension 1. Each resulting vector has length 1, so its dot product with a normalized reference equals cosine similarity.",
+      "Преобразует входные векторы V×128 в float32 и делит каждую строку на её L2-норму по измерению 1. Длина каждого результата становится равной 1, поэтому скалярное произведение с нормализованным эталоном равно cosine-сходству.",
+      "ממירה את embeddings הקלט V×128 ל-float32 ומחלקת כל שורה בנורמת L2 שלה לאורך ממד 1. אורך כל וקטור תוצאה הוא 1, ולכן המכפלה הסקלרית עם ייחוס מנורמל שווה לדמיון cosine."
+    ],
+    "label_scores = []": [
+      "Creates an empty list that will receive one V-element vector of best similarity scores for each known identity.",
+      "Создаёт пустой список, куда для каждого известного человека будет добавлен вектор из V максимальных оценок сходства.",
+      "יוצרת רשימה ריקה שאליה יתווסף עבור כל זהות מוכרת וקטור בן V ציוני הדמיון המרביים."
+    ],
+    "label_matches = []": [
+      "Creates an empty list that will receive the V winning reference-photo indices corresponding to each identity's best scores.",
+      "Создаёт пустой список для V индексов победивших эталонных фотографий, соответствующих лучшим оценкам каждого человека.",
+      "יוצרת רשימה ריקה עבור V האינדקסים של תמונות הייחוס הזוכות המתאימים לציונים הטובים של כל זהות."
+    ],
+    "for label in self.labels:": [
+      "Iterates once over every known identity label. During each iteration, all V query embeddings are compared with all references belonging to that one identity.",
+      "По очереди перебирает каждое известное имя. На одной итерации все V входных векторов сравниваются со всеми эталонами только текущего человека.",
+      "עוברת פעם אחת על כל תווית זהות מוכרת. בכל איטרציה כל V embeddings של הקלט מושווים לכל הייחוסים השייכים לזהות הנוכחית."
+    ],
+    "similarities = normalized @ references[label].transpose(0, 1)": [
+      "Multiplies the normalized query matrix V×128 by the transposed reference matrix 128×R_label on CUDA, producing a V×R_label matrix of cosine similarities against every reference photo of this identity.",
+      "На CUDA умножает нормализованную матрицу запросов V×128 на транспонированную матрицу эталонов 128×R_label. Получается матрица V×R_label с cosine-сходством с каждой фотографией текущего человека.",
+      "מכפילה ב-CUDA את מטריצת השאילתות המנורמלת V×128 במטריצת הייחוס המשוחלפת 128×R_label. התוצאה היא מטריצה V×R_label של דמיון cosine מול כל תמונת ייחוס של הזהות הנוכחית."
+    ],
+    "scores, indices = similarities.max(dim=1)": [
+      "For each of the V query rows, selects the highest similarity across this identity's R_label references and returns both that score and the reference-photo index where it occurred.",
+      "Для каждой из V строк запроса выбирает максимальное сходство среди R_label эталонов текущего человека и возвращает одновременно оценку и индекс фотографии, давшей этот максимум.",
+      "לכל אחת מ-V שורות השאילתה בוחרת את הדמיון הגבוה ביותר מבין R_label הייחוסים של הזהות הנוכחית ומחזירה גם את הציון וגם את אינדקס התמונה שבה התקבל."
+    ],
+    "label_scores.append(scores)": [
+      "Appends this identity's V best similarity scores as one future column of the final V×L score matrix, where L is the number of identities.",
+      "Добавляет V лучших оценок текущего человека как будущий столбец итоговой матрицы оценок V×L, где L — количество известных людей.",
+      "מוסיפה את V הציונים הטובים של הזהות הנוכחית כעמודה עתידית במטריצת הציונים הסופית V×L, כאשר L הוא מספר הזהויות."
+    ],
+    "label_matches.append(indices)": [
+      "Appends the V winning reference indices for this identity as one future column of the final V×L match-index matrix.",
+      "Добавляет V индексов победивших эталонов текущего человека как будущий столбец итоговой матрицы индексов V×L.",
+      "מוסיפה את V אינדקסי הייחוס הזוכים של הזהות הנוכחית כעמודה עתידית במטריצת אינדקסי ההתאמה V×L."
+    ],
+    "return torch.stack(label_scores, dim=1), torch.stack(label_matches, dim=1)": [
+      "Stacks the per-identity score vectors and reference-index vectors along dimension 1, then returns two CUDA tensors of shape V×L: similarity scores and winning reference indices. It performs no resize or image processing.",
+      "Объединяет векторы оценок и индексов отдельных людей по измерению 1 и возвращает два CUDA-тензора формы V×L: оценки сходства и индексы победивших эталонов. Никакого resize или преобразования изображения эта строка не выполняет.",
+      "מערימה את וקטורי הציונים ואת וקטורי אינדקסי הייחוס של הזהויות לאורך ממד 1 ומחזירה שני טנזורי CUDA בצורה V×L: ציוני דמיון ואינדקסי הייחוס הזוכים. השורה אינה מבצעת שינוי גודל או עיבוד תמונה."
+    ],
     "def _image_paths(folder: Path) -> list[Path]:": ["Defines the helper that returns supported image files from one reference folder in stable modification-time/name order.", "Объявляет функцию, которая возвращает допустимые изображения одной папки эталонов в стабильном порядке времени изменения и имени.", "מגדירה פונקציית עזר שמחזירה קובצי תמונה נתמכים מתיקיית ייחוס אחת בסדר יציב של זמן שינוי ושם."],
     "def __init__(": ["Begins the DeepIDIdentityDetector constructor; its following parameters configure the working folder, known identities, and acceptance thresholds.", "Начинает конструктор DeepIDIdentityDetector; следующие параметры задают рабочую папку, известные имена и пороги принятия.", "מתחילה את בנאי DeepIDIdentityDetector; הפרמטרים הבאים מגדירים את תיקיית העבודה, הזהויות הידועות וספי הקבלה."],
     "def __init__(self, w):": ["Defines the nested DeepIDTorch model constructor, which receives the decoded weight dictionary w and registers every trained tensor as a non-trainable buffer.", "Объявляет конструктор вложенной модели DeepIDTorch: он принимает словарь весов w и регистрирует каждый обученный тензор как необучаемый буфер.", "מגדירה את בנאי המודל המקונן DeepIDTorch, שמקבל את מילון המשקלים w ורושם כל טנזור מאומן כמאגר שאינו נלמד."],
