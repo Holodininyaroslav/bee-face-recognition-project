@@ -2396,11 +2396,15 @@ assert aligned_face.shape == (1, 3, 112, 112)`
       ru: "Запускает SFace на CUDA, нормализует вектор личности и одной матричной операцией GPU сравнивает его со всеми кэшированными эталонами.",
       he: "מריץ את SFace ב-CUDA, מנרמל את וקטור הזהות ומשווה אותו לכל וקטורי הייחוס השמורים באמצעות פעולת מטריצה אחת ב-GPU."
     },
-    diagram: { en: ["112×112 face", "SFace CUDA", "GPU cosine scores", "Best reference"], ru: ["Лицо 112×112", "SFace CUDA", "Cosine-оценки GPU", "Лучший эталон"], he: ["פנים 112×112", "SFace CUDA", "ציוני cosine ב-GPU", "הייחוס הטוב ביותר"] },
+    diagram: {
+      en: ["Aligned 112×112 tensor", "Select SFace CUDA session", "Start inference timer", "Contiguous CUDA input", "Create I/O binding", "Wrap input as OrtValue", "Bind CUDA input", "Bind CUDA outputs", "Execute SFace", "Return embedding on CUDA", "Synchronize and measure", "Normalize and compare", "Select best references"],
+      ru: ["Выровненный тензор 112×112", "Выбор CUDA-сессии SFace", "Запуск таймера инференса", "Непрерывный CUDA-тензор", "Создание I/O binding", "Упаковка входа в OrtValue", "Привязка CUDA-входа", "Привязка CUDA-выходов", "Выполнение SFace", "Возврат вектора в CUDA", "Синхронизация и замер", "Нормализация и сравнение", "Выбор лучших эталонов"],
+      he: ["טנזור מיושר 112×112", "בחירת סשן CUDA של SFace", "הפעלת טיימר ההסקה", "קלט CUDA רציף", "יצירת I/O binding", "עטיפת הקלט כ-OrtValue", "קישור קלט CUDA", "קישור פלטי CUDA", "הרצת SFace", "החזרת embedding ב-CUDA", "סנכרון ומדידה", "נרמול והשוואה", "בחירת הייחוסים הטובים ביותר"]
+    },
     diagramNotes: {
-      en: ["The aligned face tensor is already in CUDA memory.", "SFace executes through its CUDAExecutionProvider session and returns the embedding to CUDA memory through I/O binding.", "Torch normalizes the embedding and multiplies it by each identity's cached reference matrix on the GPU.", "GPU reductions return the best score and reference index for Adi, Faraj, and Slava."],
-      ru: ["Выровненный тензор лица уже находится в памяти CUDA.", "SFace выполняется с CUDAExecutionProvider и через I/O binding возвращает вектор в память CUDA.", "Torch нормализует вектор и умножает его на кэшированную матрицу эталонов каждого человека на GPU.", "GPU-редукции возвращают лучшую оценку и индекс эталона для Adi, Faraj и Slava."],
-      he: ["טנזור הפנים המיושר כבר נמצא בזיכרון CUDA.", "SFace פועל באמצעות CUDAExecutionProvider ומחזיר את ה-embedding לזיכרון CUDA דרך I/O binding.", "Torch מנרמל את הווקטור ומכפיל אותו במטריצת הייחוס של כל זהות ב-GPU.", "פעולות הצמצום ב-GPU מחזירות את הציון ואת אינדקס הייחוס הטובים ביותר עבור Adi, Faraj ו-Slava."]
+      en: ["Receives the aligned B×3×112×112 face tensor produced by the preceding CUDA alignment stage.", "Chooses the FP32 SFace CUDA session for a single screenshot and verifies that the session exists.", "Records the start time immediately before SFace inference.", "Makes the input tensor contiguous so ONNX Runtime can read its CUDA memory layout directly.", "Creates an ONNX Runtime I/O-binding object for device-to-device input and output binding.", "Wraps the existing CUDA tensor as an OrtValue through DLPack without converting it to a CPU NumPy array.", "Connects the SFace model input name to that CUDA OrtValue.", "Requests every SFace output directly in CUDA device memory.", "Runs the SFace ONNX graph with CUDA I/O binding.", "Converts the CUDA output OrtValues back to Torch tensors through DLPack without a CPU copy.", "Takes the embedding output, waits for CUDA completion, and records the measured SFace time.", "L2-normalizes the embedding and multiplies it by every identity's cached reference matrix on CUDA.", "For each identity, keeps the maximum similarity and its reference index, then stacks the score and index matrices."],
+      ru: ["Получает выровненный тензор лиц B×3×112×112, созданный предыдущим CUDA-этапом выравнивания.", "Выбирает FP32 CUDA-сессию SFace для одного снимка и проверяет, что сессия существует.", "Фиксирует начальное время непосредственно перед инференсом SFace.", "Делает входной тензор непрерывным, чтобы ONNX Runtime напрямую прочитал его раскладку в памяти CUDA.", "Создаёт объект I/O binding ONNX Runtime для привязки входа и выхода внутри памяти устройства.", "Через DLPack оборачивает существующий CUDA-тензор в OrtValue без преобразования в CPU-массив NumPy.", "Связывает имя входа модели SFace с этим CUDA OrtValue.", "Запрашивает размещение каждого выхода SFace непосредственно в памяти CUDA.", "Выполняет ONNX-граф SFace с CUDA I/O binding.", "Через DLPack возвращает CUDA OrtValue в виде Torch-тензоров без копирования на CPU.", "Берёт выходной вектор, ждёт завершения CUDA и фиксирует измеренное время SFace.", "L2-нормализует вектор и умножает его на кэшированную матрицу всех эталонов каждой личности на CUDA.", "Для каждой личности сохраняет максимальное сходство и индекс соответствующего эталона, затем собирает матрицы оценок и индексов."],
+      he: ["מקבל את טנזור הפנים המיושר B×3×112×112 שנוצר בשלב היישור הקודם ב-CUDA.", "בוחר את סשן SFace CUDA ב-FP32 עבור צילום מסך יחיד ומוודא שהסשן קיים.", "שומר את זמן ההתחלה מיד לפני הסקת SFace.", "הופך את טנזור הקלט לרציף כדי ש-ONNX Runtime יקרא ישירות את פריסתו בזיכרון CUDA.", "יוצר אובייקט I/O binding של ONNX Runtime לקישור קלט ופלט בתוך זיכרון ההתקן.", "עוטף באמצעות DLPack את טנזור CUDA הקיים כ-OrtValue ללא המרה למערך NumPy ב-CPU.", "מקשר את שם הקלט של מודל SFace אל CUDA OrtValue זה.", "מבקש שכל פלטי SFace ייכתבו ישירות בזיכרון CUDA.", "מריץ את גרף ONNX של SFace באמצעות CUDA I/O binding.", "ממיר באמצעות DLPack את פלטי OrtValue לטנזורי Torch ב-CUDA ללא העתקה ל-CPU.", "לוקח את וקטור הפלט, ממתין לסיום CUDA ושומר את זמן SFace שנמדד.", "מבצע נרמול L2 ל-embedding ומכפיל אותו במטריצת הייחוסים השמורה של כל זהות ב-CUDA.", "לכל זהות שומר את הדמיון המרבי ואת אינדקס הייחוס המתאים, ואז מאגד את מטריצות הציונים והאינדקסים."]
     },
     layers: { en: "SFace ONNX + L2 normalization + matrix scoring", ru: "SFace ONNX + L2-нормализация + матричная оценка", he: "SFace ONNX, נרמול L2 וחישוב מטריציוני" },
     connections: { en: "1 embedding compared with every cached reference", ru: "Один вектор сравнивается со всеми эталонами", he: "embedding אחד מושווה לכל הייחוסים" },
@@ -4724,12 +4728,24 @@ function stageFiveCodeRange(lines, stepIndex) {
     end: matchingLineIndex(lines, endText, endOccurrence)
   });
   const ranges = [
-    () => span(
-      "aligned_faces = self._align_faces_cuda(detection_images, selected_faces, valid_mask)",
-      "gpu_align_ms = (time.perf_counter() - align_started) * 1000.0"
-    ),
+    () => single("aligned_faces = self._align_faces_cuda(detection_images, selected_faces, valid_mask)"),
     () => span(
       "session = self.cuda_large_session if len(image_paths) >= 100 else self.cuda_session",
+      "assert session is not None"
+    ),
+    () => single("sface_started = time.perf_counter()"),
+    () => single("input_tensor = input_tensor.contiguous()"),
+    () => single("binding = session.io_binding()"),
+    () => single("input_value = ort.OrtValue.from_dlpack(input_tensor)"),
+    () => single("binding.bind_ortvalue_input(session.get_inputs()[0].name, input_value)"),
+    () => span(
+      "names = output_names or [item.name for item in session.get_outputs()]",
+      "binding.bind_output(name, \"cuda\", 0)"
+    ),
+    () => single("session.run_with_iobinding(binding)"),
+    () => single("return [torch.utils.dlpack.from_dlpack(value) for value in binding.get_outputs()]"),
+    () => span(
+      "vectors = self._run_ort_cuda(session, aligned_faces)[0]",
       "sface_inference_ms = (time.perf_counter() - sface_started) * 1000.0"
     ),
     () => span(
