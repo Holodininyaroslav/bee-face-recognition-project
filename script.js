@@ -2338,11 +2338,11 @@ assert verifier.cuda_session.get_providers()[0] == "CUDAExecutionProvider"`
       ru: "Декодирует ровно один PNG/JPEG на CPU, один раз загружает его на GPU, а преобразование цвета, масштабирование, нормализацию, resize и padding выполняет CUDA-тензорами.",
       he: "מפענח PNG/JPEG יחיד ב-CPU, מעלה אותו פעם אחת ל-GPU ומבצע המרת צבע, נרמול, שינוי גודל וריפוד כפעולות טנזור CUDA."
     },
-    diagram: { en: ["One file", "CPU decode", "One CUDA upload", "GPU resize + pad"], ru: ["Один файл", "Декодирование CPU", "Одна загрузка CUDA", "GPU resize + padding"], he: ["קובץ אחד", "פענוח ב-CPU", "העלאה אחת ל-CUDA", "שינוי גודל וריפוד ב-GPU"] },
+    diagram: { en: ["Decoded image input", "Calculate target size", "One CUDA upload", "GPU resize + pad"], ru: ["Входное декодированное изображение", "Расчёт целевого размера", "Одна загрузка CUDA", "GPU resize + padding"], he: ["קלט תמונה מפוענחת", "חישוב גודל היעד", "העלאה אחת ל-CUDA", "שינוי גודל וריפוד ב-GPU"] },
     diagramNotes: {
-      en: ["The simple page accepts one screenshot and sends one /api/detect request.", "cv2.imread decodes the compressed image because file codecs are host-side in this implementation.", "torch.from_numpy(...).to(device='cuda') performs the only full-image host-to-device transfer.", "CUDA converts BGR to RGB, scales values to 0..1, resizes the image to a maximum side of 192 pixels, and pads dimensions for YuNet."],
-      ru: ["Простая страница принимает один снимок и отправляет один запрос /api/detect.", "cv2.imread декодирует сжатое изображение, потому что файловые кодеки в этой реализации работают на стороне CPU.", "torch.from_numpy(...).to(device='cuda') выполняет единственный полный перенос изображения из RAM в видеопамять.", "CUDA меняет BGR на RGB, переводит значения в диапазон 0..1, уменьшает максимальную сторону до 192 пикселей и дополняет размеры для YuNet."],
-      he: ["העמוד הפשוט מקבל צילום מסך אחד ושולח בקשת ‎/api/detect אחת.", "cv2.imread מפענח את התמונה הדחוסה משום שקודקי הקבצים במימוש הזה פועלים בצד המארח.", "torch.from_numpy(...).to(device='cuda') מבצע את ההעברה המלאה היחידה מ-RAM לזיכרון הכרטיס.", "CUDA ממיר BGR ל-RGB, מנרמל ל-0..1, משנה את הצלע המרבית ל-192 פיקסלים ומרפד את הממדים עבור YuNet."]
+      en: ["Receives the already decoded NumPy image from verify_batch; compressed-file decoding occurs immediately before this exact function.", "Reads height and width and calculates a maximum-side-192 target without enlarging small images.", "torch.from_numpy(...).to(device='cuda') performs the only full-image host-to-device transfer.", "CUDA reorders the tensor, resizes when needed, pads to multiples of 32, stacks it, and returns a contiguous batch."],
+      ru: ["Получает уже декодированное NumPy-изображение от verify_batch; декодирование сжатого файла выполняется непосредственно перед этой точной функцией.", "Читает высоту и ширину и вычисляет целевой размер с максимальной стороной 192 без увеличения маленьких изображений.", "torch.from_numpy(...).to(device='cuda') выполняет единственный полный перенос изображения из RAM в видеопамять.", "CUDA переставляет оси тензора, при необходимости меняет размер, дополняет стороны до кратных 32, собирает пачку и возвращает contiguous-тензор."],
+      he: ["מקבל מ-verify_batch תמונת NumPy שכבר פוענחה; פענוח הקובץ הדחוס מתבצע מיד לפני הפונקציה המדויקת הזאת.", "קורא גובה ורוחב ומחשב גודל יעד עם צלע מרבית 192 בלי להגדיל תמונות קטנות.", "torch.from_numpy(...).to(device='cuda') מבצע את ההעברה המלאה היחידה מ-RAM לזיכרון הכרטיס.", "CUDA מסדר מחדש את צירי הטנזור, משנה גודל בעת הצורך, מרפד לכפולות של 32, עורם ומחזיר טנזור רציף."]
     },
     layers: { en: "CUDA interpolation, normalization, and padding", ru: "CUDA-интерполяция, нормализация и padding", he: "אינטרפולציה, נרמול וריפוד ב-CUDA" },
     connections: { en: "One screenshot; no batch expansion", ru: "Один снимок; без размножения в пачку", he: "צילום מסך אחד; ללא הרחבה לאצווה" },
@@ -2398,11 +2398,11 @@ assert aligned_face.shape == (1, 3, 112, 112)`
   },
   {
     level: "05",
-    title: { en: "Inside SFace: 92 ONNX layers and GPU identity scores", ru: "Внутри SFace: 92 слоя ONNX и оценки личности на GPU", he: "בתוך SFace: ‏92 שכבות ONNX וציוני זהות ב-GPU" },
+    title: { en: "Inside SFace: 92 ONNX layers to the 128D face vector", ru: "Внутри SFace: 92 слоя ONNX до вектора лица 128D", he: "בתוך SFace: ‏92 שכבות ONNX עד לווקטור פנים 128D" },
     summary: {
-      en: "Shows the real 92-layer SFace ONNX inference from the aligned 112×112 face to the 128D embedding, then separates the following GPU reference comparison.",
-      ru: "Показывает реальный проход по 92 слоям SFace ONNX от выровненного лица 112×112 до вектора 128D, а затем отдельно — последующее сравнение с эталонами на GPU.",
-      he: "מציג את ההסקה האמיתית דרך 92 שכבות SFace ONNX, מפנים מיושרות 112×112 ועד embedding בגודל 128, ולאחר מכן בנפרד את ההשוואה לייחוסים ב-GPU."
+      en: "Shows only the neural-network part: the real 92-node SFace ONNX inference from the aligned 112×112 face to one 128D embedding. Reference comparison is now entirely stage 06.",
+      ru: "Показывает только нейросетевую часть: реальный проход по 92 узлам SFace ONNX от выровненного лица 112×112 до одного вектора 128D. Сравнение с эталонами полностью перенесено в этап 06.",
+      he: "מציג רק את חלק הרשת: מעבר אמיתי דרך 92 צומתי SFace ONNX, מפנים מיושרות 112×112 ועד embedding יחיד בגודל 128. ההשוואה לייחוסים הועברה במלואה לשלב 06."
     },
     diagram: {
       en: ["Input normalization", "Conv1 stem", "Conv2 depthwise + pointwise", "Conv3 downsample", "Conv4 feature block", "Conv5 downsample", "Conv6 feature block", "Conv7 downsample", "Conv8 feature block", "Conv9 feature block", "Conv10 feature block", "Conv11 feature block", "Conv12 feature block", "Conv13 downsample", "Conv14 final convolution", "128D embedding head"],
@@ -2415,32 +2415,36 @@ assert aligned_face.shape == (1, 3, 112, 112)`
       he: ["שכבות ONNX ‏1–4 מחסרות ומכפילות קבועים כדי לנרמל את טנזור ה-RGB בגודל 112×112.", "שכבות 5–7 מבצעות קונבולוציה 3→32, נרמול אצווה ו-PReLU ללא שינוי הגודל המרחבי.", "שכבות 8–13 מבצעות קונבולוציית depthwise ב-32 ערוצים וקונבולוציית pointwise ‏32→64, ולאחר כל אחת BN ו-PReLU.", "שכבות 14–19 מקטינות 64×112×112 ל-128×56×56 באמצעות קונבולוציית depthwise עם stride.", "שכבות 20–25 מעבדות 128 ערוצים בגודל 56×56 באמצעות קונבולוציות depthwise ו-pointwise.", "שכבות 26–31 מקטינות 128×56×56 ל-256×28×28.", "שכבות 32–37 מעבדות 256 ערוצים בגודל 28×28.", "שכבות 38–43 מקטינות 256×28×28 ל-512×14×14.", "שכבות 44–49 מעבדות 512 ערוצים בגודל 14×14.", "שכבות 50–55 מבצעות טרנספורמציית depthwise/pointwise נוספת בגודל 14×14.", "שכבות 56–61 מבצעות טרנספורמציה נוספת של 512 ערוצים בגודל 14×14.", "שכבות 62–67 מבצעות טרנספורמציה נוספת של 512 ערוצים בגודל 14×14.", "שכבות 68–73 מבצעות את בלוק 512 הערוצים האחרון לפני ההקטנה הסופית.", "שכבות 74–79 מקטינות 512×14×14 ל-1024×7×7.", "שכבות 80–85 מעבדות את 1024 מפות המאפיינים הסופיות בגודל 7×7.", "שכבות 86–92 מבצעות BN, ‏Dropout, ‏Flatten, ‏Gemm ‏50176→128, ‏BN סופי ו-Identity ליצירת וקטור הפנים."]
     },
     layers: { en: "92 ONNX layers: 27 Conv, 29 BatchNorm, 27 PReLU, and a 128D head", ru: "92 слоя ONNX: 27 Conv, 29 BatchNorm, 27 PReLU и голова 128D", he: "92 שכבות ONNX: ‏27 Conv, ‏29 BatchNorm, ‏27 PReLU וראש 128D" },
-    connections: { en: "Sequential depthwise/pointwise convolution chain; reference scoring follows the network", ru: "Последовательная цепочка depthwise/pointwise-свёрток; сравнение с эталонами идёт после сети", he: "שרשרת קונבולוציות depthwise/pointwise; ההשוואה לייחוסים מתבצעת אחרי הרשת" },
+    connections: { en: "Sequential depthwise/pointwise convolution chain ending at 1×128", ru: "Последовательная цепочка depthwise/pointwise-свёрток, заканчивающаяся формой 1×128", he: "שרשרת קונבולוציות depthwise/pointwise שמסתיימת בצורה 1×128" },
     tensor: "1×3×112×112 → 32×112×112 → 128×56×56 → 256×28×28 → 512×14×14 → 1024×7×7 → 50176 → 128",
     cudaShort: { en: "All 92 SFace layers execute through CUDAExecutionProvider", ru: "Все 92 слоя SFace выполняются через CUDAExecutionProvider", he: "כל 92 שכבות SFace רצות דרך CUDAExecutionProvider" },
-    cuda: { en: "Open the complete stage to see all 92 deserialized ONNX nodes followed by the exact 16 physical lines of the post-network Python function (15 non-empty). Clicking a block highlights its ONNX range; clicking an individual Conv, PReLU, BatchNorm, Flatten, or Gemm row highlights that exact node.", ru: "Откройте полный этап: в нём показаны все 92 десериализованных узла ONNX, а после них — точные 16 физических строк Python-функции после сети (15 непустых). Нажатие на блок выделяет его диапазон ONNX; нажатие на отдельную строку Conv, PReLU, BatchNorm, Flatten или Gemm выделяет именно этот узел.", he: "פתחו את השלב המלא כדי לראות את כל 92 צומתי ONNX שעברו deserialization, ואחריהם 16 השורות הפיזיות המדויקות של פונקציית Python שלאחר הרשת (15 לא ריקות). לחיצה על בלוק מדגישה את טווח ONNX שלו; לחיצה על שורת Conv, PReLU, BatchNorm, Flatten או Gemm מדגישה את הצומת המדויק." },
+    cuda: { en: "Open the complete stage to see all 92 deserialized ONNX nodes. Clicking a block highlights its ONNX range; clicking an individual Conv, PReLU, BatchNorm, Flatten, or Gemm row highlights that exact node. No reference-scoring Python is included in stage 05.", ru: "Откройте полный этап, чтобы увидеть все 92 десериализованных узла ONNX. Нажатие на блок выделяет диапазон ONNX, а на отдельную строку Conv, PReLU, BatchNorm, Flatten или Gemm — конкретный узел. Python-код сравнения с эталонами в этап 05 больше не входит.", he: "פתחו את השלב המלא כדי לראות את כל 92 צומתי ONNX שעברו deserialization. לחיצה על בלוק מדגישה את טווח ONNX, ולחיצה על שורת Conv, PReLU, BatchNorm, Flatten או Gemm מדגישה צומת יחיד. קוד Python להשוואה לייחוסים אינו חלק עוד משלב 05." },
     code: `embedding = verifier._run_ort_cuda(verifier.cuda_session, aligned_face)[0]
-scores, matches = verifier._score_vectors_cuda(embedding)`
+assert embedding.shape == (1, 128)`
   },
   {
     level: "06",
-    title: { en: "One result for one screenshot", ru: "Один результат для одного снимка", he: "תוצאה אחת לצילום מסך אחד" },
+    title: { en: "Reference-vector comparison and one identity result", ru: "Сравнение с векторами эталонов и результат личности", he: "השוואה לווקטורי ייחוס ותוצאת זהות" },
     summary: {
-      en: "Executes the verifier with a one-item input, uses float32 precision, applies score and margin thresholds, and returns one identity JSON result with measured CUDA-stage timings.",
-      ru: "Запускает verifier с одним входным изображением, использует точность float32, применяет пороги score и margin и возвращает один JSON-результат личности с замерами этапов CUDA.",
-      he: "מריץ את המאמת עם תמונת קלט אחת, משתמש בדיוק float32, מחיל ספי score ו-margin ומחזיר תוצאת JSON אחת עם זמני שלבי CUDA."
+      en: "L2-normalizes the 128D SFace vector, compares it with every cached reference matrix on CUDA, selects the best reference per identity, ranks the identities, and returns the best label, runner-up, margin, matched reference, and timings.",
+      ru: "L2-нормализует 128D-вектор SFace, сравнивает его со всеми кэшированными матрицами эталонов на CUDA, выбирает лучший эталон каждой личности, ранжирует личности и возвращает лучшее имя, второе место, отрыв, совпавший эталон и время.",
+      he: "מבצע נרמול L2 לווקטור SFace בגודל 128, משווה אותו לכל מטריצות הייחוס השמורות ב-CUDA, בוחר את הייחוס הטוב לכל זהות, מדרג את הזהויות ומחזיר תווית מובילה, מקום שני, פער, ייחוס תואם וזמנים."
     },
-    diagram: { en: ["One screenshot", "FP32 CUDA pipeline", "Score + margin", "One JSON result"], ru: ["Один снимок", "CUDA FP32", "Score + margin", "Один JSON-результат"], he: ["צילום מסך אחד", "צינור CUDA ב-FP32", "Score ו-margin", "תוצאת JSON אחת"] },
+    diagram: {
+      en: ["Receive SFace vectors", "L2-normalize 128D", "Loop through identities", "Matrix multiply with references", "Best reference per identity", "Stack score/index matrices", "Call scorer after SFace", "Copy final small matrices to CPU", "Rank identities", "Build identity result", "Return JSON and timings"],
+      ru: ["Получить векторы SFace", "L2-нормализация 128D", "Перебор личностей", "Умножение на матрицы эталонов", "Лучший эталон каждой личности", "Сборка матриц оценок/индексов", "Вызов сравнения после SFace", "Перенос малых итоговых матриц на CPU", "Ранжирование личностей", "Сборка результата личности", "Возврат JSON и времени"],
+      he: ["קבלת וקטורי SFace", "נרמול L2 של 128D", "מעבר על הזהויות", "כפל במטריצות הייחוס", "הייחוס הטוב לכל זהות", "הרכבת מטריצות ציונים ואינדקסים", "קריאת ההשוואה לאחר SFace", "העברת המטריצות הסופיות הקטנות ל-CPU", "דירוג הזהויות", "בניית תוצאת הזהות", "החזרת JSON וזמנים"]
+    },
     diagramNotes: {
-      en: ["The browser sends one file, and Hive invokes the CUDA verifier with a list containing only that path.", "A one-image request selects the FP32 YuNet and SFace sessions; FP16 is reserved for large batches and is not part of this demo.", "The best identity is accepted only when both its similarity score and its lead over the runner-up pass the configured thresholds.", "The response reports one identity together with provider names, pipeline name, precision, timing, and cpu_intermediate_count=0."],
-      ru: ["Браузер отправляет один файл, а Hive вызывает CUDA-verifier со списком, содержащим только этот путь.", "Запрос одного изображения выбирает FP32-сессии YuNet и SFace; FP16 предназначен для больших пачек и не относится к этой демонстрации.", "Лучшее имя принимается только когда и similarity score, и его отрыв от второго места проходят заданные пороги.", "Ответ содержит одну личность, названия provider, имя конвейера, точность, время и cpu_intermediate_count=0."],
-      he: ["הדפדפן שולח קובץ אחד ו-Hive מפעיל את מאמת CUDA עם רשימה שמכילה רק את הנתיב הזה.", "בקשה של תמונה אחת בוחרת בסשנים FP32 של YuNet ו-SFace; ‏FP16 שמור לאצוות גדולות ואינו חלק מההדגמה הזו.", "הזהות המובילה מתקבלת רק אם גם ציון הדמיון וגם הפער מן המקום השני עוברים את הספים שנקבעו.", "התשובה מדווחת על זהות אחת יחד עם שמות ה-provider, שם הצינור, הדיוק, הזמנים ו-cpu_intermediate_count=0."]
+      en: ["Receives the 1×128 vector produced by stage 05 and accesses the cached reference matrices.", "Converts the vector to float and makes its L2 length equal to one, so dot products become cosine similarities.", "Processes Adi, Faraj and Slava independently using the corresponding N×128 reference matrix.", "Computes 1×128 @ 128×N, producing one similarity value for every reference image of the current identity.", "max(dim=1) keeps the highest score and its reference index for each identity.", "Stacks the three identities into compact score and matching-index matrices returned to the caller.", "verify_batch invokes the scoring function immediately after the SFace CUDA session produces vectors.", "Only the final compact scores, indices and valid flags are copied to host memory; convolution intermediates stay on CUDA.", "Builds the score dictionary, sorts it, and names the best and runner-up identities.", "Records the best label, score, runner-up, margin and exact matched-reference path. This verifier reports these values; acceptance thresholds are applied by the outer detector/Hive layer, not inside this function.", "Returns the per-image record together with CUDA stage timings and provider metadata."],
+      ru: ["Получает вектор 1×128, созданный этапом 05, и обращается к кэшированным матрицам эталонов.", "Переводит вектор во float и делает его L2-длину равной единице, поэтому скалярные произведения становятся cosine similarity.", "Отдельно обрабатывает Ади, Фараджа и Славу, используя соответствующую матрицу эталонов N×128.", "Вычисляет 1×128 @ 128×N и получает по одной оценке сходства для каждой эталонной фотографии текущей личности.", "max(dim=1) сохраняет максимальную оценку и индекс соответствующего эталона каждой личности.", "Объединяет три личности в компактные матрицы оценок и индексов, возвращаемые вызывающему коду.", "verify_batch вызывает функцию сравнения сразу после получения векторов от CUDA-сессии SFace.", "На CPU копируются только малые итоговые оценки, индексы и флаги валидности; промежуточные данные свёрток остаются в CUDA.", "Создаёт словарь оценок, сортирует его и определяет лучшую личность и второе место.", "Записывает лучшее имя, оценку, второе место, отрыв и точный путь совпавшего эталона. Этот verifier сообщает значения; пороги принятия применяет внешняя оболочка детектора/Hive, а не эта функция.", "Возвращает записи изображений вместе с временем этапов CUDA и сведениями о provider."],
+      he: ["מקבל את הווקטור 1×128 שנוצר בשלב 05 וניגש למטריצות הייחוס השמורות.", "ממיר את הווקטור ל-float ומנרמל את אורכו לפי L2 לאחד, כך שמכפלות סקלריות הן דמיון קוסינוס.", "מעבד בנפרד את עדי, פראג' וסלאבה באמצעות מטריצת הייחוס N×128 המתאימה.", "מחשב 1×128 @ 128×N ומפיק ציון דמיון אחד לכל תמונת ייחוס של הזהות הנוכחית.", "max(dim=1) שומר את הציון הגבוה ואת אינדקס הייחוס המתאים לכל זהות.", "עורם את שלוש הזהויות למטריצות קומפקטיות של ציונים ואינדקסים שמוחזרות לקוד הקורא.", "verify_batch קורא לפונקציית ההשוואה מיד לאחר שסשן SFace ב-CUDA יוצר את הווקטורים.", "רק הציונים, האינדקסים ודגלי התקינות הסופיים והקטנים מועברים ל-CPU; נתוני הביניים של הקונבולוציות נשארים ב-CUDA.", "בונה מילון ציונים, ממיין אותו וקובע את הזהות המובילה ואת המקום השני.", "שומר תווית מובילה, ציון, מקום שני, פער ונתיב מדויק לייחוס התואם. המאמת הזה מדווח את הערכים; ספי הקבלה מוחלים בשכבת הגלאי/Hive החיצונית ולא בפונקציה זו.", "מחזיר רשומות לכל תמונה יחד עם זמני שלבי CUDA ופרטי provider."]
     },
-    layers: { en: "Threshold decision and JSON serialization", ru: "Пороговое решение и формирование JSON", he: "החלטת סף ויצירת JSON" },
-    connections: { en: "Exactly one physical recognition", ru: "Ровно одно физическое распознавание", he: "זיהוי פיזי אחד בדיוק" },
-    tensor: "one screenshot → one face vector → one identity result",
+    layers: { en: "L2 normalization + CUDA matrix multiplication + host result assembly", ru: "L2-нормализация + матричное умножение CUDA + сборка ответа на host", he: "נרמול L2 + כפל מטריצות ב-CUDA + הרכבת תשובה במארח" },
+    connections: { en: "1×128 compared with every cached reference vector", ru: "1×128 сравнивается с каждым кэшированным вектором эталона", he: "1×128 מושווה לכל וקטור ייחוס שמור" },
+    tensor: "1×128 @ 128×N → 1×N per identity → best/runner-up → JSON",
     cudaShort: { en: "Single image is FP32; no 50/500 batch behavior", ru: "Одиночное изображение использует FP32; логики 50/500 здесь нет", he: "תמונה יחידה משתמשת ב-FP32; אין כאן התנהגות של 50/500" },
-    cuda: { en: "The returned cpu_intermediate_count is zero because no detector, alignment, embedding, or scoring intermediate is copied to CPU. File decoding and final JSON construction are host operations and are reported separately.", ru: "cpu_intermediate_count равен нулю, потому что промежуточные данные детекции, выравнивания, SFace и сравнения не копируются на CPU. Декодирование файла и сборка итогового JSON являются host-операциями и учитываются отдельно.", he: "cpu_intermediate_count שווה לאפס משום שנתוני הביניים של הזיהוי, היישור, SFace וההשוואה אינם מועתקים ל-CPU. פענוח הקובץ ובניית ה-JSON הסופי הן פעולות מארח ומדווחות בנפרד." },
+    cuda: { en: "The vector normalization, all reference matrix multiplications and max reductions run on CUDA. After synchronization, only the small final matrices are copied to CPU for labels, paths, timing fields and JSON assembly.", ru: "Нормализация вектора, все умножения на матрицы эталонов и редукции max выполняются на CUDA. После синхронизации на CPU копируются только малые итоговые матрицы для выбора имён, путей, полей времени и сборки JSON.", he: "נרמול הווקטור, כל הכפל במטריצות הייחוס ופעולות max רצים ב-CUDA. לאחר הסנכרון מועברות ל-CPU רק המטריצות הסופיות הקטנות לצורך תוויות, נתיבים, זמני ביצוע והרכבת JSON." },
     code: `payload = verifier.verify_batch([screenshot_path])
 result = payload["results"][0]
 print(result["label"], result["score"], payload["gpu_total_ms"])`
@@ -2527,7 +2531,8 @@ Object.assign(detailUi.en, {
   focusOnnxLayerAction: "Open the complete stage and highlight this exact ONNX node",
   onnxGraphTitle: "Actual SFace ONNX layers",
   onnxGraphMeta: "layers {start}–{end} of 92",
-  stageFiveFullSource: "Complete stage 05 · 92 ONNX nodes + exact post-network Python",
+  stageFiveFullSource: "Complete stage 05 · exact 92-node SFace ONNX graph",
+  stageSixFullSource: "Complete stage 06 · exact CUDA comparison and result code",
   stageFiveOpenFull: "Open complete stage 05 code and ONNX graph"
 });
 Object.assign(detailUi.ru, {
@@ -2542,7 +2547,8 @@ Object.assign(detailUi.ru, {
   focusOnnxLayerAction: "Открыть весь пятый этап и выделить именно этот узел ONNX",
   onnxGraphTitle: "Фактические слои SFace ONNX",
   onnxGraphMeta: "слои {start}–{end} из 92",
-  stageFiveFullSource: "Полный этап 05 · 92 узла ONNX + точный Python-код после сети",
+  stageFiveFullSource: "Полный этап 05 · точный граф SFace из 92 узлов ONNX",
+  stageSixFullSource: "Полный этап 06 · точный CUDA-код сравнения и результата",
   stageFiveOpenFull: "Открыть полный код и граф ONNX этапа 05"
 });
 Object.assign(detailUi.he, {
@@ -2557,7 +2563,8 @@ Object.assign(detailUi.he, {
   focusOnnxLayerAction: "פתיחת שלב 05 המלא והדגשת צומת ONNX המדויק הזה",
   onnxGraphTitle: "שכבות SFace ONNX בפועל",
   onnxGraphMeta: "שכבות {start}–{end} מתוך 92",
-  stageFiveFullSource: "שלב 05 המלא · 92 צומתי ONNX וקוד Python מדויק לאחר הרשת",
+  stageFiveFullSource: "שלב 05 המלא · גרף SFace מדויק של 92 צומתי ONNX",
+  stageSixFullSource: "שלב 06 המלא · קוד CUDA מדויק להשוואה ולתוצאה",
   stageFiveOpenFull: "פתיחת הקוד המלא וגרף ONNX של שלב 05"
 });
 
@@ -4707,8 +4714,7 @@ function renderStageFiveFullCode(stage, focusStart = -1, focusEnd = -1, shouldSc
   stageCode.setAttribute("dir", lang === "he" ? "rtl" : "ltr");
   stageCode.classList.add("full-code", "stage-five-complete");
   stageCodeModeButton.textContent = uiText("showShortCode");
-  const scoringLines = stage.exactCode ? stage.exactCode.replace(/\s+$/, "").split("\n") : [];
-  stageCodeSource.textContent = `${uiText("stageFiveFullSource")} · 92 + ${scoringLines.length}`;
+  stageCodeSource.textContent = `${uiText("stageFiveFullSource")} · 92`;
 
   const renderedRows = new Map();
   sfaceOnnxAllRows.forEach((item) => {
@@ -4728,34 +4734,6 @@ function renderStageFiveFullCode(stage, focusStart = -1, focusEnd = -1, shouldSc
     stageCode.appendChild(row);
   });
 
-  const boundary = document.createElement("div");
-  boundary.className = "code-line-note code-boundary";
-  const boundaryCode = document.createElement("code");
-  boundaryCode.textContent = "# --- SFace ONNX output 1×128; post-network CUDA reference scoring begins ---";
-  const boundaryNote = document.createElement("span");
-  boundaryNote.className = "code-note";
-  boundaryNote.textContent = lang === "ru"
-    ? "Граница двух разных частей: выше находится точный десериализованный граф бинарной модели ONNX, ниже — точный Python-код сравнения готового вектора с эталонами."
-    : lang === "he"
-      ? "גבול בין שני חלקים שונים: למעלה נמצא הגרף המדויק שעבר deserialization ממודל ONNX הבינרי, ולמטה קוד Python המדויק שמשווה את הווקטור המוכן לייחוסים."
-      : "Boundary between two different parts: above is the exact graph deserialized from the binary ONNX model; below is the exact Python that compares the completed embedding with references.";
-  boundary.append(boundaryCode, boundaryNote);
-  stageCode.appendChild(boundary);
-
-  scoringLines.forEach((line, index) => {
-    const row = document.createElement("div");
-    row.className = `code-line-note python-scoring-line${line.trim() ? "" : " blank"}`;
-    const code = document.createElement("code");
-    code.textContent = line || " ";
-    const note = document.createElement("span");
-    note.className = "code-note";
-    const annotationLines = combinedRecognitionCode ? combinedRecognitionCode.split("\n") : scoringLines;
-    const annotationIndex = combinedRecognitionCode ? (stage.exactStartLine || 0) + index : index;
-    note.textContent = contextualSingleSourceAnnotation(annotationLines, annotationIndex);
-    row.append(code, note);
-    stageCode.appendChild(row);
-  });
-
   const firstFocused = renderedRows.get(focusStart);
   if (firstFocused) {
     requestAnimationFrame(() => {
@@ -4765,12 +4743,76 @@ function renderStageFiveFullCode(stage, focusStart = -1, focusEnd = -1, shouldSc
   }
 }
 
+function stageSixSources() {
+  return [
+    { key: "score", stage: stageDetails[4], lines: (stageDetails[4].exactCode || "").split("\n") },
+    { key: "verify", stage: stageDetails[5], lines: (stageDetails[5].exactCode || "").split("\n") }
+  ];
+}
+
+function renderStageSixFullCode(focus = null, shouldScroll = false) {
+  const lang = document.documentElement.lang || "en";
+  stageCode.innerHTML = "";
+  stageCode.setAttribute("dir", lang === "he" ? "rtl" : "ltr");
+  stageCode.classList.add("full-code", "stage-six-complete");
+  stageCodeModeButton.textContent = uiText("showShortCode");
+  const sources = stageSixSources();
+  const count = sources.reduce((sum, source) => sum + source.lines.length, 0);
+  stageCodeSource.textContent = `${uiText("stageSixFullSource")} · ${uiText("lineCount").replace("{count}", String(count))}`;
+  let firstFocused = null;
+  sources.forEach((source, sourceIndex) => {
+    const boundary = document.createElement("div");
+    boundary.className = "code-line-note code-boundary";
+    const boundaryCode = document.createElement("code");
+    boundaryCode.textContent = source.key === "score"
+      ? "# --- CUDA reference scoring: 128D vectors -> score/index matrices ---"
+      : "# --- verifier orchestration: call scorer -> choose identity -> return result ---";
+    const boundaryNote = document.createElement("span");
+    boundaryNote.className = "code-note";
+    boundaryNote.textContent = source.key === "score"
+      ? (lang === "ru" ? "Точный вспомогательный блок CUDA-сравнения векторов с эталонами." : lang === "he" ? "בלוק העזר המדויק להשוואת וקטורים לייחוסים ב-CUDA." : "Exact CUDA helper that compares embeddings with reference vectors.")
+      : (lang === "ru" ? "Точный вызывающий код: получает оценки, выбирает личность и собирает ответ." : lang === "he" ? "הקוד הקורא המדויק: מקבל ציונים, בוחר זהות ובונה את התוצאה." : "Exact caller: receives scores, selects the identity, and builds the result.");
+    boundary.append(boundaryCode, boundaryNote);
+    stageCode.appendChild(boundary);
+    source.lines.forEach((line, index) => {
+      const row = document.createElement("div");
+      row.className = `code-line-note${line.trim() ? "" : " blank"}`;
+      row.dataset.sourceSection = source.key;
+      row.dataset.sourceLine = String(index + 1);
+      const code = document.createElement("code");
+      code.textContent = line || " ";
+      const note = document.createElement("span");
+      note.className = "code-note";
+      const annotationLines = combinedRecognitionCode ? combinedRecognitionCode.split("\n") : source.lines;
+      const annotationIndex = combinedRecognitionCode ? (source.stage.exactStartLine || 0) + index : index;
+      note.textContent = contextualSingleSourceAnnotation(annotationLines, annotationIndex);
+      row.append(code, note);
+      if (focus?.section === source.key && index >= focus.start && index <= focus.end) {
+        row.classList.add("code-focus");
+        if (!firstFocused) firstFocused = row;
+      }
+      if (focus?.section === source.key && index === focus.start) row.classList.add("code-focus-start");
+      if (focus?.section === source.key && index === focus.end) row.classList.add("code-focus-end");
+      stageCode.appendChild(row);
+    });
+    if (sourceIndex < sources.length - 1) boundary.classList.add("section-start");
+  });
+  if (firstFocused) requestAnimationFrame(() => {
+    stageCode.scrollTop = Math.max(0, firstFocused.offsetTop - stageCode.offsetTop - 18);
+    if (shouldScroll) stageCode.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+}
+
 function renderStageCode(stage) {
   stageCode.innerHTML = "";
   const lang = document.documentElement.lang || "en";
   const requestedFullMode = stageCodeMode === "full";
   if (stage.level === "05" && requestedFullMode) {
     renderStageFiveFullCode(stage);
+    return;
+  }
+  if (stage.level === "06" && requestedFullMode && stageDetails[4]?.exactCode && stage.exactCode) {
+    renderStageSixFullCode();
     return;
   }
   const fullMode = requestedFullMode && Boolean(stage.exactCode);
@@ -5122,6 +5164,37 @@ function stageOneCodeRange(lines, stepIndex) {
   return ranges[stepIndex]?.() || { start: -1, end: -1 };
 }
 
+function genericStageCodeRange(stageLevel, lines, stepIndex) {
+  const findIncludes = (text, from = 0) => lines.findIndex((line, index) => index >= from && line.includes(text));
+  const findTrimmed = (text, from = 0) => lines.findIndex((line, index) => index >= from && line.trim() === text);
+  if (stageLevel === "02") {
+    const starts = [
+      findTrimmed("prepared: list = []"),
+      findTrimmed("height, width = image.shape[:2]"),
+      findIncludes("tensor = torch.from_numpy("),
+      findTrimmed("tensor = tensor.permute(2, 0, 1).unsqueeze(0).float()")
+    ];
+    const ends = [
+      findTrimmed("for image in images:"),
+      findTrimmed("content_height = max(32, int(round(height * scale)))"),
+      findIncludes('non_blocking=False)'),
+      findTrimmed("return batch.contiguous(), sizes")
+    ];
+    return { start: starts[stepIndex], end: ends[stepIndex] };
+  }
+  if (stageLevel === "03") {
+    const starts = [findTrimmed("face_levels = []"), findTrimmed("for level, stride in enumerate(YUNET_STRIDES):"), findTrimmed("faces = torch.cat(face_levels, dim=1)"), findTrimmed("candidate_mask = scores >= 0.55")];
+    const ends = [findTrimmed("score_levels = []"), findTrimmed("score_levels.append(scores)"), findTrimmed("face_rank = faces[..., 2] * faces[..., 3] * (1.25 - centre_offset).clamp_min_(0.25)"), findTrimmed("return selected_faces, valid_mask")];
+    return { start: starts[stepIndex], end: ends[stepIndex] };
+  }
+  if (stageLevel === "04") {
+    const starts = [findIncludes("source = faces[:, 4:14]"), findTrimmed("source_mean = source.mean(dim=1, keepdim=True)"), findTrimmed("inverse_linear = torch.linalg.inv(linear)"), findTrimmed("aligned = functional.grid_sample(")];
+    const ends = [findIncludes(".unsqueeze(0).expand(source.shape[0], -1, -1)"), findTrimmed("translation = destination_mean.squeeze(1) - (linear @ source_mean.transpose(1, 2)).squeeze(2)"), findTrimmed(").reshape(-1, 112, 112, 2)"), findTrimmed("return aligned[:, [2, 1, 0]].contiguous()")];
+    return { start: starts[stepIndex], end: ends[stepIndex] };
+  }
+  return { start: -1, end: -1 };
+}
+
 function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true) {
   if (!stage?.exactCode || range.start < 0 || range.end < range.start) return false;
   const sourceLines = stage.exactCode.split("\n");
@@ -5177,6 +5250,71 @@ async function focusStageOneCode(stepIndex, shouldScroll = true) {
   }
 }
 
+async function focusGenericStageCode(stepIndex, shouldScroll = true) {
+  const ready = await ensureExactStageCode();
+  const stage = stageDetails[currentStageIndex];
+  if (!ready || !["02", "03", "04"].includes(stage?.level)) return;
+  const range = genericStageCodeRange(stage.level, stage.exactCode.split("\n"), stepIndex);
+  if (!renderFocusedStageSource(stage, range, stepIndex, shouldScroll)) {
+    console.error(`Could not resolve stage ${stage.level} code range for step ${stepIndex + 1}`);
+    stageCodeSource.textContent = uiText("fullStageError");
+  }
+}
+
+function stageSixCodeRange(stepIndex) {
+  const sources = stageSixSources();
+  const score = sources[0].lines;
+  const verify = sources[1].lines;
+  const find = (lines, text, from = 0) => lines.findIndex((line, index) => index >= from && line.trim() === text);
+  const scoreRange = (startText, endText = startText) => ({
+    section: "score",
+    start: find(score, startText),
+    end: find(score, endText, Math.max(0, find(score, startText)))
+  });
+  const verifyRange = (startText, endText = startText) => ({
+    section: "verify",
+    start: find(verify, startText),
+    end: find(verify, endText, Math.max(0, find(verify, startText)))
+  });
+  const resultStart = find(verify, "results[index] = {");
+  const resultEnd = resultStart < 0 ? -1 : find(verify, "}", resultStart);
+  const finalReturn = find(verify, "return {", resultEnd + 1);
+  const finalEnd = finalReturn < 0 ? -1 : find(verify, "}", finalReturn);
+  const ranges = [
+    () => scoreRange("def _score_vectors_cuda(self, vectors):", 'raise RuntimeError("CUDA reference vectors are not initialized")'),
+    () => scoreRange("import torch.nn.functional as functional", "normalized = functional.normalize(vectors.float(), dim=1)"),
+    () => scoreRange("label_scores = []", "for label in self.labels:"),
+    () => scoreRange("similarities = normalized @ references[label].transpose(0, 1)"),
+    () => scoreRange("scores, indices = similarities.max(dim=1)", "label_matches.append(indices)"),
+    () => scoreRange("return torch.stack(label_scores, dim=1), torch.stack(label_matches, dim=1)"),
+    () => verifyRange("score_started = time.perf_counter()", "gpu_score_ms = (time.perf_counter() - score_started) * 1000.0"),
+    () => verifyRange("valid_flags = valid_mask.cpu().tolist()", "del vectors, score_matrix, match_matrix, valid_mask"),
+    () => verifyRange("scores = {label: float(score_values[index, label_index]) for label_index, label in enumerate(self.labels)}", "best_label_index = self.labels.index(best)"),
+    () => ({ section: "verify", start: find(verify, "reference_index = int(match_values[index, best_label_index])"), end: resultEnd }),
+    () => ({ section: "verify", start: finalReturn, end: finalEnd })
+  ];
+  return ranges[stepIndex]?.() || { section: "score", start: -1, end: -1 };
+}
+
+async function focusStageSixCode(stepIndex, shouldScroll = true) {
+  const ready = await ensureExactStageCode();
+  if (!ready || stageDetails[currentStageIndex]?.level !== "06") return;
+  const range = stageSixCodeRange(stepIndex);
+  if (range.start < 0 || range.end < range.start) {
+    console.error(`Could not resolve stage 06 code range for step ${stepIndex + 1}`);
+    stageCodeSource.textContent = uiText("fullStageError");
+    return;
+  }
+  stageCodeMode = "full";
+  activeStageFiveCodeStep = stepIndex;
+  renderStageSixFullCode(range, shouldScroll);
+  document.querySelectorAll(".diagram-node.code-linked").forEach((node) => {
+    const selected = Number(node.dataset.codeStep) === stepIndex;
+    node.classList.toggle("code-active", selected);
+    node.setAttribute("aria-pressed", selected ? "true" : "false");
+  });
+}
+
 async function focusStageFiveOnnx(stepIndex, shouldScroll = true, exactLayer = null) {
   if (stageDetails[currentStageIndex]?.level !== "05" || !stageOnnxPanel || !stageOnnxLayers) return;
   const rows = sfaceOnnxRows(stepIndex);
@@ -5225,7 +5363,7 @@ async function focusStageFiveOnnx(stepIndex, shouldScroll = true, exactLayer = n
 function buildStageDiagram(labels, notes, data) {
   stageDiagram.innerHTML = "";
   labels.forEach((label, index) => {
-    const codeLinked = ["01", "05"].includes(data?.level) && activeDetectorVariant === "single";
+    const codeLinked = ["01", "02", "03", "04", "05", "06"].includes(data?.level) && activeDetectorVariant === "single";
     const node = document.createElement(codeLinked ? "button" : "div");
     node.className = "diagram-node";
     if (codeLinked) {
@@ -5236,7 +5374,13 @@ function buildStageDiagram(labels, notes, data) {
       const action = data.level === "05" ? uiText("focusOnnxAction") : uiText("focusCodeAction");
       node.setAttribute("aria-label", `${label}. ${action}`);
       node.title = action;
-      node.addEventListener("click", () => data.level === "05" ? focusStageFiveOnnx(index) : focusStageOneCode(index));
+      node.addEventListener("click", () => data.level === "05"
+        ? focusStageFiveOnnx(index)
+        : data.level === "06"
+          ? focusStageSixCode(index)
+          : data.level === "01"
+            ? focusStageOneCode(index)
+            : focusGenericStageCode(index));
     }
     const title = document.createElement("strong");
     title.textContent = label;
@@ -5291,6 +5435,10 @@ function renderStageDetail(index, shouldScroll = true) {
     focusStageFiveOnnx(activeStageFiveCodeStep, false);
   } else if (data.level === "01" && activeStageFiveCodeStep >= 0) {
     focusStageOneCode(activeStageFiveCodeStep, false);
+  } else if (data.level === "06" && activeStageFiveCodeStep >= 0) {
+    focusStageSixCode(activeStageFiveCodeStep, false);
+  } else if (["02", "03", "04"].includes(data.level) && activeStageFiveCodeStep >= 0) {
+    focusGenericStageCode(activeStageFiveCodeStep, false);
   }
   if (shouldScroll) stageDetail.scrollIntoView({ behavior: "smooth", block: "start" });
 }
