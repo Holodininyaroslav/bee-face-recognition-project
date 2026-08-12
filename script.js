@@ -2305,17 +2305,21 @@ const currentRuntimeStages = [
 const singleCudaStages = [
   {
     level: "01",
-    title: { en: "CUDA runtime and model sessions", ru: "Среда CUDA и сессии моделей", he: "סביבת CUDA וסשנים של המודלים" },
+    title: { en: "Loading YuNet/SFace models, weights, and CUDA sessions", ru: "Загрузка моделей и весов YuNet/SFace и создание CUDA-сессий", he: "טעינת מודלי ומשקלי YuNet/SFace ויצירת סשני CUDA" },
     summary: {
-      en: "Creates CUDA-only YuNet and SFace ONNX Runtime sessions, initializes GPU reference tensors, and rejects startup when CUDA is not the active provider.",
-      ru: "Создаёт CUDA-сессии ONNX Runtime для YuNet и SFace, размещает эталонные векторы на GPU и останавливает запуск, если активным provider является не CUDA.",
-      he: "יוצר סשנים של ONNX Runtime ב-CUDA עבור YuNet ו-SFace, מציב את וקטורי הייחוס ב-GPU ועוצר את ההפעלה אם CUDA אינה ה-provider הפעיל."
+      en: "Reads the YuNet and SFace ONNX files, loads their graphs and trained weights, creates and validates CUDAExecutionProvider sessions, then places the cached reference vectors in GPU memory.",
+      ru: "Читает ONNX-файлы YuNet и SFace, загружает их графы и обученные веса, создаёт и проверяет сессии CUDAExecutionProvider, а затем размещает кэшированные эталонные векторы в памяти GPU.",
+      he: "קורא את קובצי ה-ONNX של YuNet ו-SFace, טוען את הגרפים והמשקלים המאומנים, יוצר ומאמת סשנים של CUDAExecutionProvider ולאחר מכן מציב את וקטורי הייחוס השמורים בזיכרון ה-GPU."
     },
-    diagram: { en: ["Load models", "CUDA provider", "GPU references", "Ready"], ru: ["Загрузка моделей", "Provider CUDA", "Эталоны на GPU", "Готово"], he: ["טעינת מודלים", "CUDA provider", "ייחוסים ב-GPU", "מוכן"] },
+    diagram: {
+      en: ["Locate both ONNX files", "Load SFace graph and weights", "Create SFace CUDA session", "Load YuNet graph and weights", "Create YuNet CUDA session", "Copy references to CUDA"],
+      ru: ["Найти оба ONNX-файла", "Загрузить граф и веса SFace", "Создать CUDA-сессию SFace", "Загрузить граф и веса YuNet", "Создать CUDA-сессию YuNet", "Перенести эталоны в CUDA"],
+      he: ["איתור שני קובצי ה-ONNX", "טעינת גרף ומשקלי SFace", "יצירת סשן CUDA ל-SFace", "טעינת גרף ומשקלי YuNet", "יצירת סשן CUDA ל-YuNet", "העברת הייחוסים ל-CUDA"]
+    },
     diagramNotes: {
-      en: ["Loads the YuNet detector and SFace recognizer ONNX files once when Hive starts.", "Creates ONNX Runtime sessions with CUDAExecutionProvider first and verifies that it remains the active provider.", "Copies the cached normalized reference embeddings to CUDA memory once, before the screenshot request.", "The one-image request starts only after both neural networks and the reference matrix are resident on the GPU."],
-      ru: ["Один раз при запуске Hive загружает ONNX-файлы детектора YuNet и распознавателя SFace.", "Создаёт сессии ONNX Runtime с CUDAExecutionProvider первым и проверяет, что именно он остался активным provider.", "Один раз до запроса снимка копирует кэшированные нормализованные эталонные векторы в память CUDA.", "Запрос одного изображения начинается только после размещения обеих нейросетей и матрицы эталонов на GPU."],
-      he: ["טוען פעם אחת בעת הפעלת Hive את קובצי ה-ONNX של גלאי YuNet ושל מזהה SFace.", "יוצר סשנים של ONNX Runtime כאשר CUDAExecutionProvider ראשון ומוודא שהוא נשאר ה-provider הפעיל.", "מעתיק פעם אחת, לפני בקשת צילום המסך, את embeddings הייחוס המנורמלים לזיכרון CUDA.", "בקשת התמונה היחידה מתחילה רק לאחר ששתי הרשתות ומטריצת הייחוס נמצאות ב-GPU."]
+      en: ["Builds the exact YuNet and SFace paths and stops immediately if either trained .onnx file is missing.", "onnx.load reads the SFace graph and its trained initializer tensors; the code removes initializer-only graph inputs and prepares a dynamic batch dimension.", "InferenceSession consumes the serialized SFace model, initializes CUDAExecutionProvider resources, and rejects a silent CPU fallback.", "onnx.load reads the YuNet graph and trained initializers; the code adjusts reshape constants and dynamic input/output dimensions required by this CUDA path.", "InferenceSession consumes the serialized YuNet model, initializes its CUDA provider and memory arena, and verifies that CUDA is first.", "After the reference photos have been embedded, torch.as_tensor places each identity's normalized reference matrix in CUDA memory for later comparisons."],
+      ru: ["Формирует точные пути к YuNet и SFace и сразу останавливается, если отсутствует хотя бы один обученный файл .onnx.", "onnx.load читает граф SFace и тензоры его обученных параметров; затем код удаляет initializer-only входы графа и задаёт динамический размер пачки.", "InferenceSession принимает сериализованную модель SFace, инициализирует ресурсы CUDAExecutionProvider и запрещает незаметный переход на CPU.", "onnx.load читает граф YuNet и обученные параметры; затем код исправляет константы reshape и динамические размеры входов/выходов для этого CUDA-пути.", "InferenceSession принимает сериализованную модель YuNet, инициализирует CUDA-provider и его арену памяти и проверяет, что CUDA стоит первой.", "После получения векторов эталонных фотографий torch.as_tensor размещает нормализованную матрицу эталонов каждой личности в памяти CUDA для последующих сравнений."],
+      he: ["בונה את הנתיבים המדויקים של YuNet ושל SFace ועוצר מיד אם חסר אחד מקובצי ה-.onnx המאומנים.", "onnx.load קורא את גרף SFace ואת טנזורי הפרמטרים המאומנים שלו; לאחר מכן הקוד מסיר קלטי גרף שהם initializer בלבד ומגדיר ממד אצווה דינמי.", "InferenceSession מקבל את מודל SFace המסוריאל, מאתחל משאבים של CUDAExecutionProvider ומונע מעבר שקט ל-CPU.", "onnx.load קורא את גרף YuNet ואת הפרמטרים המאומנים; לאחר מכן הקוד מתאים קבועי reshape וממדים דינמיים של קלט ופלט למסלול CUDA זה.", "InferenceSession מקבל את מודל YuNet המסוריאל, מאתחל את ספק CUDA ואת זירת הזיכרון שלו ומוודא ש-CUDA ראשון.", "לאחר הפקת embeddings מתמונות הייחוס, torch.as_tensor מציב בזיכרון CUDA את מטריצת הייחוס המנורמלת של כל זהות לצורך ההשוואות הבאות."]
     },
     layers: { en: "YuNet ONNX + SFace ONNX initialization", ru: "Инициализация YuNet ONNX + SFace ONNX", he: "אתחול YuNet ONNX ו-SFace ONNX" },
     connections: { en: "No screenshot inference yet", ru: "Инференс снимка ещё не выполняется", he: "עדיין אין הסקה של צילום המסך" },
@@ -5082,6 +5086,97 @@ async function focusStageFiveCode(stepIndex, shouldScroll = true) {
   }
 }
 
+function stageOneCodeRange(lines, stepIndex) {
+  const find = (text, from = 0) => lines.findIndex((line, index) => index >= from && line.trim() === text);
+  const before = (text, from = 0) => {
+    const index = find(text, from);
+    return index < 0 ? -1 : index - 1;
+  };
+  const ranges = [
+    () => ({
+      start: find('yunet = self.model_root / "face_detection_yunet_2023mar.onnx"'),
+      end: find('raise RuntimeError(f"SFace models are missing in {self.model_root}")')
+    }),
+    () => {
+      const start = find("model = onnx.load(str(model_path))", find("def _create_cuda_session(self, model_path: Path, *, use_fp16: bool):"));
+      return { start, end: before("options = ort.SessionOptions()", start) };
+    },
+    () => {
+      const method = find("def _create_cuda_session(self, model_path: Path, *, use_fp16: bool):");
+      return { start: find("options = ort.SessionOptions()", method), end: find("return session", method) };
+    },
+    () => {
+      const method = find("def _create_cuda_yunet_session(self, model_path: Path, *, use_fp16: bool):");
+      const start = find("model = onnx.load(str(model_path))", method);
+      return { start, end: before("options = ort.SessionOptions()", start) };
+    },
+    () => {
+      const method = find("def _create_cuda_yunet_session(self, model_path: Path, *, use_fp16: bool):");
+      return { start: find("options = ort.SessionOptions()", method), end: find("return session", method) };
+    },
+    () => ({
+      start: find("def _initialize_cuda_pipeline(self) -> None:"),
+      end: before("def _run_ort_cuda(self, session, input_tensor, output_names: list[str] | None = None):")
+    })
+  ];
+  return ranges[stepIndex]?.() || { start: -1, end: -1 };
+}
+
+function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true) {
+  if (!stage?.exactCode || range.start < 0 || range.end < range.start) return false;
+  const sourceLines = stage.exactCode.split("\n");
+  stageCodeMode = "full";
+  stageCode.innerHTML = "";
+  stageCode.setAttribute("dir", (document.documentElement.lang || "en") === "he" ? "rtl" : "ltr");
+  stageCode.classList.add("full-code", "focused-source");
+  stageCodeModeButton.textContent = uiText("showShortCode");
+  stageCodeSource.textContent = uiText("focusedCodeSource")
+    .replace("{start}", String(range.start + 1))
+    .replace("{end}", String(range.end + 1));
+  const rows = [];
+  sourceLines.forEach((line, index) => {
+    const row = document.createElement("div");
+    row.className = `code-line-note${line.trim() ? "" : " blank"}`;
+    row.dataset.sourceLine = String(index + 1);
+    const code = document.createElement("code");
+    code.textContent = line || " ";
+    const note = document.createElement("span");
+    note.className = "code-note";
+    const annotationLines = combinedRecognitionCode ? combinedRecognitionCode.split("\n") : sourceLines;
+    const annotationIndex = combinedRecognitionCode ? (stage.exactStartLine || 0) + index : index;
+    note.textContent = contextualSingleSourceAnnotation(annotationLines, annotationIndex);
+    row.append(code, note);
+    if (index >= range.start && index <= range.end) row.classList.add("code-focus");
+    if (index === range.start) row.classList.add("code-focus-start");
+    if (index === range.end) row.classList.add("code-focus-end");
+    rows.push(row);
+    stageCode.appendChild(row);
+  });
+  activeStageFiveCodeStep = stepIndex;
+  document.querySelectorAll(".diagram-node.code-linked").forEach((node) => {
+    const selected = Number(node.dataset.codeStep) === stepIndex;
+    node.classList.toggle("code-active", selected);
+    node.setAttribute("aria-pressed", selected ? "true" : "false");
+  });
+  const firstRow = rows[range.start];
+  if (firstRow) requestAnimationFrame(() => {
+    stageCode.scrollTop = Math.max(0, firstRow.offsetTop - stageCode.offsetTop - 18);
+    if (shouldScroll) stageCode.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+  return true;
+}
+
+async function focusStageOneCode(stepIndex, shouldScroll = true) {
+  const ready = await ensureExactStageCode();
+  const stage = stageDetails[currentStageIndex];
+  if (!ready || stage?.level !== "01") return;
+  const range = stageOneCodeRange(stage.exactCode.split("\n"), stepIndex);
+  if (!renderFocusedStageSource(stage, range, stepIndex, shouldScroll)) {
+    console.error(`Could not resolve stage 01 code range for step ${stepIndex + 1}`);
+    stageCodeSource.textContent = uiText("fullStageError");
+  }
+}
+
 async function focusStageFiveOnnx(stepIndex, shouldScroll = true, exactLayer = null) {
   if (stageDetails[currentStageIndex]?.level !== "05" || !stageOnnxPanel || !stageOnnxLayers) return;
   const rows = sfaceOnnxRows(stepIndex);
@@ -5130,7 +5225,7 @@ async function focusStageFiveOnnx(stepIndex, shouldScroll = true, exactLayer = n
 function buildStageDiagram(labels, notes, data) {
   stageDiagram.innerHTML = "";
   labels.forEach((label, index) => {
-    const codeLinked = data?.level === "05" && activeDetectorVariant === "single";
+    const codeLinked = ["01", "05"].includes(data?.level) && activeDetectorVariant === "single";
     const node = document.createElement(codeLinked ? "button" : "div");
     node.className = "diagram-node";
     if (codeLinked) {
@@ -5138,9 +5233,10 @@ function buildStageDiagram(labels, notes, data) {
       node.classList.add("code-linked");
       node.dataset.codeStep = String(index);
       node.setAttribute("aria-pressed", activeStageFiveCodeStep === index ? "true" : "false");
-      node.setAttribute("aria-label", `${label}. ${uiText("focusOnnxAction")}`);
-      node.title = uiText("focusOnnxAction");
-      node.addEventListener("click", () => focusStageFiveOnnx(index));
+      const action = data.level === "05" ? uiText("focusOnnxAction") : uiText("focusCodeAction");
+      node.setAttribute("aria-label", `${label}. ${action}`);
+      node.title = action;
+      node.addEventListener("click", () => data.level === "05" ? focusStageFiveOnnx(index) : focusStageOneCode(index));
     }
     const title = document.createElement("strong");
     title.textContent = label;
@@ -5193,6 +5289,8 @@ function renderStageDetail(index, shouldScroll = true) {
   });
   if (data.level === "05" && activeStageFiveCodeStep >= 0) {
     focusStageFiveOnnx(activeStageFiveCodeStep, false);
+  } else if (data.level === "01" && activeStageFiveCodeStep >= 0) {
+    focusStageOneCode(activeStageFiveCodeStep, false);
   }
   if (shouldScroll) stageDetail.scrollIntoView({ behavior: "smooth", block: "start" });
 }
