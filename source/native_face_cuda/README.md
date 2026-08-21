@@ -19,6 +19,16 @@ network inference is performed by native C++ executables.
 The CUDA executable loads `CUDAExecutionProvider` directly. It does not import
 Python, PyTorch, OpenCV Python or a Python ONNX Runtime session.
 
+## Current bilingual summary
+
+- [Russian native CPU/CUDA guide](docs/Face_Recognition_CUDA_Demo_Guide_RU.pdf)
+- [Hebrew native CPU/CUDA guide](docs/Face_Recognition_CUDA_Demo_Guide_HE.pdf)
+
+Both four-page guides describe the active C++/CUDA path, the exact CPU/GPU
+boundary, the 1/50/500 workload semantics, the project-owned score kernel and
+the verified native benchmark results. Regenerate them with
+`tools/build_demo_guides.py` using the bundled ReportLab runtime.
+
 ## Auditable CUDA source
 
 - `src/sface_cuda.cu`: active SFace cosine-score CUDA kernel.

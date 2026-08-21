@@ -4509,13 +4509,269 @@ function currentCppSourceAnnotation(text, lang) {
     "Директива препроцессора C/C++, которая выбирает или определяет компилируемый код backend.",
     "הנחיית קדם־מעבד של C/C++ שבוחרת או מגדירה את קוד ה‑backend שיודר."
   );
-  if (/^(\/\/|\/\*|\*)/.test(text)) return say(
-    "Non-executable C++ documentation comment describing the adjacent detector code.",
-    "Неисполняемый комментарий C++, поясняющий соседний код детектора.",
-    "הערת תיעוד לא־מבוצעת של C++ המתארת את קוד הגלאי הסמוך."
-  );
+  if (/^(\/\/|\/\*|\*)/.test(text)) {
+    if (/Grid Y selects a query image/.test(text)) return say(
+      "Documents the two-dimensional launch mapping: grid Y selects one query, while grid X walks through blocks of references.",
+      "Поясняет двумерное распределение запуска: grid Y выбирает запрос, а grid X проходит по блокам эталонов.",
+      "מתעד את מיפוי השיגור הדו־ממדי: grid Y בוחר שאילתה אחת, ו־grid X עובר על בלוקים של ייחוסים."
+    );
+    if (/guard is required because the final block/.test(text)) return say(
+      "Explains why the index check is necessary: ceil(N/256) can launch extra threads in the last reference block.",
+      "Объясняет boundary guard: `ceil(N/256)` может создать лишние threads в последнем блоке эталонов.",
+      "מסביר מדוע נדרשת בדיקת גבול: `ceil(N/256)` עלול לשגר threads עודפים בבלוק הייחוסים האחרון."
+    );
+    if (/Every query\/reference pair is evaluated/.test(text)) return say(
+      "States the benchmark rule: duplicate images are still separate work items and every query/reference pair must execute.",
+      "Фиксирует правило эксперимента: одинаковые изображения остаются отдельными заданиями, и каждая пара query/reference действительно вычисляется.",
+      "קובע את כלל הניסוי: גם תמונות כפולות נשארות משימות נפרדות, וכל זוג query/reference אכן מחושב."
+    );
+    if (/deliberately a measurement of executed inference work/.test(text)) return say(
+      "Clarifies that the timing measures executed work rather than a cache or duplicate-skipping optimization.",
+      "Уточняет, что замер относится к реально выполненной работе, а не к кэшу или пропуску повторов.",
+      "מבהיר שהתזמון מודד עבודה שבוצעה בפועל ולא מטמון או דילוג על כפילויות."
+    );
+    return say(
+      "Non-executable C++ documentation comment describing the purpose or constraint of the adjacent detector code.",
+      "Неисполняемый комментарий C++, который описывает назначение или ограничение соседнего кода детектора.",
+      "הערת C++ שאינה מבוצעת ומתארת את התפקיד או את המגבלה של קוד הגלאי הסמוך."
+    );
+  }
   if (/^namespace\b/.test(text)) return say("Opens or names the C++ namespace that groups these detector symbols.", "Открывает или называет пространство имён C++, объединяющее эти символы детектора.", "פותח או מציין מרחב שמות C++ שמאגד את סמלי הגלאי האלה.");
   if (/^(struct|class)\s+/.test(text)) return say("Declares a C++ data type that groups the state and operations named on this line.", "Объявляет тип данных C++, объединяющий указанное состояние и операции.", "מצהיר על טיפוס נתונים ב‑C++ שמאגד את המצב והפעולות המצוינים.");
+  if (/^void check_cuda\(cudaError_t status, const char\* operation\)/.test(text)) return say(
+    "Defines the CUDA error-checking helper. It receives a runtime status and the name of the attempted operation, then throws a readable exception if CUDA reported failure.",
+    "Объявляет функцию проверки CUDA. Она получает код результата runtime и название операции, а при ошибке CUDA выбрасывает понятное исключение.",
+    "מגדיר פונקציית בדיקת שגיאות CUDA. היא מקבלת קוד מצב ושם פעולה, וזורקת חריגה ברורה אם CUDA דיווחה על כשל."
+  );
+  if (/^throw std::runtime_error\(std::string\(operation\)/.test(text)) return say(
+    "Builds an exception message from the failed operation name and cudaGetErrorString(status), then stops the current scoring request.",
+    "Формирует сообщение из названия неудачной операции и `cudaGetErrorString(status)`, после чего останавливает текущий запрос сравнения.",
+    "בונה הודעת חריגה משם הפעולה שנכשלה ומ־`cudaGetErrorString(status)`, ואז עוצרת את בקשת הדירוג הנוכחית."
+  );
+  if (/^__global__ void cosine_scores_kernel\(/.test(text)) return say(
+    "Declares the project-owned CUDA kernel. NVIDIA launches many copies of this function; each valid thread computes one query/reference cosine score.",
+    "Объявляет собственный CUDA kernel проекта. NVIDIA запускает множество копий этой функции; каждый допустимый thread вычисляет одно cosine-сходство query/reference.",
+    "מצהיר על CUDA kernel של הפרויקט. NVIDIA משגרת עותקים רבים של הפונקציה; כל thread תקין מחשב ציון cosine אחד לזוג query/reference."
+  );
+  if (/^const float\* queries,?$/.test(text)) return say(
+    "Receives a read-only pointer to the flat device matrix of query embeddings with logical shape B x D.",
+    "Получает read-only указатель на плоскую device-матрицу входных embeddings логической формы B x D.",
+    "מקבל מצביע לקריאה בלבד אל מטריצת embeddings שטוחה בזיכרון ההתקן, בצורה לוגית B x D."
+  );
+  if (/^const float\* references,?$/.test(text)) return say(
+    "Receives a read-only pointer to the flat device matrix of reference embeddings with logical shape N x D.",
+    "Получает read-only указатель на плоскую device-матрицу эталонных embeddings логической формы N x D.",
+    "מקבל מצביע לקריאה בלבד אל מטריצת embeddings של הייחוסים בזיכרון ההתקן, בצורה לוגית N x D."
+  );
+  if (/^float\* scores,?$/.test(text)) return say(
+    "Receives the writable device buffer where the kernel stores the complete B x N similarity matrix.",
+    "Получает доступный для записи device-буфер, куда kernel сохраняет полную матрицу сходства B x N.",
+    "מקבל מאגר התקן לכתיבה שבו ה־kernel שומר את מטריצת הדמיון המלאה B x N."
+  );
+  if (/^int query_count,?$/.test(text)) return say(
+    "Supplies B, the number of query face embeddings processed by this launch.",
+    "Передаёт B: количество входных embeddings лиц, обрабатываемых этим запуском.",
+    "מספק את B, מספר embeddings של פני הקלט שמעובדים בשיגור הזה."
+  );
+  if (/^int reference_count,?$/.test(text)) return say(
+    "Supplies N, the number of cached reference embeddings compared with every query.",
+    "Передаёт N: количество закэшированных эталонных embeddings, с которыми сравнивается каждый запрос.",
+    "מספק את N, מספר embeddings של הייחוס שבמטמון אשר מושווים לכל שאילתה."
+  );
+  if (/^int dimensions,?$/.test(text)) return say(
+    "Supplies D, the number of float components in one embedding; SFace uses D = 128.",
+    "Передаёт D: число float-компонентов одного embedding; для SFace D = 128.",
+    "מספק את D, מספר רכיבי float ב־embedding יחיד; ב־SFace הערך הוא D = 128."
+  );
+  if (/^\)\s*\{$/.test(text)) return say(
+    "Closes the preceding multi-line parameter list and opens the function body in which those parameters are used.",
+    "Закрывает многострочный список параметров и открывает тело функции, где эти параметры будут использоваться.",
+    "סוגר את רשימת הפרמטרים הרב־שורתית ופותח את גוף הפונקציה שבו ייעשה שימוש בפרמטרים."
+  );
+  if (/^\);$/.test(text)) return say(
+    "Closes the preceding multi-line C++ call; execution uses all arguments listed immediately above.",
+    "Закрывает предыдущий многострочный вызов C++; при выполнении используются все аргументы, перечисленные выше.",
+    "סוגר את קריאת ה־C++ הרב־שורתית הקודמת; הביצוע משתמש בכל הארגומנטים הרשומים מעל."
+  );
+  if (/Grid Y selects a query image/.test(text)) return say(
+    "Documents the two-dimensional launch mapping: grid Y selects one query, while grid X walks through blocks of references.",
+    "Поясняет двумерное распределение запуска: grid Y выбирает запрос, а grid X проходит по блокам эталонов.",
+    "מתעד את מיפוי השיגור הדו־ממדי: grid Y בוחר שאילתה אחת, ו־grid X עובר על בלוקים של ייחוסים."
+  );
+  if (/guard is required because the final block/.test(text)) return say(
+    "Explains why the index check is necessary: ceil(N/256) can launch extra threads in the last reference block.",
+    "Объясняет boundary guard: `ceil(N/256)` может создать лишние threads в последнем блоке эталонов.",
+    "מסביר מדוע נדרשת בדיקת גבול: `ceil(N/256)` עלול לשגר threads עודפים בבלוק הייחוסים האחרון."
+  );
+  if (/^const int reference_index = blockIdx\.x \* blockDim\.x \+ threadIdx\.x;/.test(text)) return say(
+    "Converts the X block number and the thread's local X position into one global reference index from 0 to N-1.",
+    "Преобразует номер блока X и локальную позицию thread в глобальный индекс эталона от 0 до N-1.",
+    "ממיר את מספר הבלוק בציר X ואת מיקום ה־thread המקומי לאינדקס ייחוס גלובלי בין 0 ל־N-1."
+  );
+  if (/^const int query_index = blockIdx\.y;/.test(text)) return say(
+    "Uses the Y block number as the query index, so every grid row handles one input embedding.",
+    "Использует номер блока Y как индекс запроса, поэтому каждая строка grid обрабатывает один входной embedding.",
+    "משתמש במספר הבלוק בציר Y כאינדקס השאילתה, כך שכל שורת grid מטפלת ב־embedding קלט אחד."
+  );
+  if (/^if \(query_index >= query_count \|\| reference_index >= reference_count\) return;/.test(text)) return say(
+    "Stops only out-of-range threads before they read or write memory; valid query/reference pairs continue to the dot product.",
+    "Останавливает только threads с индексами вне диапазона до обращения к памяти; допустимые пары query/reference продолжают вычисление.",
+    "עוצר רק threads שהאינדקסים שלהם מחוץ לטווח לפני גישה לזיכרון; זוגות query/reference תקינים ממשיכים לחישוב."
+  );
+  if (/^float dot = 0\.0f;/.test(text)) return say(
+    "Initializes this thread's dot-product accumulator to zero before processing the 128 embedding components.",
+    "Обнуляет аккумулятор скалярного произведения текущего thread перед обработкой 128 компонентов embedding.",
+    "מאתחל לאפס את צובר המכפלה הסקלרית של ה־thread לפני עיבוד 128 רכיבי ה־embedding."
+  );
+  if (/^for \(int index = 0; index < dimensions; \+\+index\)/.test(text)) return say(
+    "Iterates over all D embedding components; for SFace the loop performs exactly 128 multiply-add steps per score.",
+    "Перебирает все D компонентов embedding; для SFace цикл выполняет ровно 128 операций multiply-add на одну оценку.",
+    "עובר על כל D רכיבי ה־embedding; ב־SFace הלולאה מבצעת בדיוק 128 צעדי multiply-add לכל ציון."
+  );
+  if (/^dot \+= queries\[query_index \* dimensions \+ index\] \* references\[reference_index \* dimensions \+ index\];/.test(text)) return say(
+    "Multiplies matching components from the selected query and reference vectors and accumulates the product into this thread's score.",
+    "Умножает соответствующие компоненты выбранных query- и reference-векторов и добавляет произведение к оценке текущего thread.",
+    "מכפיל רכיבים תואמים מווקטור השאילתה ומווקטור הייחוס שנבחרו, ומוסיף את המכפלה לציון של ה־thread."
+  );
+  if (/^scores\[query_index \* reference_count \+ reference_index\] = dot;/.test(text)) return say(
+    "Writes the finished cosine score into row query_index and column reference_index of the flat B x N output matrix.",
+    "Записывает готовое cosine-сходство в строку `query_index` и столбец `reference_index` плоской матрицы B x N.",
+    "כותב את ציון ה־cosine שהושלם לשורה `query_index` ולעמודה `reference_index` במטריצת הפלט השטוחה B x N."
+  );
+  if (/^std::vector<float> sface_cuda_scores\(/.test(text)) return say(
+    "Defines the host-side C++ entry point that allocates GPU buffers, launches the kernel, copies the B x N scores back, and returns them as a vector.",
+    "Объявляет host-функцию C++, которая выделяет GPU-буферы, запускает kernel, копирует оценки B x N обратно и возвращает их в `std::vector`.",
+    "מגדיר את נקודת הכניסה בצד המארח שמקצה מאגרי GPU, משגרת את ה־kernel, מעתיקה חזרה ציוני B x N ומחזירה אותם כ־`std::vector`."
+  );
+  if (/^const std::vector<float>& queries,?$/.test(text)) return say(
+    "Accepts the host-resident flat B x D query matrix by constant reference, avoiding an extra C++ vector copy.",
+    "Принимает плоскую host-матрицу запросов B x D по константной ссылке, не создавая лишнюю копию C++-вектора.",
+    "מקבל את מטריצת השאילתות השטוחה B x D שבזיכרון המארח לפי הפניה קבועה, ללא העתקת vector נוספת."
+  );
+  if (/^const std::vector<float>& references,?$/.test(text)) return say(
+    "Accepts the host-resident flat N x D reference matrix by constant reference, avoiding an extra C++ vector copy.",
+    "Принимает плоскую host-матрицу эталонов N x D по константной ссылке, не создавая лишнюю копию C++-вектора.",
+    "מקבל את מטריצת הייחוסים השטוחה N x D שבזיכרון המארח לפי הפניה קבועה, ללא העתקת vector נוספת."
+  );
+  if (/^if \(query_count <= 0 \|\| reference_count <= 0 \|\| dimensions <= 0\) return \{\};/.test(text)) return say(
+    "Rejects empty or invalid matrix dimensions early and returns an empty score vector without allocating GPU memory.",
+    "Сразу отклоняет пустые или некорректные размеры матриц и возвращает пустой результат без выделения GPU-памяти.",
+    "דוחה מיד ממדי מטריצה ריקים או לא תקינים ומחזיר תוצאה ריקה בלי להקצות זיכרון GPU."
+  );
+  if (/^float\* device_(queries|references|scores) = nullptr;/.test(text)) {
+    const buffer = text.match(/^float\* (device_\w+)/)?.[1] || "device buffer";
+    return say(
+      `Declares the ${buffer} GPU pointer as null so cleanup can safely test or free it even if a later allocation fails.`,
+      `Объявляет GPU-указатель ${buffer} равным null, чтобы очистка оставалась безопасной даже при ошибке последующего выделения памяти.`,
+      `מצהיר על מצביע ה־GPU ‏${buffer} כ־null, כדי שהניקוי יישאר בטוח גם אם הקצאה מאוחרת תיכשל.`
+    );
+  }
+  if (/^const std::size_t query_bytes = queries\.size\(\) \* sizeof\(float\);/.test(text)) return say(
+    "Calculates the exact byte count needed to upload all B x D query floats.",
+    "Вычисляет точное число байт для загрузки всех B x D float-значений запросов.",
+    "מחשב את מספר הבייטים המדויק להעלאת כל ערכי ה־float של שאילתות B x D."
+  );
+  if (/^const std::size_t reference_bytes = references\.size\(\) \* sizeof\(float\);/.test(text)) return say(
+    "Calculates the exact byte count needed to upload all N x D reference floats.",
+    "Вычисляет точное число байт для загрузки всех N x D float-значений эталонов.",
+    "מחשב את מספר הבייטים המדויק להעלאת כל ערכי ה־float של ייחוסים N x D."
+  );
+  if (/^const std::size_t score_bytes =/.test(text)) return say(
+    "Calculates storage for B x N float scores, converting B to size_t before multiplication to avoid signed integer overflow rules.",
+    "Вычисляет память для B x N оценок float, заранее преобразуя B в `size_t`, чтобы умножение выполнялось в беззнаковом размере.",
+    "מחשב מקום עבור B x N ציוני float, תוך המרת B ל־`size_t` לפני הכפל כדי להשתמש בחישוב גודל ללא סימן."
+  );
+  if (/cudaMalloc\(&device_(queries|references|scores),/.test(text)) {
+    const kind = text.match(/device_(queries|references|scores)/)?.[1] || "data";
+    const terms = {
+      queries: ["query embeddings", "входных embeddings", "embeddings של השאילתות"],
+      references: ["reference embeddings", "эталонных embeddings", "embeddings של הייחוסים"],
+      scores: ["B x N output scores", "выходных оценок B x N", "ציוני הפלט B x N"]
+    }[kind];
+    return say(
+      `Allocates device memory for ${terms[0]}; check_cuda turns allocation failure into a named exception.`,
+      `Выделяет device-память для ${terms[1]}; ` + "`check_cuda` превращает ошибку выделения в именованное исключение.",
+      `מקצה זיכרון התקן עבור ${terms[2]}; ` + "`check_cuda` ממירה כשל הקצאה לחריגה עם שם הפעולה."
+    );
+  }
+  if (/Every query\/reference pair is evaluated/.test(text)) return say(
+    "States the benchmark rule: duplicate images are still separate work items and every query/reference pair must execute.",
+    "Фиксирует правило эксперимента: одинаковые изображения остаются отдельными заданиями, и каждая пара query/reference действительно вычисляется.",
+    "קובע את כלל הניסוי: גם תמונות כפולות נשארות משימות נפרדות, וכל זוג query/reference אכן מחושב."
+  );
+  if (/deliberately a measurement of executed inference work/.test(text)) return say(
+    "Clarifies that the timing measures executed work rather than a cache or duplicate-skipping optimization.",
+    "Уточняет, что замер относится к реально выполненной работе, а не к кэшу или пропуску повторов.",
+    "מבהיר שהתזמון מודד עבודה שבוצעה בפועל ולא מטמון או דילוג על כפילויות."
+  );
+  if (/cudaMemcpy\(device_queries, queries\.data\(\), query_bytes, cudaMemcpyHostToDevice\)/.test(text)) return say(
+    "Copies the complete B x D query matrix from host RAM to device_queries in GPU memory before the kernel launch.",
+    "Копирует полную матрицу запросов B x D из RAM в `device_queries` в GPU-памяти до запуска kernel.",
+    "מעתיק את מטריצת השאילתות המלאה B x D מ־RAM אל `device_queries` בזיכרון ה־GPU לפני שיגור ה־kernel."
+  );
+  if (/cudaMemcpy\(device_references, references\.data\(\), reference_bytes, cudaMemcpyHostToDevice\)/.test(text)) return say(
+    "Copies the complete N x D reference matrix from host RAM to device_references in GPU memory before the kernel launch.",
+    "Копирует полную матрицу эталонов N x D из RAM в `device_references` в GPU-памяти до запуска kernel.",
+    "מעתיק את מטריצת הייחוסים המלאה N x D מ־RAM אל `device_references` בזיכרון ה־GPU לפני שיגור ה־kernel."
+  );
+  if (/^const dim3 block\(256\);/.test(text)) return say(
+    "Configures each CUDA block with 256 threads along X; each thread is responsible for one reference score.",
+    "Задаёт 256 CUDA threads по оси X в каждом block; один thread отвечает за одну оценку с эталоном.",
+    "מגדיר 256 CUDA threads בציר X בכל block; כל thread אחראי לציון מול ייחוס אחד."
+  );
+  if (/^const dim3 grid\(\(reference_count \+ block\.x - 1\) \/ block\.x, query_count\);/.test(text)) return say(
+    "Creates a 2D grid with ceil(N/256) blocks along X and B blocks along Y, covering every query/reference pair.",
+    "Создаёт двумерный grid: `ceil(N/256)` блоков по X и B блоков по Y, покрывая все пары query/reference.",
+    "יוצר grid דו־ממדי עם `ceil(N/256)` בלוקים בציר X ו־B בלוקים בציר Y, המכסים כל זוג query/reference."
+  );
+  if (/^cosine_scores_kernel<<<grid, block>>>\(/.test(text)) return say(
+    "Launches the custom CUDA kernel asynchronously with the previously defined grid and 256-thread block geometry.",
+    "Асинхронно запускает собственный CUDA kernel с заданными ранее grid и block по 256 threads.",
+    "משגר באופן אסינכרוני את CUDA kernel המותאם עם ה־grid ועם block בן 256 threads שהוגדרו קודם."
+  );
+  if (/^device_queries, device_references, device_scores, query_count, reference_count, dimensions$/.test(text)) return say(
+    "Passes the three device buffers and the B, N, D dimensions into every launched kernel instance.",
+    "Передаёт каждому экземпляру kernel три device-буфера и размеры B, N, D.",
+    "מעביר לכל מופע kernel ששוגר את שלושת מאגרי ההתקן ואת הממדים B, N, D."
+  );
+  if (/cudaGetLastError\(\)/.test(text)) return say(
+    "Checks whether kernel dispatch itself failed, for example because of invalid launch geometry or missing CUDA resources.",
+    "Проверяет ошибку самого запуска kernel, например некорректную геометрию или нехватку CUDA-ресурсов.",
+    "בודק אם שיגור ה־kernel עצמו נכשל, למשל עקב גאומטריית שיגור לא תקינה או מחסור במשאבי CUDA."
+  );
+  if (/^std::vector<float> result\(static_cast<std::size_t>\(query_count\) \* reference_count\);/.test(text)) return say(
+    "Allocates a host vector with exactly B x N float elements to receive the completed score matrix.",
+    "Выделяет host-вектор ровно из B x N элементов float для приёма готовой матрицы оценок.",
+    "מקצה vector בזיכרון המארח עם בדיוק B x N איברי float לקבלת מטריצת הציונים שהושלמה."
+  );
+  if (/cudaMemcpy\(result\.data\(\), device_scores, score_bytes, cudaMemcpyDeviceToHost\)/.test(text)) return say(
+    "Copies the complete B x N score matrix from GPU memory into result on the host; this synchronous copy also waits for the kernel output it needs.",
+    "Копирует полную матрицу B x N из GPU-памяти в host-вектор `result`; синхронное копирование также ожидает нужный результат kernel.",
+    "מעתיק את מטריצת B x N המלאה מזיכרון ה־GPU אל `result` במארח; ההעתקה הסינכרונית גם ממתינה לפלט ה־kernel הדרוש."
+  );
+  if (/^cudaFree\(device_(queries|references|scores)\);/.test(text)) {
+    const buffer = text.match(/device_(queries|references|scores)/)?.[1] || "buffer";
+    return say(
+      `Releases the GPU allocation for ${buffer} so this scoring request does not leak device memory.`,
+      `Освобождает GPU-память буфера ${buffer}, чтобы запрос сравнения не создавал утечку device-памяти.`,
+      `משחרר את הקצאת ה־GPU של ${buffer}, כדי שבקשת הדירוג לא תדליף זיכרון התקן.`
+    );
+  }
+  if (/^return result;/.test(text)) return say(
+    "Returns the host B x N score vector to sface_engine.cpp after all three GPU buffers have been released.",
+    "Возвращает host-вектор оценок B x N в `sface_engine.cpp` после освобождения всех трёх GPU-буферов.",
+    "מחזיר את וקטור ציוני B x N שבמארח אל `sface_engine.cpp` לאחר שחרור כל שלושת מאגרי ה־GPU."
+  );
+  if (/^catch \(\.\.\.\)/.test(text)) return say(
+    "Catches any exception from copying, launch checking, or result transfer so device buffers can be released before the same error is rethrown.",
+    "Перехватывает любую ошибку копирования, запуска или возврата результата, чтобы освободить device-буферы перед повторной передачей ошибки.",
+    "לוכד כל חריגה מהעתקה, מבדיקת השיגור או מהחזרת התוצאה, כדי לשחרר את מאגרי ההתקן לפני זריקת אותה שגיאה מחדש."
+  );
+  if (/^throw;$/.test(text)) return say(
+    "Rethrows the original exception after cleanup, preserving its CUDA operation name and error text for the caller.",
+    "Повторно выбрасывает исходное исключение после очистки, сохраняя название CUDA-операции и текст ошибки.",
+    "זורק מחדש את החריגה המקורית לאחר הניקוי, תוך שמירת שם פעולת CUDA וטקסט השגיאה עבור הקוד הקורא."
+  );
   if (/clGetDeviceIDs\s*\(/.test(text)) return say("Queries OpenCL for a real device of the requested type; this project requests a GPU and does not silently substitute CPU.", "Запрашивает у OpenCL реальное устройство требуемого типа; проект просит GPU и не подставляет CPU скрытно.", "מבקש מ‑OpenCL התקן אמיתי מהסוג הנדרש; הפרויקט מבקש GPU ואינו מחליף אותו ב‑CPU בסתר.");
   if (/clCreate(Buffer|Context|CommandQueue|Program|Kernel)/.test(text)) return say("Creates the named OpenCL resource used to hold data, compile kernels, or queue GPU work.", "Создаёт указанный ресурс OpenCL для хранения данных, компиляции ядер или постановки GPU-работы в очередь.", "יוצר את משאב OpenCL המצוין לאחסון נתונים, הידור kernels או תזמון עבודת GPU.");
   if (/clEnqueueNDRangeKernel\s*\(/.test(text)) return say("Enqueues this OpenCL kernel over its global work range so independent outputs run in parallel on the GPU.", "Ставит это OpenCL-ядро в очередь с глобальным рабочим диапазоном, чтобы независимые выходы вычислялись параллельно на GPU.", "מכניס את kernel של OpenCL לתור על פני טווח העבודה הגלובלי כדי שפלטים בלתי תלויים ירוצו במקביל ב‑GPU.");
@@ -4528,7 +4784,21 @@ function currentCppSourceAnnotation(text, lang) {
   if (/^(for|while)\s*\(/.test(text)) return say(`Starts the C++ loop ${text} to process the indicated elements or indices.`, `Запускает цикл C++ ${text} для обработки указанных элементов или индексов.`, `מתחיל את לולאת C++ ‏${text} לעיבוד האיברים או האינדקסים המצוינים.`);
   if (/^return\b/.test(text)) return say(`Returns ${text.replace(/^return\s*/, "").replace(/;$/, "")} to the C++ caller.`, `Возвращает ${text.replace(/^return\s*/, "").replace(/;$/, "")} вызвавшему C++-коду.`, `מחזיר ${text.replace(/^return\s*/, "").replace(/;$/, "")} לקוד C++ שקרא לפונקציה.`);
   if (/^[{}];?$/.test(text)) return say("Opens or closes the current C++ scope; it groups the statements controlled by the surrounding declaration or condition.", "Открывает или закрывает текущую область C++; она объединяет команды окружающего объявления или условия.", "פותח או סוגר את תחום C++ הנוכחי שמאגד את הפקודות של ההצהרה או התנאי הסובבים.");
-  return say(`Executes or completes this exact C++ detector statement: ${text}`, `Выполняет или завершает эту точную команду C++ детектора: ${text}`, `מבצע או משלים את פקודת C++ המדויקת של הגלאי: ${text}`);
+  if (/^[A-Za-z_][\w:<>,*&\s]+\([^;]*\)\s*\{?$/.test(text)) return say(
+    "Declares or calls the named C++ operation; its arguments define the data and dimensions used by the surrounding detector step.",
+    "Объявляет или вызывает указанную C++-операцию; её аргументы задают данные и размеры текущего шага детектора.",
+    "מצהיר או קורא לפעולת C++ בשם המוצג; הארגומנטים שלה מגדירים את הנתונים והממדים של שלב הגלאי הנוכחי."
+  );
+  if (/^[A-Za-z_][\w:<>,*&\s]+\s+[A-Za-z_]\w*\s*=/.test(text)) return say(
+    "Creates a typed C++ value from the expression on this line so the following detector operation can reuse the computed result.",
+    "Создаёт типизированное значение C++ из выражения этой строки, чтобы следующий шаг детектора использовал вычисленный результат.",
+    "יוצר ערך C++ מטיפוס מוגדר מתוך הביטוי בשורה, כדי ששלב הגלאי הבא יוכל להשתמש בתוצאה שחושבה."
+  );
+  return say(
+    "Supplies part of the surrounding C++ declaration or call; the neighboring lines determine the complete operation and its data flow.",
+    "Передаёт часть окружающего объявления или вызова C++; соседние строки задают полную операцию и движение её данных.",
+    "מספק חלק מהצהרת או מקריאת C++ הסובבת; השורות הסמוכות מגדירות את הפעולה המלאה ואת זרימת הנתונים שלה."
+  );
 }
 
 function contextualNativeSourceAnnotation(lines, index) {
