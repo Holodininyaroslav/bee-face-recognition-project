@@ -2552,21 +2552,25 @@ auto sface_outputs = sface.Run(...);`
     level: "05",
     title: { en: "Explicit CUDA cosine-score kernel", ru: "Явный CUDA kernel косинусных оценок", he: "CUDA kernel מפורש לציוני cosine" },
     summary: {
-      en: "The real sface_cuda.cu kernel evaluates every query/reference embedding pair on the RTX GPU with boundary checks and returns the complete score matrix.",
-      ru: "Настоящий kernel из sface_cuda.cu вычисляет на RTX каждую пару query/reference embeddings с boundary checks и возвращает полную матрицу оценок.",
-      he: "ה-kernel האמיתי מתוך sface_cuda.cu מחשב ב-RTX כל זוג של query/reference embeddings עם boundary checks ומחזיר את מטריצת הציונים המלאה."
+      en: "The complete sface_cuda.cu path is shown as thirteen concrete operations: validation, device allocation, H2D copies, launch geometry, thread indexing, the 128D dot product, error checking, D2H readback, and cleanup.",
+      ru: "Полный путь sface_cuda.cu показан как тринадцать конкретных операций: проверка, выделение device-памяти, H2D-копирование, геометрия запуска, индексация thread, скалярное произведение 128D, проверка ошибок, D2H-чтение и очистка.",
+      he: "המסלול המלא של sface_cuda.cu מוצג כשלוש-עשרה פעולות ממשיות: אימות, הקצאת זיכרון התקן, העתקות H2D, גאומטריית שיגור, אינדוקס thread, מכפלה פנימית 128D, בדיקת שגיאות, קריאת D2H וניקוי."
     },
-    diagram: { en: ["B query vectors", "N references", "CUDA grid B x ceil(N/256)", "B x N scores"], ru: ["B query-векторов", "N эталонов", "CUDA grid B x ceil(N/256)", "Оценки B x N"], he: ["B וקטורי query", "N ייחוסים", "CUDA grid B x ceil(N/256)", "ציונים B x N"] },
+    diagram: {
+      en: ["01 CUDA error guard", "02 __global__ kernel contract", "03 Thread indices + boundary guard", "04 128D dot-product loop", "05 Host scoring entry point", "06 Validate sizes + byte counts", "07 Three cudaMalloc allocations", "08 Two H2D cudaMemcpy operations", "09 block(256) + 2D grid", "10 Explicit <<<grid, block>>> launch", "11 Launch check + D2H result", "12 Success cleanup + return", "13 Exception-safe cleanup"],
+      ru: ["01 Проверка CUDA-ошибок", "02 Контракт __global__ kernel", "03 Индексы thread + boundary guard", "04 Цикл скалярного произведения 128D", "05 Host-точка входа оценки", "06 Проверка размеров и числа байт", "07 Три выделения cudaMalloc", "08 Два H2D-копирования cudaMemcpy", "09 block(256) и двумерный grid", "10 Явный запуск <<<grid, block>>>", "11 Проверка запуска + D2H-результат", "12 Очистка и возврат при успехе", "13 Очистка при исключении"],
+      he: ["01 מגן שגיאות CUDA", "02 חוזה __global__ kernel", "03 אינדקסי thread ו-boundary guard", "04 לולאת מכפלה פנימית 128D", "05 נקודת כניסת scoring במארח", "06 אימות גדלים ומספרי בתים", "07 שלוש הקצאות cudaMalloc", "08 שתי העתקות H2D עם cudaMemcpy", "09 block(256) ו-grid דו-ממדי", "10 שיגור מפורש <<<grid, block>>>", "11 בדיקת שיגור ותוצאת D2H", "12 ניקוי והחזרה בהצלחה", "13 ניקוי בטוח בחריגה"]
+    },
     diagramNotes: {
-      en: ["Grid Y selects the query image.", "Grid X spans reference vectors in blocks of 256 threads.", "Each thread computes one 128D dot product.", "The final partial block is protected by a boundary check."],
-      ru: ["Grid Y выбирает входное изображение.", "Grid X охватывает эталоны блоками по 256 threads.", "Каждый thread вычисляет одно скалярное произведение 128D.", "Последний неполный блок защищён boundary check."],
-      he: ["Grid Y בוחר את תמונת הקלט.", "Grid X עובר על וקטורי הייחוס בבלוקים של 256 threads.", "כל thread מחשב מכפלה פנימית אחת בגודל 128D.", "הבלוק החלקי האחרון מוגן באמצעות boundary check."]
+      en: ["check_cuda converts every CUDA runtime failure into a C++ exception with the operation name.", "The kernel receives query, reference, and score pointers plus B, N, and embedding dimensions.", "blockIdx.y selects the query; blockIdx.x and threadIdx.x select the reference; excess threads return.", "Each surviving thread performs all 128 multiply-add operations for exactly one query/reference pair.", "sface_cuda_scores owns the host-side lifetime of one complete score-matrix request.", "Empty shapes return immediately; byte counts are calculated for Bx128, Nx128, and BxN buffers.", "Separate device buffers are allocated for queries, references, and output scores.", "All query and reference embeddings are copied from host RAM to RTX device memory.", "A block contains 256 threads; grid X covers ceil(N/256) blocks and grid Y covers B queries.", "The project-owned kernel is dispatched once for the complete BxN score matrix.", "cudaGetLastError validates dispatch; the completed BxN matrix is copied back to host memory.", "All three device buffers are freed before the result vector is returned.", "The catch path frees every allocated buffer and rethrows the original failure."],
+      ru: ["check_cuda превращает любую ошибку CUDA runtime в C++ exception с названием операции.", "Kernel получает указатели queries, references и scores, а также B, N и размер embedding.", "blockIdx.y выбирает query; blockIdx.x и threadIdx.x выбирают эталон; лишние threads завершаются.", "Каждый оставшийся thread выполняет все 128 multiply-add для одной пары query/reference.", "sface_cuda_scores управляет host-жизненным циклом одного полного запроса матрицы оценок.", "Пустые размеры сразу возвращаются; вычисляется число байт для буферов Bx128, Nx128 и BxN.", "Отдельные device-буферы выделяются для queries, references и выходных scores.", "Все query- и reference-embeddings копируются из RAM в device-память RTX.", "Block содержит 256 threads; grid X покрывает ceil(N/256) блоков, а grid Y — B запросов.", "Собственный kernel проекта один раз запускается для полной матрицы оценок BxN.", "cudaGetLastError проверяет запуск; готовая матрица BxN копируется обратно в host-память.", "Все три device-буфера освобождаются до возврата вектора результата.", "Ветка catch освобождает каждый выделенный буфер и повторно выбрасывает исходную ошибку."],
+      he: ["check_cuda ממיר כל כשל של CUDA runtime לחריגת C++ עם שם הפעולה.", "ה-kernel מקבל מצביעים ל-queries, references ו-scores וכן B, ‏N וממד embedding.", "blockIdx.y בוחר query;‏ blockIdx.x ו-threadIdx.x בוחרים ייחוס; threads עודפים חוזרים.", "כל thread שנשאר מבצע את כל 128 פעולות multiply-add עבור זוג query/reference יחיד.", "sface_cuda_scores מנהלת בצד המארח את מחזור החיים של בקשת מטריצת ציונים מלאה.", "גדלים ריקים חוזרים מיד; מחושבים מספרי הבתים למאגרים Bx128, ‏Nx128 ו-BxN.", "מוקצים מאגרי התקן נפרדים ל-queries, ל-references ולציוני הפלט.", "כל embeddings של query ושל reference מועתקים מ-RAM לזיכרון התקן RTX.", "כל block מכיל 256 threads;‏ grid X מכסה ceil(N/256) בלוקים ו-grid Y מכסה B שאילתות.", "ה-kernel של הפרויקט משוגר פעם אחת עבור כל מטריצת הציונים BxN.", "cudaGetLastError מאמת את השיגור; מטריצת BxN המלאה מועתקת חזרה לזיכרון המארח.", "שלושת מאגרי ההתקן משוחררים לפני החזרת וקטור התוצאה.", "מסלול catch משחרר כל מאגר שהוקצה וזורק מחדש את השגיאה המקורית."]
     },
-    layers: { en: "One custom __global__ CUDA kernel", ru: "Один пользовательский __global__ CUDA kernel", he: "CUDA kernel מותאם אחד מסוג __global__" },
-    connections: { en: "B x N x 128 multiply-adds", ru: "B x N x 128 операций multiply-add", he: "B x N x 128 פעולות multiply-add" },
-    tensor: "queries Bx128 + references Nx128 -> scores BxN",
-    cudaShort: { en: "One CUDA thread per query/reference score", ru: "Один CUDA thread на оценку query/reference", he: "CUDA thread אחד לכל ציון query/reference" },
-    cuda: { en: "This is project-owned CUDA C++, compiled by NVCC. It uses cudaMalloc, cudaMemcpy, a two-dimensional grid, a boundary guard, and an explicit kernel launch.", ru: "Это собственный CUDA C++ код проекта, собранный NVCC. Он использует cudaMalloc, cudaMemcpy, двумерный grid, boundary guard и явный запуск kernel.", he: "זהו קוד CUDA C++ של הפרויקט שנבנה באמצעות NVCC. הוא משתמש ב-cudaMalloc, ‏cudaMemcpy, ‏grid דו-ממדי, boundary guard והפעלת kernel מפורשת." },
+    layers: { en: "13 concrete CUDA/runtime operations around one __global__ kernel", ru: "13 конкретных CUDA/runtime-операций вокруг одного __global__ kernel", he: "13 פעולות CUDA/runtime ממשיות סביב __global__ kernel אחד" },
+    connections: { en: "B x N CUDA threads; every valid thread executes 128 multiply-adds", ru: "B x N CUDA threads; каждый допустимый thread выполняет 128 multiply-add", he: "B x N CUDA threads; כל thread תקין מבצע 128 פעולות multiply-add" },
+    tensor: "host Bx128 + Nx128 -> device Bx128 + Nx128 -> device/host BxN",
+    cudaShort: { en: "256-thread blocks, 2D grid, one score per valid thread", ru: "Блоки по 256 threads, двумерный grid, одна оценка на допустимый thread", he: "בלוקים של 256 threads, ‏grid דו-ממדי וציון אחד לכל thread תקין" },
+    cuda: { en: "This project-owned CUDA C++ path is compiled by NVCC. Click any of the thirteen operations to open the exact corresponding lines from sface_cuda.cu; no synthetic ONNX layer list is substituted here.", ru: "Этот собственный путь CUDA C++ собирается NVCC. Нажмите любую из тринадцати операций, чтобы открыть точные соответствующие строки sface_cuda.cu; синтетический список ONNX-слоёв здесь не подставляется.", he: "מסלול CUDA C++ של הפרויקט נבנה באמצעות NVCC. לחצו על כל אחת משלוש-עשרה הפעולות כדי לפתוח את השורות המדויקות ב-sface_cuda.cu; לא מוצגת כאן רשימת שכבות ONNX מלאכותית." },
     code: `const dim3 block(256);
 const dim3 grid((reference_count + 255) / 256, query_count);
 cosine_scores_kernel<<<grid, block>>>(
@@ -4895,6 +4899,37 @@ function usesLegacyStageInspector(stage) {
   return stage?.variantKey !== "single";
 }
 
+function nativeStageFiveCodeRange(lines, stepIndex) {
+  if (lines.length < 75) return { start: -1, end: -1 };
+  const ranges = [
+    { start: 7, end: 11 },
+    { start: 13, end: 20 },
+    { start: 21, end: 25 },
+    { start: 26, end: 31 },
+    { start: 34, end: 40 },
+    { start: 41, end: 47 },
+    { start: 48, end: 50 },
+    { start: 52, end: 55 },
+    { start: 56, end: 57 },
+    { start: 58, end: 60 },
+    { start: 61, end: 63 },
+    { start: 64, end: 67 },
+    { start: 68, end: 73 }
+  ];
+  return ranges[stepIndex] || { start: -1, end: -1 };
+}
+
+async function focusNativeStageFiveCode(stepIndex, shouldScroll = true) {
+  const ready = await ensureExactStageCode();
+  const stage = stageDetails[currentStageIndex];
+  if (!ready || stage?.level !== "05" || usesLegacyStageInspector(stage)) return;
+  const range = nativeStageFiveCodeRange(stage.exactCode.split("\n"), stepIndex);
+  if (!renderFocusedStageSource(stage, range, stepIndex, shouldScroll)) {
+    console.error(`Could not resolve native stage 05 code range for step ${stepIndex + 1}`);
+    stageCodeSource.textContent = uiText("fullStageError");
+  }
+}
+
 function renderStageFiveFullCode(stage, focusStart = -1, focusEnd = -1, shouldScroll = false) {
   const lang = document.documentElement.lang || "en";
   stageCode.innerHTML = "";
@@ -5289,7 +5324,9 @@ function renderFocusedStageFiveSource(stepIndex, shouldScroll = true) {
     note.className = "code-note";
     const annotationLines = combinedRecognitionCode ? combinedRecognitionCode.split("\n") : sourceLines;
     const annotationIndex = combinedRecognitionCode ? (stage.exactStartLine || 0) + index : index;
-    note.textContent = contextualSingleSourceAnnotation(annotationLines, annotationIndex);
+    note.textContent = stage?.variantKey === "single"
+      ? contextualNativeSourceAnnotation(annotationLines, annotationIndex)
+      : contextualSingleSourceAnnotation(annotationLines, annotationIndex);
     row.append(code, note);
     if (index >= range.start && index <= range.end) row.classList.add("code-focus");
     if (index === range.start) row.classList.add("code-focus-start");
@@ -5412,7 +5449,9 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true) 
     note.className = "code-note";
     const annotationLines = combinedRecognitionCode ? combinedRecognitionCode.split("\n") : sourceLines;
     const annotationIndex = combinedRecognitionCode ? (stage.exactStartLine || 0) + index : index;
-    note.textContent = contextualSingleSourceAnnotation(annotationLines, annotationIndex);
+    note.textContent = stage?.variantKey === "single"
+      ? contextualNativeSourceAnnotation(annotationLines, annotationIndex)
+      : contextualSingleSourceAnnotation(annotationLines, annotationIndex);
     row.append(code, note);
     if (index >= range.start && index <= range.end) row.classList.add("code-focus");
     if (index === range.start) row.classList.add("code-focus-start");
@@ -5558,9 +5597,12 @@ async function focusStageFiveOnnx(stepIndex, shouldScroll = true, exactLayer = n
 function buildStageDiagram(labels, notes, data) {
   stageDiagram.innerHTML = "";
   labels.forEach((label, index) => {
-    const codeLinked = ["01", "02", "03", "04", "05", "06"].includes(data?.level)
+    const nativeStageFive = data?.level === "05"
       && activeDetectorVariant === "single"
-      && usesLegacyStageInspector(data);
+      && !usesLegacyStageInspector(data);
+    const codeLinked = nativeStageFive || (["01", "02", "03", "04", "05", "06"].includes(data?.level)
+      && activeDetectorVariant === "single"
+      && usesLegacyStageInspector(data));
     const node = document.createElement(codeLinked ? "button" : "div");
     node.className = "diagram-node";
     if (codeLinked) {
@@ -5568,11 +5610,15 @@ function buildStageDiagram(labels, notes, data) {
       node.classList.add("code-linked");
       node.dataset.codeStep = String(index);
       node.setAttribute("aria-pressed", activeStageFiveCodeStep === index ? "true" : "false");
-      const action = data.level === "05" ? uiText("focusOnnxAction") : uiText("focusCodeAction");
+      const action = data.level === "05" && usesLegacyStageInspector(data)
+        ? uiText("focusOnnxAction")
+        : uiText("focusCodeAction");
       node.setAttribute("aria-label", `${label}. ${action}`);
       node.title = action;
       node.addEventListener("click", () => data.level === "05"
-        ? focusStageFiveOnnx(index)
+        ? usesLegacyStageInspector(data)
+          ? focusStageFiveOnnx(index)
+          : focusNativeStageFiveCode(index)
         : data.level === "06"
           ? focusStageSixCode(index)
           : data.level === "01"
@@ -5628,8 +5674,12 @@ function renderStageDetail(index, shouldScroll = true) {
   document.querySelectorAll(".pipeline-step").forEach((step) => {
     step.classList.toggle("active", Number(step.dataset.stage) === currentStageIndex);
   });
-  if (data.level === "05" && usesLegacyStageInspector(data) && activeStageFiveCodeStep >= 0) {
-    focusStageFiveOnnx(activeStageFiveCodeStep, false);
+  if (data.level === "05" && activeStageFiveCodeStep >= 0) {
+    if (usesLegacyStageInspector(data)) {
+      focusStageFiveOnnx(activeStageFiveCodeStep, false);
+    } else {
+      focusNativeStageFiveCode(activeStageFiveCodeStep, false);
+    }
   } else if (data.level === "01" && activeStageFiveCodeStep >= 0) {
     focusStageOneCode(activeStageFiveCodeStep, false);
   } else if (data.level === "06" && activeStageFiveCodeStep >= 0) {
