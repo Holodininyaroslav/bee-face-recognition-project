@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
-  <meta name="description" content="Bee Face Recognition Project: CUDA/OpenCL face detector, Colab bridge, AI MIPS Hive Web interface, and local 3D simulation tools.">
+  <meta name="description" content="Bee Face Recognition Project: native C++/CUDA YuNet and SFace recognition, CPU comparison, AI MIPS Hive Web, and local 3D simulation tools.">
   <meta property="og:title" content="Bee Face Recognition Project">
-  <meta property="og:description" content="Face recognition detector with GPU/CPU modes, Colab bridge, AI MIPS Hive Web, and local simulation modules.">
+  <meta property="og:description" content="Native C++/CUDA face recognition with YuNet, SFace, an explicit CUDA scoring kernel, CPU comparison, AI MIPS Hive Web, and local simulations.">
   <meta property="og:image" content="https://holodininyaroslav.github.io/bee-face-recognition-project/assets/project-social-preview.png">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
@@ -30,27 +30,27 @@
   <main>
     <section id="home" class="hero view active">
       <div class="hero-copy">
-        <p class="kicker" data-i18n="kicker">COLAB GPU / FACE DETECTION / PROJECT INTERFACE</p>
+        <p class="kicker" data-i18n="kicker">NATIVE C++ / CUDA FACE RECOGNITION / AI MIPS HIVE</p>
         <h2 data-i18n="title">Welcome to Bee Face Recognition Project</h2>
         <p class="lead" data-i18n="lead">
-          Upload screenshots, recognize faces through the connected Colab detector, and inspect the same result stream inside the integrated AI MIPS project view.
+          Run the native YuNet and SFace pipeline through CUDA or the sequential CPU baseline, inspect the exact C++/CUDA source, and open the integrated AI MIPS Hive view.
         </p>
         <div class="actions">
           <button class="primary" data-target="simple" type="button" data-i18n="simple">Simple demonstration</button>
           <button class="secondary" data-target="complex" type="button" data-i18n="complex">Complex demonstration integrated into the project</button>
         </div>
         <div class="tool-links" aria-label="Project tools">
-          <a class="tool-card" href="https://colab.research.google.com/github/Holodininyaroslav/bee-face-recognition-project/blob/main/colab/colab_public_one_image_site.ipynb" target="_blank" rel="noreferrer">
-            <strong data-i18n="toolColab">Colab project notebook</strong>
-            <span data-i18n="toolColabText">Open the CUDA/Colab detector notebook from this repository.</span>
+          <a class="tool-card" href="source/native_face_cuda/src/sface_engine.cpp" target="_blank" rel="noreferrer">
+            <strong data-i18n="toolColab">Native CUDA recognition engine</strong>
+            <span data-i18n="toolColabText">Open the active C++ YuNet/SFace engine used by identity_cuda.exe.</span>
           </a>
           <a class="tool-card" href="https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_face_full_local_suite_installer.zip" target="_blank" rel="noreferrer">
             <strong data-i18n="toolFullSuite">Full local suite installer</strong>
             <span data-i18n="toolFullSuiteText">Install the Hive service, local simulations, BeeBoard 3D review, Bgame, orbital mechanics, models, and launchers together.</span>
           </a>
-          <a class="tool-card" href="course.html">
-            <strong data-i18n="toolAttention">CPU / OpenCL / CUDA course project</strong>
-            <span data-i18n="toolAttentionText">Inspect the exact Scaled Dot-Product Attention source in six stages with line-specific English, Russian, and Hebrew explanations.</span>
+          <a class="tool-card" href="source/native_face_cuda/src/sface_cuda.cu" target="_blank" rel="noreferrer">
+            <strong data-i18n="toolAttention">Explicit CUDA scoring kernel</strong>
+            <span data-i18n="toolAttentionText">Open the project-owned CUDA kernel, device-memory transfers, launch configuration, and score readback.</span>
           </a>
         </div>
       </div>
@@ -286,6 +286,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=native-cuda-flow-20260821b"></script>
+  <script src="script.js?v=native-cuda-flow-20260821c"></script>
 </body>
 </html>

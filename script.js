@@ -2826,6 +2826,12 @@ function sfaceOnnxLineAnnotation(item) {
 }
 
 Object.assign(translations.en, {
+  kicker: "NATIVE C++ / CUDA FACE RECOGNITION / AI MIPS HIVE",
+  lead: "Run the native YuNet and SFace pipeline through CUDA or the sequential CPU baseline, inspect the exact C++/CUDA source, and open the integrated AI MIPS Hive view.",
+  toolColab: "Native CUDA recognition engine",
+  toolColabText: "Open the active C++ YuNet/SFace engine used by identity_cuda.exe.",
+  toolAttention: "Explicit CUDA scoring kernel",
+  toolAttentionText: "Open the project-owned CUDA kernel, device-memory transfers, launch configuration, and score readback.",
   simpleNote: "Upload one screenshot, choose CUDA or CPU, and press Recognize.",
   dropHint: "Choose one screenshot for CUDA/CPU analysis.",
   howIntro: "This inspector documents the active native path: C++ image preparation and alignment, CUDA YuNet/SFace inference, the explicit sface_cuda.cu score kernel, and one Hive result.",
@@ -2845,6 +2851,12 @@ Object.assign(translations.en, {
   sourceLoaded: "Verified: {total} exact source lines for the {variant} path = {sum} lines across stages 1–6."
 });
 Object.assign(translations.ru, {
+  kicker: "NATIVE C++ / CUDA РАСПОЗНАВАНИЕ ЛИЦ / AI MIPS HIVE",
+  lead: "Запустите native-конвейер YuNet и SFace через CUDA либо последовательный CPU baseline, изучите точный исходник C++/CUDA и откройте интегрированный AI MIPS Hive.",
+  toolColab: "Native CUDA-движок распознавания",
+  toolColabText: "Открыть активный C++-движок YuNet/SFace, используемый identity_cuda.exe.",
+  toolAttention: "Явное CUDA-ядро оценки",
+  toolAttentionText: "Открыть собственное CUDA-ядро проекта, переносы device-памяти, конфигурацию запуска и чтение оценок.",
   simpleNote: "Загрузите один снимок, выберите CUDA или CPU и нажмите «Распознать».",
   dropHint: "Выберите один снимок для анализа через CUDA/CPU.",
   howIntro: "Инспектор описывает активный native-путь: подготовку и выравнивание в C++, инференс YuNet/SFace на CUDA, явный kernel оценок из sface_cuda.cu и один результат Hive.",
@@ -2864,6 +2876,12 @@ Object.assign(translations.ru, {
   sourceLoaded: "Проверено: {total} точных строк пути «{variant}» = {sum} строк на этапах 1–6."
 });
 Object.assign(translations.he, {
+  kicker: "זיהוי פנים NATIVE C++ / CUDA / ‏AI MIPS HIVE",
+  lead: "הריצו את צינור YuNet ו-SFace המקורי דרך CUDA או דרך קו הבסיס הסדרתי של CPU, בדקו את מקור C++/CUDA המדויק ופתחו את תצוגת AI MIPS Hive המשולבת.",
+  toolColab: "מנוע זיהוי native CUDA",
+  toolColabText: "פתיחת מנוע C++ הפעיל של YuNet/SFace שבו משתמש identity_cuda.exe.",
+  toolAttention: "CUDA kernel מפורש לחישוב ציונים",
+  toolAttentionText: "פתיחת CUDA kernel של הפרויקט, העברות זיכרון ההתקן, תצורת השיגור וקריאת הציונים.",
   simpleNote: "העלו צילום מסך אחד, בחרו CUDA או CPU ולחצו על זיהוי.",
   dropHint: "בחרו צילום מסך אחד לניתוח באמצעות CUDA/CPU.",
   howIntro: "הבודק מתאר את מסלול ה-native הפעיל: הכנה ויישור ב-C++, הסקת YuNet/SFace ב-CUDA, ה-kernel המפורש מתוך sface_cuda.cu ותוצאת Hive אחת.",
@@ -5726,8 +5744,8 @@ async function recognizeSelectedFiles() {
   jsonBox.textContent = "{}";
   try {
     selectDetectorVariant("single");
-    const result = await runRecognition(files[0], mode, score, margin);
-    const results = [{ file: files[0].name, ...result }];
+    const result = await runRecognition(file, mode, score, margin);
+    const results = [{ file: file.name, ...result }];
     renderResults(results);
     backendStatus.textContent = uiText("ready");
   } catch (error) {
