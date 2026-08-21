@@ -4954,7 +4954,9 @@ function renderStageSixFullCode(focus = null, shouldScroll = false) {
       note.className = "code-note";
       const annotationLines = combinedRecognitionCode ? combinedRecognitionCode.split("\n") : source.lines;
       const annotationIndex = combinedRecognitionCode ? (source.stage.exactStartLine || 0) + index : index;
-      note.textContent = contextualSingleSourceAnnotation(annotationLines, annotationIndex);
+      note.textContent = source.stage?.variantKey === "single"
+        ? contextualNativeSourceAnnotation(annotationLines, annotationIndex)
+        : contextualSingleSourceAnnotation(annotationLines, annotationIndex);
       row.append(code, note);
       if (focus?.section === source.key && index >= focus.start && index <= focus.end) {
         row.classList.add("code-focus");
@@ -5175,7 +5177,9 @@ function renderDetectorSource(source) {
     code.textContent = line || " ";
     const note = document.createElement("span");
     note.className = "code-note";
-    note.textContent = contextualSingleSourceAnnotation(sourceLines, index);
+    note.textContent = activeDetectorVariant === "single"
+      ? contextualNativeSourceAnnotation(sourceLines, index)
+      : contextualSingleSourceAnnotation(sourceLines, index);
     row.append(code, note);
     fullDetectorSource.appendChild(row);
   });
