@@ -18,8 +18,29 @@ It is not a commercial production service. It is a portfolio and course-style sy
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_face_full_local_suite_installer.zip
 - Optional Colab notebook:  
   https://colab.research.google.com/github/Holodininyaroslav/bee-face-recognition-project/blob/main/colab/colab_public_one_image_site.ipynb
-- Detector-only CUDA source, without Hive or web routes:
-  https://github.com/Holodininyaroslav/bee-face-recognition-project/blob/main/source/cuda_deepid_detector.py
+- Required CUDA Attention source:
+  https://github.com/Holodininyaroslav/bee-face-recognition-project/blob/main/source/attention/attention_cuda.cu
+- Native CUDA face-recognition source:
+  https://github.com/Holodininyaroslav/bee-face-recognition-project/tree/main/source/native_face_cuda
+
+## CUDA Course Assignment
+
+The graded CUDA module is the native C++/CUDA implementation of Scaled
+Dot-Product Attention in `source/attention/`:
+
+`Attention(Q,K,V) = softmax((Q*K^T)/sqrt(d))*V`
+
+It contains the required basic kernels for `Q*K^T`, scaling, stable row-wise
+softmax, and `P*V`; an optimized shared-memory tiled path; an independent
+sequential C++ CPU reference; explicit CUDA allocation and transfers; numerical
+verification; and reproducible CPU/basic-CUDA/optimized-CUDA timings for
+`N=512`, `d=64`. Run `source/attention/verify_cuda_assignment.bat` to build
+with NVCC, execute the benchmark, validate both GPU outputs against the CPU
+result, and regenerate the CSV report.
+
+The native YuNet/SFace face-recognition pipeline and Hive swarm simulation are
+the applied demonstration built around the course work. They do not replace
+the required Attention implementation.
 
 ## What Works Now
 
@@ -42,11 +63,12 @@ The current project package is built around the local Hive service.
 
 ## NVIDIA/CUDA Local Bee Game
 
-The repository now includes an additive NVIDIA implementation at
+The repository includes an NVIDIA simulation package at
 `installers/nvidia_bee_simulation/`. It contains the local 2D/3D bee game,
-mini-map, three face statues, model assets, and a CUDA-only PyTorch face
-matcher. The matcher reports `nvidia-cuda-pytorch` and the selected NVIDIA
-device, and refuses to fall back to CPU when CUDA is unavailable.
+mini-map, three face statues, model assets, and a native C++ face-recognition
+worker. The CUDA worker uses ONNX Runtime CUDAExecutionProvider for YuNet and
+SFace and the project-owned `sface_cuda.cu` kernel for identity scores. It
+refuses to report CUDA success when the CUDA provider is unavailable.
 
 The existing AMD/OpenCL detector, CPU path, and original local game package
 remain unchanged. See the NVIDIA folder README for installation and launch
@@ -57,18 +79,18 @@ instructions.
 The face detector is intentionally exposed as an engineering pipeline instead of a hidden black box.
 
 The GitHub Pages simple demonstration accepts exactly one screenshot. Its
-six-stage source inspector loads exact blocks from
-`source/local_detector_v2/sface_identity_verifier.py` and documents the local
-NVIDIA path actually used by Hive for that request. The page checks the loaded
-source-block line count before displaying the annotated listing in English,
-Russian, or Hebrew. Batch controls and the 50/500 simulation paths are not part
-of this one-screenshot demonstration.
+six-stage source inspector loads 434 exact lines from
+`source/native_face_cuda/src/sface_engine.cpp` and
+`source/native_face_cuda/src/sface_cuda.cu`. Every displayed line has a
+line-specific explanation in English, Russian, and Hebrew. The page checks the
+loaded source-block line count before displaying it. Batch controls and the
+50/500 simulation paths are not part of this one-screenshot demonstration.
 
 1. **Image capture** - the Hive UI, simple demo, or bee simulation provides an image / screenshot.
-2. **CUDA image preparation** - after host PNG/JPEG decoding, the screenshot is uploaded once; resize, normalization, and padding run as CUDA tensor operations.
-3. **CUDA face detection** - YuNet runs through ONNX Runtime CUDA, and its face box and five landmarks are decoded on the GPU.
-4. **CUDA alignment and embedding** - a five-landmark similarity transform and `grid_sample` create the aligned crop, then SFace produces the identity vector on CUDA.
-5. **CUDA reference comparison** - the SFace vector is compared with cached GPU reference matrices.
+2. **Native C++ image preparation** - C++ decodes PNG/JPEG, resizes, pads, and packs the YuNet input into NCHW BGR floats.
+3. **CUDA face detection** - ONNX Runtime executes the YuNet graph through CUDAExecutionProvider; C++ decodes its boxes, confidence, and five landmarks.
+4. **Native C++ alignment and CUDA embedding** - C++ computes the five-landmark similarity transform and bilinear crop; ONNX Runtime executes the SFace graph through CUDAExecutionProvider.
+5. **Explicit CUDA reference comparison** - `sface_cuda.cu`, compiled by NVCC, assigns one CUDA thread to each query/reference cosine score and returns the score matrix.
 6. **One JSON response** - only the final small scores and indices return to the host; Hive receives one label, score, runner-up, margin, provider, timing, and accepted/rejected state.
 7. **Hive event logging** - the result is written into the Hive detection stream.
 8. **Optional neutrino handoff** - if the neutrino concept simulator is open, the recognized name is inserted into its message flow.
@@ -77,22 +99,22 @@ of this one-screenshot demonstration.
 
 The installer includes the local detector pieces required for a fresh machine:
 
-- `identity_matcher.py`
+- native `identity_cpu.exe` and `identity_cuda.exe` workers
 - local reference embeddings and face reference images
-- OpenCL detector executable
+- optional OpenCL detector executable for the legacy AMD path
 - CPU detector executable
 - neural model weights
 - Hive server routes for `/api/detect`, `/api/detector-status`, and `/api/neutrino-outbox`
 
 Recommended behavior:
 
-- **AMD/Radeon machine:** use the OpenCL path.
+- **AMD/Radeon machine:** use the optional OpenCL path.
 - **No supported GPU:** use the CPU path.
 - **NVIDIA/CUDA machine:** use the local ONNX Runtime CUDA YuNet/SFace pipeline installed with the NVIDIA suite.
 
 For the local NVIDIA game implementation, use
-`installers/nvidia_bee_simulation/Start NVIDIA Bee Simulation.bat` after
-installing a CUDA-enabled PyTorch build.
+`installers/nvidia_bee_simulation/Start NVIDIA Bee Simulation.bat` after the
+native CUDA worker and ONNX Runtime CUDA dependencies have been installed.
 
 Colab is no longer the only path. It is an optional external GPU service and must be connected deliberately.
 

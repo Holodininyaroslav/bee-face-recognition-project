@@ -1,0 +1,4 @@
+backend,variant,device,N,d,warmup,iterations,kernel_ms,end_to_end_ms,speedup_vs_cpu,max_abs_error,mean_abs_error,verification
+CPU,naive,host,512,64,5,50,0,10.6346,1,0,0,PASS
+CUDA,basic,NVIDIA GeForce RTX 4060,512,64,5,50,0.251794,0.350112,30.3749,4.47035e-08,5.48305e-09,PASS
+CUDA,optimized,NVIDIA GeForce RTX 4060,512,64,5,50,0.114701,0.211658,50.2443,4.47035e-08,5.48305e-09,PASS

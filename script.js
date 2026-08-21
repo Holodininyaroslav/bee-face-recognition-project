@@ -2834,8 +2834,8 @@ Object.assign(translations.en, {
   lead: "Run the native YuNet and SFace pipeline through CUDA or the sequential CPU baseline, inspect the exact C++/CUDA source, and open the integrated AI MIPS Hive view.",
   toolColab: "Native CUDA recognition engine",
   toolColabText: "Open the active C++ YuNet/SFace engine used by identity_cuda.exe.",
-  toolAttention: "Explicit CUDA scoring kernel",
-  toolAttentionText: "Open the project-owned CUDA kernel, device-memory transfers, launch configuration, and score readback.",
+  toolAttention: "CUDA Attention course implementation",
+  toolAttentionText: "Open the required Scaled Dot-Product Attention implementation: basic kernels, optimized tiled kernels, memory transfers, validation, and timing.",
   simpleNote: "Upload one screenshot, choose CUDA or CPU, and press Recognize.",
   dropHint: "Choose one screenshot for CUDA/CPU analysis.",
   howIntro: "This inspector documents the active native path: C++ image preparation and alignment, CUDA YuNet/SFace inference, the explicit sface_cuda.cu score kernel, and one Hive result.",
@@ -2859,8 +2859,8 @@ Object.assign(translations.ru, {
   lead: "Запустите native-конвейер YuNet и SFace через CUDA либо последовательный CPU baseline, изучите точный исходник C++/CUDA и откройте интегрированный AI MIPS Hive.",
   toolColab: "Native CUDA-движок распознавания",
   toolColabText: "Открыть активный C++-движок YuNet/SFace, используемый identity_cuda.exe.",
-  toolAttention: "Явное CUDA-ядро оценки",
-  toolAttentionText: "Открыть собственное CUDA-ядро проекта, переносы device-памяти, конфигурацию запуска и чтение оценок.",
+  toolAttention: "Курсовая реализация CUDA Attention",
+  toolAttentionText: "Открыть обязательную реализацию Scaled Dot-Product Attention: базовые kernels, оптимизированные tiled kernels, переносы памяти, проверку и измерение времени.",
   simpleNote: "Загрузите один снимок, выберите CUDA или CPU и нажмите «Распознать».",
   dropHint: "Выберите один снимок для анализа через CUDA/CPU.",
   howIntro: "Инспектор описывает активный native-путь: подготовку и выравнивание в C++, инференс YuNet/SFace на CUDA, явный kernel оценок из sface_cuda.cu и один результат Hive.",
@@ -2884,8 +2884,8 @@ Object.assign(translations.he, {
   lead: "הריצו את צינור YuNet ו-SFace המקורי דרך CUDA או דרך קו הבסיס הסדרתי של CPU, בדקו את מקור C++/CUDA המדויק ופתחו את תצוגת AI MIPS Hive המשולבת.",
   toolColab: "מנוע זיהוי native CUDA",
   toolColabText: "פתיחת מנוע C++ הפעיל של YuNet/SFace שבו משתמש identity_cuda.exe.",
-  toolAttention: "CUDA kernel מפורש לחישוב ציונים",
-  toolAttentionText: "פתיחת CUDA kernel של הפרויקט, העברות זיכרון ההתקן, תצורת השיגור וקריאת הציונים.",
+  toolAttention: "מימוש הקורס CUDA Attention",
+  toolAttentionText: "פתיחת המימוש הנדרש של Scaled Dot-Product Attention: kernels בסיסיים, kernels מרוצפים וממוטבים, העברות זיכרון, אימות ומדידת זמן.",
   simpleNote: "העלו צילום מסך אחד, בחרו CUDA או CPU ולחצו על זיהוי.",
   dropHint: "בחרו צילום מסך אחד לניתוח באמצעות CUDA/CPU.",
   howIntro: "הבודק מתאר את מסלול ה-native הפעיל: הכנה ויישור ב-C++, הסקת YuNet/SFace ב-CUDA, ה-kernel המפורש מתוך sface_cuda.cu ותוצאת Hive אחת.",
@@ -4801,6 +4801,483 @@ function currentCppSourceAnnotation(text, lang) {
   );
 }
 
+const nativeStageContexts = [
+  {
+    end: 60,
+    en: "the one-time NativeSFaceEngine initialization",
+    ru: "одноразовой инициализации NativeSFaceEngine",
+    he: "האתחול החד-פעמי של NativeSFaceEngine"
+  },
+  {
+    end: 95,
+    en: "host preparation of the shared YuNet NCHW batch",
+    ru: "host-подготовки общего NCHW-пакета YuNet",
+    he: "הכנת אצוות NCHW המשותפת של YuNet במארח"
+  },
+  {
+    end: 187,
+    en: "batched YuNet detection and SFace embedding",
+    ru: "пакетного детектирования YuNet и получения SFace-векторов",
+    he: "זיהוי YuNet והפקת embeddings של SFace באצווה"
+  },
+  {
+    end: 270,
+    en: "five-landmark alignment and L2 normalization",
+    ru: "выравнивания по пяти ориентирам и L2-нормализации",
+    he: "יישור לפי חמש נקודות ציון ונרמול L2"
+  },
+  {
+    end: 345,
+    en: "the explicit CUDA cosine-score implementation",
+    ru: "явной CUDA-реализации cosine-оценок",
+    he: "מימוש CUDA המפורש של ציוני cosine"
+  },
+  {
+    end: Number.POSITIVE_INFINITY,
+    en: "batch dispatch, ranking, and the final identity decision",
+    ru: "диспетчеризации пакета, ранжирования и итогового решения о личности",
+    he: "שיגור האצווה, הדירוג והחלטת הזהות הסופית"
+  }
+];
+
+const nativeValueMeanings = {
+  label: ["the identity name stored with one reference", "имя человека, сохранённое вместе с одним эталоном", "שם הזהות הנשמר עם ייחוס אחד"],
+  path: ["the filesystem path of an input or matched reference image", "путь к входному снимку или совпавшему эталону", "נתיב הקובץ של תמונת קלט או ייחוס תואם"],
+  vector: ["one normalized 128-value SFace embedding", "один нормализованный SFace-вектор из 128 значений", "embedding מנורמל של SFace בן 128 ערכים"],
+  use_cuda: ["whether this worker must use CUDA instead of the sequential CPU baseline", "должен ли worker использовать CUDA вместо последовательного CPU baseline", "האם ה-worker חייב להשתמש ב-CUDA במקום קו הבסיס הסדרתי של CPU"],
+  min_score: ["the minimum cosine similarity required to accept a name", "минимальное cosine-сходство для принятия имени", "דמיון cosine מינימלי הנדרש לקבלת שם"],
+  min_margin: ["the minimum lead over the runner-up identity", "минимальный отрыв от личности на втором месте", "הפער המינימלי מעל הזהות שבמקום השני"],
+  env: ["the persistent ONNX Runtime environment and its diagnostic name", "постоянную среду ONNX Runtime и её диагностическое имя", "סביבת ONNX Runtime הקבועה ושמה לצורכי אבחון"],
+  options: ["the session configuration shared by YuNet and SFace", "настройки сессии, общие для YuNet и SFace", "הגדרות הסשן המשותפות ל-YuNet ול-SFace"],
+  yunet: ["the persistent YuNet face-detector ONNX session", "постоянную ONNX-сессию детектора лиц YuNet", "סשן ONNX קבוע של גלאי הפנים YuNet"],
+  sface: ["the persistent SFace embedding ONNX session", "постоянную ONNX-сессию получения SFace-векторов", "סשן ONNX קבוע להפקת embeddings של SFace"],
+  references: ["the in-memory bank of labelled reference embeddings", "банк размеченных эталонных векторов в памяти", "מאגר embeddings מסומנים לייחוס בזיכרון"],
+  images: ["the decoded RGBA images belonging to the current request", "декодированные RGBA-изображения текущего запроса", "תמונות RGBA המפוענחות של הבקשה הנוכחית"],
+  metadata: ["the label and source path paired with every startup reference image", "имя и исходный путь каждой эталонной фотографии при запуске", "השם ונתיב המקור המוצמדים לכל תמונת ייחוס בעת ההפעלה"],
+  embedded: ["the batch of 128D embeddings and face-validity flags", "пакет 128D-векторов и флагов найденного лица", "אצוות embeddings בגודל 128D ודגלי תקינות פנים"],
+  batch: ["the padded NCHW BGR tensor and per-image content dimensions", "дополненный NCHW BGR-тензор и размеры содержимого каждого снимка", "טנזור BGR מרופד בסידור NCHW וממדי התוכן של כל תמונה"],
+  scale: ["the resize ratio capped at 1.0 so small images are not enlarged", "коэффициент resize не выше 1, поэтому маленькие снимки не увеличиваются", "יחס שינוי הגודל המוגבל ל-1.0 כדי שתמונות קטנות לא יוגדלו"],
+  width: ["the resized image width with a 32-pixel minimum", "ширину изображения после resize с минимумом 32 пикселя", "רוחב התמונה לאחר שינוי גודל עם מינימום 32 פיקסלים"],
+  height: ["the resized image height with a 32-pixel minimum", "высоту изображения после resize с минимумом 32 пикселя", "גובה התמונה לאחר שינוי גודל עם מינימום 32 פיקסלים"],
+  plane: ["the number of float elements in one padded color plane", "число float-элементов в одной дополненной цветовой плоскости", "מספר איברי float במישור צבע מרופד אחד"],
+  target_width: ["this image's unpadded resized width", "ширину текущего снимка после resize до padding", "הרוחב של התמונה הנוכחית לאחר שינוי גודל ולפני ריפוד"],
+  target_height: ["this image's unpadded resized height", "высоту текущего снимка после resize до padding", "הגובה של התמונה הנוכחית לאחר שינוי גודל ולפני ריפוד"],
+  scale_x: ["the horizontal mapping from output pixels back to source coordinates", "горизонтальный коэффициент обратного перехода к координатам исходника", "מקדם המיפוי האופקי מפיקסלי הפלט חזרה לקואורדינטות המקור"],
+  scale_y: ["the vertical mapping from output pixels back to source coordinates", "вертикальный коэффициент обратного перехода к координатам исходника", "מקדם המיפוי האנכי מפיקסלי הפלט חזרה לקואורדינטות המקור"],
+  input_shape: ["the B x 3 x H x W shape supplied to YuNet", "форму B x 3 x H x W, передаваемую YuNet", "הצורה B x 3 x H x W הנמסרת ל-YuNet"],
+  memory: ["CPU tensor memory whose data ONNX Runtime transfers to the selected execution provider", "CPU-память тензора, данные которой ONNX Runtime переносит выбранному provider", "זיכרון טנזור ב-CPU שאת נתוניו ONNX Runtime מעביר ל-provider שנבחר"],
+  input: ["the ONNX tensor view over the prepared NCHW batch", "ONNX-представление подготовленного NCHW-пакета", "תצוגת טנזור ONNX מעל אצוות NCHW המוכנה"],
+  outputs: ["the twelve YuNet output tensors for three feature-map strides", "двенадцать выходных тензоров YuNet для трёх шагов feature map", "שנים-עשר טנזורי הפלט של YuNet עבור שלושה stride-ים"],
+  faces: ["one strongest detected-face record per input image", "одну запись сильнейшего найденного лица на каждый снимок", "רשומת הפנים החזקה ביותר לכל תמונת קלט"],
+  confidence: ["the geometric mean of YuNet class and object probabilities", "геометрическое среднее вероятностей class и object из YuNet", "הממוצע הגאומטרי של הסתברויות class ו-object מ-YuNet"],
+  rank: ["the area-and-centering score used to choose one face", "оценку площади и близости к центру для выбора одного лица", "ציון שטח ומרכוז המשמש לבחירת פנים אחת"],
+  aligned: ["the B x 3 x 112 x 112 aligned-face tensor for SFace", "выровненный тензор лиц B x 3 x 112 x 112 для SFace", "טנזור הפנים המיושרות B x 3 x 112 x 112 עבור SFace"],
+  result: ["the native result object returned to the worker caller", "native-результат, возвращаемый вызывающему worker-коду", "אובייקט תוצאת native המוחזר לקוד שקרא ל-worker"],
+  scores: ["the complete query-by-reference cosine-score matrix", "полную матрицу cosine-оценок query x reference", "מטריצת ציוני cosine מלאה בגודל query כפול reference"],
+  flat_references: ["all cached 128D reference vectors packed contiguously", "все кэшированные 128D-векторы эталонов в непрерывной памяти", "כל וקטורי הייחוס השמורים בגודל 128D באריזה רציפה"],
+  shared_ms: ["total request time divided by the number of requested images", "общее время запроса, делённое на число изображений", "זמן הבקשה הכולל מחולק במספר התמונות"],
+  label_scores: ["the best reference score retained separately for each identity", "лучшую оценку эталона, сохранённую отдельно для каждой личности", "ציון הייחוס הטוב ביותר הנשמר בנפרד לכל זהות"],
+  ranked: ["the identities sorted from highest to lowest similarity", "личности, отсортированные от наибольшего сходства к меньшему", "הזהויות הממוינות מדמיון גבוה לנמוך"]
+  ,image: ["the current decoded RGBA image selected from the request batch", "текущее декодированное RGBA-изображение из пакета запроса", "תמונת ה-RGBA המפוענחת הנוכחית שנבחרה מאצוות הבקשה"]
+  ,source_y: ["the source-image y coordinate sampled for the current output pixel", "координату y исходного изображения для текущего выходного пикселя", "קואורדינטת y בתמונת המקור הנדגמת עבור פיקסל הפלט הנוכחי"]
+  ,source_x: ["the source-image x coordinate sampled for the current output pixel", "координату x исходного изображения для текущего выходного пикселя", "קואורדינטת x בתמונת המקור הנדגמת עבור פיקסל הפלט הנוכחי"]
+  ,offset: ["the flat NCHW index of the current image, channel, row, and column", "плоский NCHW-индекс текущих image, channel, row и column", "אינדקס NCHW השטוח של התמונה, הערוץ, השורה והעמודה הנוכחיים"]
+  ,input_name: ["YuNet's first ONNX input name", "имя первого ONNX-входа YuNet", "שם קלט ONNX הראשון של YuNet"]
+  ,best_rank: ["the strongest face-candidate rank found so far for the current image", "лучшую оценку кандидата лица, найденную для текущего снимка", "ציון מועמד הפנים החזק ביותר שנמצא עד כה עבור התמונה הנוכחית"]
+  ,shape: ["the dimensions of the selected YuNet output tensor", "размерности выбранного выходного тензора YuNet", "ממדי טנזור הפלט הנבחר של YuNet"]
+  ,box: ["the four encoded YuNet box values for the current anchor", "четыре закодированных значения YuNet box текущего anchor", "ארבעת ערכי תיבת YuNet המקודדים עבור ה-anchor הנוכחי"]
+  ,points: ["the ten YuNet landmark coordinates for the current anchor", "десять координат ориентиров YuNet текущего anchor", "עשר קואורדינטות נקודות הציון של YuNet עבור ה-anchor הנוכחי"]
+  ,sface_input: ["the ONNX tensor view over all aligned 112 x 112 faces", "ONNX-тензор всех выровненных лиц 112 x 112", "תצוגת טנזור ONNX מעל כל הפנים המיושרות בגודל 112 x 112"]
+  ,sface_input_name: ["SFace's ONNX input name", "имя ONNX-входа SFace", "שם קלט ONNX של SFace"]
+  ,sface_output_name: ["SFace's ONNX embedding-output name", "имя ONNX-выхода embeddings SFace", "שם פלט ה-embedding של SFace ב-ONNX"]
+  ,input_plane: ["the number of floats in one channel of the padded detector input", "число float-значений в одном канале дополненного входа детектора", "מספר ערכי float בערוץ אחד של קלט הגלאי המרופד"]
+  ,output_plane: ["the number of floats in one 112 x 112 aligned-face channel", "число float-значений в одном канале выровненного лица 112 x 112", "מספר ערכי float בערוץ אחד של פנים מיושרות בגודל 112 x 112"]
+  ,source_mean_x: ["the mean x coordinate of the five detected landmarks", "среднюю координату x пяти найденных ориентиров", "ממוצע קואורדינטות x של חמש נקודות הציון שזוהו"]
+  ,source_mean_y: ["the mean y coordinate of the five detected landmarks", "среднюю координату y пяти найденных ориентиров", "ממוצע קואורדינטות y של חמש נקודות הציון שזוהו"]
+  ,target_mean_x: ["the mean x coordinate of the canonical SFace landmark template", "среднюю координату x канонического шаблона ориентиров SFace", "ממוצע קואורדינטות x של תבנית נקודות הציון הקנונית של SFace"]
+  ,target_mean_y: ["the mean y coordinate of the canonical SFace landmark template", "среднюю координату y канонического шаблона ориентиров SFace", "ממוצע קואורדינטות y של תבנית נקודות הציון הקנונית של SFace"]
+  ,numerator_a: ["the accumulated scale-cosine numerator of the similarity transform", "накопленный числитель scale-cosine similarity-преобразования", "המונה המצטבר של scale-cosine בהתמרת similarity"]
+  ,numerator_b: ["the accumulated scale-sine numerator of the similarity transform", "накопленный числитель scale-sine similarity-преобразования", "המונה המצטבר של scale-sine בהתמרת similarity"]
+  ,denominator: ["the summed squared distance of source landmarks from their centroid", "сумму квадратов расстояний исходных ориентиров от их центра", "סכום ריבועי המרחקים של נקודות המקור מן המרכז שלהן"]
+  ,sx: ["the current source landmark's x offset from the source centroid", "смещение x текущего исходного ориентира от центра", "היסט x של נקודת המקור הנוכחית ממרכז נקודות המקור"]
+  ,sy: ["the current source landmark's y offset from the source centroid", "смещение y текущего исходного ориентира от центра", "היסט y של נקודת המקור הנוכחית ממרכז נקודות המקור"]
+  ,dx: ["the current coordinate's horizontal offset used by the similarity transform", "горизонтальное смещение текущей координаты для similarity-преобразования", "ההיסט האופקי של הקואורדינטה הנוכחית בהתמרת similarity"]
+  ,dy: ["the current coordinate's vertical offset used by the similarity transform", "вертикальное смещение текущей координаты для similarity-преобразования", "ההיסט האנכי של הקואורדינטה הנוכחית בהתמרת similarity"]
+  ,sum: ["the accumulated sum of squared embedding components", "накопленную сумму квадратов компонент embedding", "הסכום המצטבר של ריבועי רכיבי ה-embedding"]
+  ,results: ["one final recognition result for every requested image", "по одному итоговому результату распознавания на каждый снимок", "תוצאת זיהוי סופית אחת לכל תמונה מבוקשת"]
+};
+
+function nativeStageContext(index, lang) {
+  const stage = nativeStageContexts.find((item) => index <= item.end) || nativeStageContexts[5];
+  return stage[lang] || stage.en;
+}
+
+function nativeValueMeaning(name, lang) {
+  const value = nativeValueMeanings[name];
+  if (!value) return "";
+  return value[lang === "ru" ? 1 : lang === "he" ? 2 : 0];
+}
+
+function nativeCommentAnnotation(text, lang) {
+  const say = (en, ru, he) => lang === "ru" ? ru : lang === "he" ? he : en;
+  const comment = text.replace(/^\/\/\s?/, "");
+  const known = [
+    [/compiled into identity_cuda/, "Records that CUDA provider ownership is inside identity_cuda.exe, not Python.", "Фиксирует, что CUDA provider создаётся внутри identity_cuda.exe, а не в Python.", "מתעד שהבעלות על CUDA provider נמצאת בתוך identity_cuda.exe ולא ב-Python."],
+    [/creates or owns the CUDA/, "Completes the ownership note: Python transports requests but never creates this CUDA session.", "Завершает пояснение: Python передаёт запросы, но не создаёт эту CUDA-сессию.", "משלים את ההבהרה: Python מעביר בקשות אך אינו יוצר את סשן CUDA הזה."],
+    [/Reference embeddings are computed once/, "Explains that reference inference is startup work, not repeated request work.", "Объясняет, что инференс эталонов выполняется при запуске, а не для каждого запроса.", "מסביר שהסקת הייחוסים היא עבודת אתחול ואינה חוזרת בכל בקשה."],
+    [/reused for every request/, "Confirms that the persistent worker reuses the already computed reference vectors.", "Подтверждает повторное использование готовых эталонных векторов постоянным worker-процессом.", "מאשר שה-worker הקבוע משתמש מחדש בווקטורי הייחוס שכבר חושבו."],
+    [/Build one dynamic NCHW tensor/, "States that all request images are packed into one dynamic NCHW tensor.", "Указывает, что все изображения запроса упаковываются в один динамический NCHW-тензор.", "מציין שכל תמונות הבקשה נארזות בטנזור NCHW דינמי אחד."],
+    [/entire request as one CUDA batch/, "Explains why every image is padded to the same shape: ONNX Runtime can dispatch one CUDA batch.", "Объясняет общий padding: ONNX Runtime получает возможность отправить весь запрос одним CUDA-пакетом.", "מסביר את הריפוד המשותף: ONNX Runtime יכול לשגר את כל הבקשה כאצוות CUDA אחת."],
+    [/Decode YuNet's three/, "Introduces decoding of YuNet outputs at strides 8, 16, and 32.", "Вводит разбор выходов YuNet с шагами 8, 16 и 32.", "מציג את פענוח פלטי YuNet ב-stride-ים 8, 16 ו-32."],
+    [/centered face candidate/, "States the selection rule: keep one strong, centered face and its five landmarks.", "Фиксирует правило выбора: сохранить одно сильное центральное лицо и пять ориентиров.", "קובע את כלל הבחירה: לשמור פנים חזקות וממורכזות ואת חמש נקודות הציון שלהן."],
+    [/Estimate a 2D similarity transform/, "Introduces the least-squares similarity transform from detected landmarks to the canonical SFace template.", "Вводит similarity-преобразование от найденных ориентиров к каноническому шаблону SFace.", "מציג התמרת similarity מנקודות הציון שזוהו אל תבנית SFace הקנונית."],
+    [/canonical SFace template/, "States that the transform resamples every valid face to the fixed 112 x 112 SFace input.", "Указывает, что преобразование пересэмплирует каждое лицо во вход SFace 112 x 112.", "מציין שההתמרה דוגמת כל פנים תקינות מחדש לקלט SFace קבוע בגודל 112 x 112."],
+    [/Grid Y selects/, "Documents the kernel mapping: blockIdx.y selects a query and the X grid covers references.", "Документирует раскладку kernel: blockIdx.y выбирает query, а grid X покрывает эталоны.", "מתעד את מיפוי ה-kernel: ‏blockIdx.y בוחר query ו-grid X מכסה את הייחוסים."],
+    [/final block may be only partly full/, "Explains why the next boundary check is mandatory when N is not divisible by 256.", "Объясняет обязательность следующей проверки границ, когда N не делится на 256.", "מסביר מדוע בדיקת הגבולות הבאה הכרחית כאשר N אינו מתחלק ב-256."],
+    [/Every query\/reference pair/, "States that duplicate inputs remain independent work and every query/reference score is computed.", "Указывает, что повторы остаются отдельной работой и вычисляется каждая пара query/reference.", "מציין שקלטים כפולים נשארים עבודה נפרדת וכל ציון query/reference מחושב."],
+    [/measurement of executed inference work/, "Clarifies that timing measures executed computations rather than cache hits or duplicate skipping.", "Уточняет, что время измеряет выполненные вычисления, а не кэш или пропуск повторов.", "מבהיר שהתזמון מודד חישובים שבוצעו ולא פגיעות מטמון או דילוג על כפילויות."],
+    [/One dynamic batch enters/, "States that the CUDA branch submits the complete image list to YuNet and SFace together.", "Указывает, что CUDA-ветка совместно передаёт весь список изображений в YuNet и SFace.", "מציין שענף CUDA שולח יחד את כל רשימת התמונות אל YuNet ו-SFace."],
+    [/graph kernels across the CUDA device/, "Explains that ONNX Runtime schedules the neural graph kernels over the NVIDIA GPU.", "Объясняет, что ONNX Runtime распределяет kernels нейросетевых графов по NVIDIA GPU.", "מסביר ש-ONNX Runtime מתזמן את kernels של הגרפים העצביים על פני ה-GPU של NVIDIA."],
+    [/grading baseline intentionally/, "Defines the required baseline as the same networks invoked one image at a time on CPU.", "Определяет требуемый baseline: те же сети запускаются на CPU по одному изображению.", "מגדיר את קו הבסיס הנדרש: אותן רשתות מופעלות ב-CPU תמונה אחר תמונה."],
+    [/CPU execution strictly sequential/, "Confirms that the CPU comparison does not batch multiple images.", "Подтверждает, что CPU-сравнение не объединяет несколько снимков в пакет.", "מאשר שהשוואת CPU אינה מאגדת כמה תמונות באצווה."],
+    [/Query\/reference cosine products/, "Introduces the project-owned CUDA kernel used for the final score matrix.", "Вводит собственный CUDA kernel проекта для итоговой матрицы оценок.", "מציג את CUDA kernel של הפרויקט עבור מטריצת הציונים הסופית."],
+    [/not by Python or a cached result/, "Confirms that these scores are freshly computed by sface_cuda.cu rather than fabricated by Python or a cache.", "Подтверждает, что sface_cuda.cu заново вычисляет оценки, а Python или кэш их не подменяют.", "מאשר ש-sface_cuda.cu מחשב את הציונים מחדש ו-Python או מטמון אינם מחליפים אותם."]
+  ];
+  const match = known.find((item) => item[0].test(comment));
+  if (match) return say(match[1], match[2], match[3]);
+  return say(
+    `Documents this implementation rule in context: ${comment}`,
+    `Документирует правило текущей реализации: ${comment}`,
+    `מתעד את כלל המימוש הנוכחי: ${comment}`
+  );
+}
+
+function nativeContextFallback(lines, index, lang) {
+  const text = lines[index].trim();
+  const say = (en, ru, he) => repairLocalizedText(lang === "ru" ? ru : lang === "he" ? he : en);
+  const context = nativeStageContext(index, lang);
+  const exact = (pattern, en, ru, he) => pattern.test(text) ? say(en, ru, he) : null;
+  const exactRules = [
+    exact(/^struct NativeSFaceEngine::Impl/, "Defines the private persistent state behind NativeSFaceEngine: sessions, thresholds, references, and recognition methods.", "Определяет закрытое постоянное состояние NativeSFaceEngine: сессии, пороги, эталоны и методы распознавания.", "מגדירה את המצב הפרטי והקבוע מאחורי NativeSFaceEngine: סשנים, ספים, ייחוסים ומתודות זיהוי."),
+    exact(/^struct Reference/, "Defines one reference-bank record containing an identity label, source path, and normalized SFace vector.", "Определяет одну запись банка эталонов: имя человека, путь к файлу и нормализованный SFace-вектор.", "מגדירה רשומה אחת במאגר הייחוס הכוללת תווית זהות, נתיב מקור ווקטור SFace מנורמל."),
+    exact(/^std::string label;/, "Declares the identity label field that is filled from the reference directory name.", "Объявляет поле имени личности, которое заполняется названием папки эталонов.", "מצהירה על שדה תווית הזהות שמתמלא משם תיקיית הייחוס."),
+    exact(/^fs::path path;/, "Declares the source-image path field used to report which reference produced the winning score.", "Объявляет поле пути к исходному снимку, чтобы затем сообщить, какой эталон дал победившую оценку.", "מצהירה על שדה נתיב תמונת המקור כדי לדווח איזה ייחוס הפיק את הציון המנצח."),
+    exact(/^bool use_cuda;/, "Stores the constructor's backend choice for every later inference and scoring request.", "Хранит выбранный constructor-ом backend для последующего инференса и вычисления оценок.", "שומרת את בחירת ה-backend של ה-constructor עבור כל בקשת הסקה ודירוג בהמשך."),
+    exact(/^float min_score;/, "Stores the minimum cosine score that a winning identity must reach.", "Хранит минимальную cosine-оценку, которую должна набрать победившая личность.", "שומרת את ציון ה-cosine המינימלי שהזהות המנצחת חייבת להשיג."),
+    exact(/^float min_margin;/, "Stores the minimum score gap required between first and second place.", "Хранит минимальный разрыв оценок между первым и вторым местом.", "שומרת את פער הציונים המינימלי הנדרש בין המקום הראשון לשני."),
+    exact(/^if \(use_cuda\)/, "Selects the CUDA-only branch: provider setup during construction, batched inference during recognition, or GPU cosine scoring after embeddings are ready.", "Выбирает CUDA-ветку: подключение provider при создании, пакетный инференс при распознавании или GPU-оценки после получения embeddings.", "בוחרת בענף CUDA: חיבור provider בעת הבנייה, הסקה באצווה בזמן הזיהוי או חישוב ציוני GPU לאחר הפקת embeddings."),
+    exact(/^if \(!entry\.is_regular_file\(\)\) continue;/, "Skips directory entries because only regular image files can become face references.", "Пропускает записи папок, поскольку эталоном лица может быть только обычный файл изображения.", "מדלגת על רשומות תיקייה משום שרק קובץ תמונה רגיל יכול לשמש כייחוס פנים."),
+    exact(/^if \(extension != ".jpg"/, "Skips files whose extension is not JPG, JPEG, PNG, or BMP.", "Пропускает файлы с расширением, отличным от JPG, JPEG, PNG или BMP.", "מדלגת על קבצים שהסיומת שלהם אינה JPG, JPEG, PNG או BMP."),
+    exact(/^if \(!embedded\.valid\[index\]\) continue;/, "Skips a reference image when YuNet did not find a valid face, preventing an invalid vector from entering the reference bank.", "Пропускает эталон, если YuNet не нашёл валидное лицо, чтобы ошибочный vector не попал в банк эталонов.", "מדלגת על תמונת ייחוס כאשר YuNet לא מצא פנים תקינות, כדי למנוע הכנסת וקטור שגוי למאגר."),
+    exact(/^if \(confidence < 0\.55f\) continue;/, "Rejects this YuNet anchor because its combined class/object confidence is below 0.55.", "Отбрасывает текущий YuNet anchor, поскольку его общая class/object confidence ниже 0.55.", "דוחה את ה-anchor הנוכחי של YuNet משום שביטחון class/object המשולב נמוך מ-0.55."),
+    exact(/^if \(rank <= best_rank\) continue;/, "Keeps the previously selected face because this candidate is smaller or farther from the image centre.", "Сохраняет ранее выбранное лицо, поскольку текущий кандидат меньше или дальше от центра снимка.", "משאירה את הפנים שנבחרו קודם משום שהמועמד הנוכחי קטן יותר או רחוק יותר ממרכז התמונה."),
+    exact(/^if \(x < 0\.0f \|\| y < 0\.0f/, "Returns a zero pixel when inverse alignment maps outside the padded detector image.", "Возвращает нулевой пиксель, если обратное alignment-преобразование вышло за границы дополненного изображения.", "מחזירה פיקסל אפס כאשר מיפוי היישור ההפוך יוצא מגבולות תמונת הגלאי המרופדת."),
+    exact(/^if \(!faces\[image\]\.valid\) continue;/, "Leaves this aligned-face slot zero-filled because YuNet found no usable face for the image.", "Оставляет место выровненного лица заполненным нулями, поскольку YuNet не нашёл пригодное лицо.", "משאירה את תא הפנים המיושרות מלא באפסים משום ש-YuNet לא מצא פנים שמישות בתמונה."),
+    exact(/^if \(!result\.face_found\) continue;/, "Skips identity ranking for this image because there is no valid SFace embedding to compare.", "Не выполняет ранжирование личности для этого снимка, поскольку нет валидного SFace embedding.", "מדלגת על דירוג הזהות לתמונה זו משום שאין embedding תקין של SFace להשוואה."),
+    exact(/^if \(score > best\.score\) best =/, "Replaces the identity's retained reference only when the current reference has a higher cosine score.", "Заменяет сохранённый эталон личности только тогда, когда текущий эталон дал более высокую cosine-оценку.", "מחליפה את הייחוס השמור של הזהות רק כאשר הייחוס הנוכחי קיבל ציון cosine גבוה יותר."),
+    exact(/^struct LabelBest/, "Defines the per-identity accumulator: its best score starts at -1 and stores the winning reference index.", "Определяет accumulator одной личности: лучшая оценка начинается с -1 и хранит индекс победившего эталона.", "מגדירה צובר לכל זהות: הציון הטוב ביותר מתחיל ב-1- ושומר את אינדקס הייחוס המנצח."),
+    exact(/^Impl\(const fs::path& model_root/, "Declares the constructor that receives model and reference roots, backend choice, and both acceptance thresholds.", "Объявляет constructor, получающий папки моделей и эталонов, выбор backend и оба порога принятия.", "מצהירה על ה-constructor שמקבל תיקיות מודלים וייחוסים, בחירת backend ושני ספי הקבלה."),
+    exact(/^: use_cuda\(cuda\)/, "Copies the constructor arguments into persistent backend and threshold fields before session initialization starts.", "Копирует аргументы constructor в постоянные поля backend и порогов до создания сессий.", "מעתיקה את ארגומנטי ה-constructor לשדות הקבועים של backend ושל הספים לפני אתחול הסשנים."),
+    exact(/SetGraphOptimizationLevel/, "Enables every ONNX Runtime graph optimization, including node fusion and provider-specific execution planning.", "Включает все оптимизации графа ONNX Runtime, включая fusion узлов и планирование для выбранного provider.", "מפעילה את כל אופטימיזציות גרף ONNX Runtime, כולל fusion של צמתים ותכנון ביצוע ל-provider שנבחר."),
+    exact(/SetLogSeverityLevel\(3\)/, "Restricts ONNX Runtime output to error-level diagnostics so normal inference does not flood the worker log.", "Оставляет в журнале ONNX Runtime сообщения уровня error, чтобы обычный инференс не засорял лог worker.", "מגבילה את פלט ONNX Runtime לרמת שגיאה כדי שהסקה רגילה לא תציף את יומן ה-worker."),
+    exact(/^OrtCUDAProviderOptions cuda_options/, "Creates zero-initialized CUDA provider options used only by identity_cuda.exe.", "Создаёт обнулённые настройки CUDA provider, используемые только identity_cuda.exe.", "יוצרת אפשרויות CUDA provider מאותחלות לאפס המשמשות רק את identity_cuda.exe."),
+    exact(/cuda_options\.device_id = 0/, "Selects NVIDIA device 0 as the execution device for both neural-network sessions.", "Выбирает NVIDIA device 0 для выполнения обеих нейросетевых сессий.", "בוחרת את התקן NVIDIA מספר 0 לביצוע שני הסשנים העצביים."),
+    exact(/arena_extend_strategy = 1/, "Configures the CUDA memory arena to extend by the amount requested instead of doubling aggressively.", "Настраивает CUDA memory arena на увеличение по требуемому объёму вместо агрессивного удвоения.", "מגדירה את זירת זיכרון CUDA להתרחב לפי הגודל הנדרש במקום להכפיל באגרסיביות."),
+    exact(/AppendExecutionProvider_CUDA/, "Attaches CUDAExecutionProvider to the session options; failure here prevents a silent CPU fallback.", "Подключает CUDAExecutionProvider к настройкам сессии; ошибка здесь не позволяет незаметно перейти на CPU.", "מחברת CUDAExecutionProvider להגדרות הסשן; כשל כאן מונע מעבר שקט ל-CPU."),
+    exact(/^yunet = Ort::Session/, "Loads yunet_dynamic.onnx into a persistent session using the configured CPU or CUDA provider.", "Загружает yunet_dynamic.onnx в постоянную сессию с настроенным CPU или CUDA provider.", "טוענת את yunet_dynamic.onnx לסשן קבוע באמצעות CPU או CUDA provider שהוגדר."),
+    exact(/^sface = Ort::Session/, "Loads sface_dynamic.onnx into the second persistent session with the same provider contract.", "Загружает sface_dynamic.onnx во вторую постоянную сессию с тем же provider.", "טוענת את sface_dynamic.onnx לסשן הקבוע השני עם אותו provider."),
+    exact(/^const fs::path folder = reference_root \/ label/, "Builds the reference directory for the current identity label.", "Формирует папку эталонов текущей личности.", "בונה את תיקיית הייחוס עבור תווית הזהות הנוכחית."),
+    exact(/is_directory\(folder\).*Reference folder/, "Stops startup with the missing folder name because recognition cannot rank an identity without references.", "Останавливает запуск с именем отсутствующей папки, поскольку без эталонов личность нельзя ранжировать.", "עוצרת את ההפעלה עם שם התיקייה החסרה, משום שאי אפשר לדרג זהות ללא ייחוסים."),
+    exact(/^const auto extension =/, "Reads the file extension so non-image files can be excluded from the reference bank.", "Читает расширение файла, чтобы исключить не-изображения из банка эталонов.", "קוראת את סיומת הקובץ כדי להוציא קבצים שאינם תמונות ממאגר הייחוס."),
+    exact(/^images\.push_back\(load_image_rgba/, "Decodes this accepted reference file into RGBA pixels and appends it to the startup inference batch.", "Декодирует подходящий эталонный файл в RGBA и добавляет его в стартовый пакет инференса.", "מפענחת את קובץ הייחוס התקין לפיקסלי RGBA ומוסיפה אותו לאצוות ההסקה בעת ההפעלה."),
+    exact(/^metadata\.emplace_back/, "Stores the identity label and exact file path at the same index as the decoded reference image.", "Сохраняет имя личности и точный путь под тем же индексом, что и декодированное эталонное изображение.", "שומרת את תווית הזהות ואת הנתיב המדויק באותו אינדקס של תמונת הייחוס המפוענחת."),
+    exact(/^auto embedded = embed_images\(images\)/, "Runs one startup YuNet/SFace batch for all decoded reference images and returns their 128D vectors.", "Запускает один стартовый пакет YuNet/SFace для всех эталонных снимков и получает их 128D-векторы.", "מריצה אצוות YuNet/SFace אחת בעת ההפעלה עבור כל תמונות הייחוס ומחזירה את וקטורי 128D שלהן."),
+    exact(/^references\.push_back/, "Begins appending one valid labelled reference record to the persistent in-memory bank.", "Начинает добавление одного валидного размеченного эталона в постоянный банк в памяти.", "מתחילה להוסיף רשומת ייחוס תקינה ומסומנת למאגר הקבוע בזיכרון."),
+    exact(/metadata\[index\]\.first/, "Supplies the identity label paired with this reference image.", "Передаёт имя личности, связанное с текущим эталонным снимком.", "מעבירה את תווית הזהות המוצמדת לתמונת הייחוס הנוכחית."),
+    exact(/metadata\[index\]\.second/, "Supplies the exact source-file path paired with this reference image.", "Передаёт точный путь к файлу текущего эталонного снимка.", "מעבירה את נתיב קובץ המקור המדויק של תמונת הייחוס הנוכחית."),
+    exact(/embedded\.vectors\.begin\(\).*index \* kEmbeddingSize/, "Points to the first float of this image's 128-value embedding in the flat batch output.", "Указывает на первый float 128-мерного вектора текущего снимка в плоском выходе пакета.", "מצביעה על ערך ה-float הראשון ב-embedding בן 128 הערכים של התמונה בפלט האצווה השטוח."),
+    exact(/embedded\.vectors\.begin\(\).*\(index \+ 1\)/, "Points one element past this image's 128-value embedding, completing the vector-copy range.", "Указывает сразу после 128-мерного вектора текущего снимка и завершает диапазон копирования.", "מצביעה לאיבר שאחרי ה-embedding בן 128 הערכים ומשלימה את טווח ההעתקה."),
+    exact(/references\.empty\(\)/, "Rejects startup when no reference image produced a valid face embedding.", "Останавливает запуск, если ни один эталон не дал валидный вектор лица.", "דוחה את ההפעלה אם אף תמונת ייחוס לא הפיקה embedding תקין של פנים."),
+    exact(/^PreparedBatch prepare_detection_batch/, "Defines host preprocessing that packs all request images into one padded float32 NCHW BGR batch.", "Определяет host-предобработку, упаковывающую все снимки запроса в один дополненный float32 NCHW BGR-пакет.", "מגדירה עיבוד מקדים במארח האורז את כל תמונות הבקשה באצוות float32 NCHW BGR מרופדת אחת."),
+    exact(/^batch\.content_widths\.push_back/, "Records this image's resized content width so YuNet coordinates can later be checked against real content rather than padding.", "Сохраняет ширину содержимого после resize, чтобы координаты YuNet проверялись по изображению, а не по padding.", "שומרת את רוחב התוכן לאחר שינוי גודל כדי לבדוק קואורדינטות YuNet מול התמונה ולא מול הריפוד."),
+    exact(/^batch\.content_heights\.push_back/, "Records this image's resized content height for later face-coordinate decoding.", "Сохраняет высоту содержимого после resize для последующего разбора координат лица.", "שומרת את גובה התוכן לאחר שינוי גודל לפענוח קואורדינטות הפנים בהמשך."),
+    exact(/^batch\.width =/, "Raises the common batch width to the largest image width rounded up to a multiple of 32.", "Увеличивает общую ширину пакета до максимальной ширины снимка, округлённой вверх до 32.", "מעדכנת את רוחב האצווה המשותף לרוחב התמונה הגדול ביותר המעוגל כלפי מעלה לכפולה של 32."),
+    exact(/^batch\.height =/, "Raises the common batch height to the largest image height rounded up to a multiple of 32.", "Увеличивает общую высоту пакета до максимальной высоты снимка, округлённой вверх до 32.", "מעדכנת את גובה האצווה המשותף לגובה התמונה הגדול ביותר המעוגל כלפי מעלה לכפולה של 32."),
+    exact(/^batch\.nchw_bgr\.assign/, "Allocates B x 3 x H x W floats and initializes padding pixels to zero.", "Выделяет B x 3 x H x W значений float и заполняет padding нулями.", "מקצה B x 3 x H x W ערכי float ומאתחלת את פיקסלי הריפוד לאפס."),
+    exact(/^batch\.nchw_bgr\[offset\] = pixel_bgr/, "Bilinearly samples one source pixel and writes it into the selected image, channel, y, x position of the NCHW batch.", "Билинейно выбирает один пиксель исходника и записывает его в позицию image, channel, y, x NCHW-пакета.", "דוגמת פיקסל מקור אחד בבילינאריות וכותבת אותו למיקום image, channel, y, x באצוות NCHW."),
+    exact(/^EmbeddingBatch embed_images/, "Defines the shared neural path: one YuNet batch, landmark decoding, alignment, one SFace batch, and normalized embeddings.", "Определяет общий нейросетевой путь: один пакет YuNet, разбор ориентиров, alignment, один пакет SFace и нормализованные векторы.", "מגדירה את המסלול העצבי המשותף: אצוות YuNet אחת, פענוח נקודות ציון, יישור, אצוות SFace אחת ו-embeddings מנורמלים."),
+    exact(/images\.empty\(\).*return/, "Returns an empty batch immediately because there is no image tensor to infer.", "Сразу возвращает пустой пакет, поскольку нет изображений для инференса.", "מחזירה מיד אצווה ריקה משום שאין תמונות להסקה."),
+    exact(/^auto prepared = prepare_detection_batch/, "Runs the host packer and obtains one padded NCHW batch plus each image's real content dimensions.", "Запускает host-упаковку и получает один дополненный NCHW-пакет вместе с реальными размерами каждого снимка.", "מריצה את אורז המארח ומקבלת אצוות NCHW מרופדת אחת יחד עם ממדי התוכן האמיתיים של כל תמונה."),
+    exact(/^auto memory = Ort::MemoryInfo::CreateCpu/, "Describes the prepared vector as CPU arena memory; CUDAExecutionProvider uploads it when the graph starts.", "Описывает подготовленный vector как CPU arena memory; CUDAExecutionProvider загружает его при запуске графа.", "מתארת את ה-vector המוכן כזיכרון CPU arena; ‏CUDAExecutionProvider מעלה אותו עם תחילת הגרף."),
+    exact(/^auto input = Ort::Value::CreateTensor/, "Begins creating YuNet's float tensor view over the prepared batch without copying the C++ vector.", "Начинает создание float-тензора YuNet поверх подготовленного C++ vector без дополнительной копии.", "מתחילה ליצור תצוגת טנזור float של YuNet מעל ה-vector המוכן בלי העתקה נוספת."),
+    exact(/^auto outputs = yunet\.Run/, "Executes the YuNet ONNX graph once for the complete batch through the configured provider and requests all twelve output tensors.", "Один раз выполняет ONNX-граф YuNet для всего пакета через настроенный provider и запрашивает 12 выходных тензоров.", "מריצה את גרף ONNX של YuNet פעם אחת עבור כל האצווה דרך ה-provider שהוגדר ומבקשת את כל 12 טנזורי הפלט."),
+    exact(/^const int stride = kStrides/, "Selects the current YuNet feature-map stride: 8, 16, or 32 pixels.", "Выбирает текущий шаг feature map YuNet: 8, 16 или 32 пикселя.", "בוחרת את stride מפת התכונות הנוכחי של YuNet: ‏8, 16 או 32 פיקסלים."),
+    exact(/^const int columns = prepared\.width \/ stride/, "Computes the number of anchor columns at this stride so a flat anchor index can be converted to grid x/y.", "Вычисляет число столбцов anchors на этом шаге, чтобы перевести плоский индекс anchor в grid x/y.", "מחשבת את מספר עמודות ה-anchors ב-stride הזה כדי להמיר אינדקס anchor שטוח ל-grid x/y."),
+    exact(/^const int anchors =/, "Reads the anchor count from the selected YuNet bbox output shape.", "Читает число anchors из формы выбранного bbox-выхода YuNet.", "קוראת את מספר ה-anchors מצורת פלט ה-bbox הנבחר של YuNet."),
+    exact(/^const float\* cls =/, "Gets the class-probability array for the current YuNet stride.", "Получает массив class probability текущего шага YuNet.", "מקבלת את מערך הסתברויות ה-class עבור stride הנוכחי של YuNet."),
+    exact(/^const float\* obj =/, "Gets the objectness-probability array for the current YuNet stride.", "Получает массив objectness probability текущего шага YuNet.", "מקבלת את מערך הסתברויות ה-objectness עבור stride הנוכחי של YuNet."),
+    exact(/^const float\* bbox =/, "Gets the encoded center and size values for every anchor at this stride.", "Получает закодированные центр и размер каждого anchor на этом шаге.", "מקבלת את ערכי המרכז והגודל המקודדים לכל anchor ב-stride הזה."),
+    exact(/^const float\* keypoints =/, "Gets the ten coordinates representing five facial landmarks for every anchor.", "Получает десять координат пяти ориентиров лица для каждого anchor.", "מקבלת עשר קואורדינטות המייצגות חמש נקודות ציון של הפנים לכל anchor."),
+    exact(/^const std::size_t scalar =/, "Maps the current image and anchor to one class/object score element in the flat batch output.", "Преобразует текущие image и anchor в один индекс class/object score плоского выхода пакета.", "ממפה את התמונה ואת ה-anchor הנוכחיים לאיבר score אחד של class/object בפלט האצווה השטוח."),
+    exact(/^const float grid_x =/, "Converts the anchor index remainder into its feature-map x coordinate.", "Преобразует остаток индекса anchor в координату x feature map.", "ממירה את שארית אינדקס ה-anchor לקואורדינטת x במפת התכונות."),
+    exact(/^const float grid_y =/, "Converts the anchor index quotient into its feature-map y coordinate.", "Преобразует частное индекса anchor в координату y feature map.", "ממירה את מנת אינדקס ה-anchor לקואורדינטת y במפת התכונות."),
+    exact(/^const float centre_x =/, "Decodes the face-center x coordinate by adding the predicted offset to grid x and multiplying by stride.", "Декодирует x центра лица: прибавляет предсказанное смещение к grid x и умножает на stride.", "מפענחת את קואורדינטת x של מרכז הפנים על ידי הוספת ההיסט החזוי ל-grid x וכפל ב-stride."),
+    exact(/^const float centre_y =/, "Decodes the face-center y coordinate by adding the predicted offset to grid y and multiplying by stride.", "Декодирует y центра лица: прибавляет предсказанное смещение к grid y и умножает на stride.", "מפענחת את קואורדינטת y של מרכז הפנים על ידי הוספת ההיסט החזוי ל-grid y וכפל ב-stride."),
+    exact(/^const float width = std::exp/, "Exponentiates the clamped width logit and scales it by stride to obtain face width in pixels.", "Экспоненцирует ограниченный width logit и умножает на stride, получая ширину лица в пикселях.", "מעלה באקספוננט את logit הרוחב המוגבל וכופלת ב-stride לקבלת רוחב פנים בפיקסלים."),
+    exact(/^const float height = std::exp/, "Exponentiates the clamped height logit and scales it by stride to obtain face height in pixels.", "Экспоненцирует ограниченный height logit и умножает на stride, получая высоту лица в пикселях.", "מעלה באקספוננט את logit הגובה המוגבל וכופלת ב-stride לקבלת גובה פנים בפיקסלים."),
+    exact(/^best_rank = rank/, "Stores this candidate's rank so only a better candidate can replace it.", "Сохраняет rank кандидата, чтобы заменить его мог только лучший кандидат.", "שומרת את דירוג המועמד כך שרק מועמד טוב יותר יוכל להחליפו."),
+    exact(/faces\[image\]\.valid = true/, "Marks that this image has a usable face and may proceed to alignment and SFace.", "Отмечает наличие подходящего лица, которое можно передать в alignment и SFace.", "מסמנת שבתמונה קיימות פנים שמישות שיכולות לעבור ליישור ול-SFace."),
+    exact(/faces\[image\]\.score = confidence/, "Stores YuNet confidence for the selected face candidate.", "Сохраняет confidence YuNet выбранного кандидата лица.", "שומרת את confidence של YuNet עבור מועמד הפנים שנבחר."),
+    exact(/landmarks\[point \* 2\] =/, "Decodes one landmark x coordinate from its anchor-relative offset into input pixels.", "Декодирует x одного ориентира из смещения относительно anchor в пиксели входа.", "מפענחת קואורדינטת x של נקודת ציון אחת מהיסט יחסי ל-anchor לפיקסלי הקלט."),
+    exact(/landmarks\[point \* 2 \+ 1\] =/, "Decodes the matching landmark y coordinate into input pixels.", "Декодирует соответствующую y-координату ориентира в пиксели входа.", "מפענחת את קואורדינטת y המתאימה של נקודת הציון לפיקסלי הקלט."),
+    exact(/^auto aligned = align_faces/, "Uses the five decoded landmarks to create one canonical 112 x 112 face tensor per valid image.", "По пяти ориентирам создаёт канонический тензор лица 112 x 112 для каждого валидного снимка.", "משתמשת בחמש נקודות הציון ליצירת טנזור פנים קנוני בגודל 112 x 112 לכל תמונה תקינה."),
+    exact(/^auto sface_outputs = sface\.Run/, "Begins one SFace ONNX execution for the complete aligned-face batch through the same provider.", "Начинает одно выполнение ONNX-графа SFace для всего пакета выровненных лиц через тот же provider.", "מתחילה הרצת ONNX אחת של SFace עבור כל אצוות הפנים המיושרות דרך אותו provider."),
+    exact(/^const float\* output = sface_outputs/, "Obtains a pointer to the contiguous B x 128 SFace output tensor.", "Получает указатель на непрерывный выходной тензор SFace B x 128.", "מקבלת מצביע לטנזור הפלט הרציף B x 128 של SFace."),
+    exact(/^result\.vectors\.assign/, "Copies every B x 128 embedding from the ONNX output into the native result vector.", "Копирует все B x 128 embeddings из ONNX-выхода в native vector результата.", "מעתיקה את כל embeddings בגודל B x 128 מפלט ONNX אל vector תוצאת native."),
+    exact(/^result\.valid\.push_back/, "Copies the face-validity flag corresponding to this embedding into the result batch.", "Копирует флаг валидного лица, соответствующий текущему вектору, в пакет результата.", "מעתיקה לאצוות התוצאה את דגל תקינות הפנים המתאים ל-embedding הזה."),
+    exact(/^normalize\(result\.vectors/, "L2-normalizes this 128D vector so its dot product with a normalized reference is cosine similarity.", "L2-нормализует текущий 128D-вектор, чтобы dot product с нормализованным эталоном стал cosine similarity.", "מנרמלת ב-L2 את וקטור 128D הזה כדי שהמכפלה הסקלרית שלו עם ייחוס מנורמל תהיה דמיון cosine."),
+    exact(/^std::vector<float> align_faces/, "Defines landmark alignment that maps detected faces to the canonical SFace geometry.", "Определяет alignment по ориентирам, переводящий найденные лица в каноническую геометрию SFace.", "מגדירה יישור לפי נקודות ציון הממפה פנים שזוהו לגאומטריית SFace הקנונית."),
+    exact(/^std::vector<float> aligned/, "Allocates B x 3 x 112 x 112 floats initialized to zero; invalid faces remain zero-filled.", "Выделяет B x 3 x 112 x 112 float со значением 0; невалидные лица остаются нулевыми.", "מקצה B x 3 x 112 x 112 ערכי float מאותחלים לאפס; פנים לא תקינות נשארות מאופסות."),
+    exact(/^auto sample =/, "Defines a bilinear sampler that reads one channel from the padded NCHW detection batch at fractional coordinates.", "Определяет bilinear sampler, читающий один канал дополненного NCHW-пакета по дробным координатам.", "מגדירה דוגם בילינארי הקורא ערוץ אחד מאצוות NCHW המרופדת בקואורדינטות שבריות."),
+    exact(/^const int x0 =/, "Rounds the sample x coordinate down to the left source pixel.", "Округляет x выборки вниз до левого пикселя исходника.", "מעגלת את קואורדינטת x של הדגימה מטה לפיקסל המקור השמאלי."),
+    exact(/^const int y0 =/, "Rounds the sample y coordinate down to the upper source pixel.", "Округляет y выборки вниз до верхнего пикселя исходника.", "מעגלת את קואורדינטת y של הדגימה מטה לפיקסל המקור העליון."),
+    exact(/^const int x1 =/, "Selects the right neighbour and clamps it to the image boundary.", "Выбирает правого соседа и ограничивает его границей изображения.", "בוחרת את השכן הימני ומגבילה אותו לגבול התמונה."),
+    exact(/^const int y1 =/, "Selects the lower neighbour and clamps it to the image boundary.", "Выбирает нижнего соседа и ограничивает его границей изображения.", "בוחרת את השכן התחתון ומגבילה אותו לגבול התמונה."),
+    exact(/^const float tx = x - x0/, "Keeps the fractional horizontal distance used to interpolate left and right pixels.", "Сохраняет дробную горизонтальную долю для интерполяции левого и правого пикселей.", "שומרת את המרחק האופקי השברי לאינטרפולציה בין הפיקסל השמאלי לימני."),
+    exact(/^const float ty = y - y0/, "Keeps the fractional vertical distance used to interpolate top and bottom rows.", "Сохраняет дробную вертикальную долю для интерполяции верхней и нижней строк.", "שומרת את המרחק האנכי השברי לאינטרפולציה בין השורה העליונה לתחתונה."),
+    exact(/^const float top =/, "Starts horizontal interpolation between the two source pixels on the upper row.", "Начинает горизонтальную интерполяцию двух пикселей верхней строки.", "מתחילה אינטרפולציה אופקית בין שני פיקסלי המקור בשורה העליונה."),
+    exact(/^const float bottom =/, "Starts horizontal interpolation between the two source pixels on the lower row.", "Начинает горизонтальную интерполяцию двух пикселей нижней строки.", "מתחילה אינטרפולציה אופקית בין שני פיקסלי המקור בשורה התחתונה."),
+    exact(/^return top \*/, "Interpolates vertically between the two row values and returns the final bilinear sample.", "Интерполирует между значениями двух строк по вертикали и возвращает итоговую bilinear-выборку.", "מבצעת אינטרפולציה אנכית בין ערכי שתי השורות ומחזירה את הדגימה הבילינארית הסופית."),
+    exact(/^source_mean_x \+=/, "Adds this landmark's detected x coordinate to the source centroid accumulator.", "Добавляет x текущего найденного ориентира к сумме координат исходного центра.", "מוסיפה את קואורדינטת x של נקודת הציון שזוהתה לצובר מרכז המקור."),
+    exact(/^source_mean_y \+=/, "Adds this landmark's detected y coordinate to the source centroid accumulator.", "Добавляет y текущего найденного ориентира к сумме координат исходного центра.", "מוסיפה את קואורדינטת y של נקודת הציון שזוהתה לצובר מרכז המקור."),
+    exact(/^target_mean_x \+=/, "Adds the canonical template x coordinate to the target centroid accumulator.", "Добавляет x канонического шаблона к сумме координат целевого центра.", "מוסיפה את קואורדינטת x של התבנית הקנונית לצובר מרכז היעד."),
+    exact(/^target_mean_y \+=/, "Adds the canonical template y coordinate to the target centroid accumulator.", "Добавляет y канонического шаблона к сумме координат целевого центра.", "מוסיפה את קואורדינטת y של התבנית הקנונית לצובר מרכז היעד."),
+    exact(/^(source|target)_mean_[xy] \/= 5/, "Divides the accumulated coordinate by five to obtain the landmark centroid component.", "Делит сумму координат на пять и получает компонент центра пяти ориентиров.", "מחלקת את סכום הקואורדינטות בחמש לקבלת רכיב מרכז חמש נקודות הציון."),
+    exact(/^numerator_a \+=/, "Accumulates the dot-product term that estimates scale times cosine of the alignment rotation.", "Накапливает dot-product для оценки scale, умноженного на cosine угла alignment.", "צוברת את איבר המכפלה הסקלרית המעריך scale כפול cosine של סיבוב היישור."),
+    exact(/^numerator_b \+=/, "Accumulates the cross-product term that estimates scale times sine of the alignment rotation.", "Накапливает cross-product для оценки scale, умноженного на sine угла alignment.", "צוברת את איבר המכפלה הווקטורית המעריך scale כפול sine של סיבוב היישור."),
+    exact(/^denominator \+=/, "Accumulates squared source-landmark distance used to normalize the similarity-transform coefficients.", "Накапливает квадрат расстояния исходных ориентиров для нормализации коэффициентов similarity transform.", "צוברת מרחק ריבועי של נקודות המקור לנרמול מקדמי התמרת similarity."),
+    exact(/^const float a = numerator_a/, "Computes the scale-cosine coefficient and clamps the denominator away from zero.", "Вычисляет коэффициент scale-cosine и защищает denominator от нуля.", "מחשבת את מקדם scale-cosine ומגינה על המכנה מאפס."),
+    exact(/^const float b = numerator_b/, "Computes the scale-sine coefficient of the two-dimensional similarity transform.", "Вычисляет коэффициент scale-sine двумерного similarity transform.", "מחשבת את מקדם scale-sine של התמרת similarity דו-ממדית."),
+    exact(/^const float tx = target_mean_x/, "Computes the horizontal translation that maps the source landmark centroid onto the SFace template centroid.", "Вычисляет горизонтальный перенос от центра исходных ориентиров к центру шаблона SFace.", "מחשבת את ההזזה האופקית הממפה את מרכז נקודות המקור למרכז תבנית SFace."),
+    exact(/^const float ty = target_mean_y/, "Computes the vertical translation of the landmark similarity transform.", "Вычисляет вертикальный перенос similarity transform по ориентирам.", "מחשבת את ההזזה האנכית של התמרת similarity לפי נקודות הציון."),
+    exact(/^const float determinant =/, "Computes squared transform scale and clamps it before applying the inverse mapping.", "Вычисляет квадрат масштаба transform и ограничивает его перед обратным отображением.", "מחשבת את ריבוע קנה המידה של ההתמרה ומגבילה אותו לפני המיפוי ההפוך."),
+    exact(/^const float source_x = \(a \* dx/, "Applies the inverse similarity transform to obtain the source x coordinate for this output pixel.", "Применяет обратный similarity transform и получает x исходника для текущего выходного пикселя.", "מפעילה את התמרת similarity ההפוכה לקבלת קואורדינטת x במקור עבור פיקסל הפלט."),
+    exact(/^const float source_y = \(-b \* dx/, "Applies the inverse similarity transform to obtain the source y coordinate for this output pixel.", "Применяет обратный similarity transform и получает y исходника для текущего выходного пикселя.", "מפעילה את התמרת similarity ההפוכה לקבלת קואורדינטת y במקור עבור פיקסל הפלט."),
+    exact(/^const int bgr_channel = 2 - rgb_channel/, "Reverses channel order so the aligned tensor expected by SFace is written as RGB from the BGR detection batch.", "Разворачивает порядок каналов: aligned-тензор SFace получает RGB из BGR-пакета детектора.", "הופכת את סדר הערוצים כך שטנזור היישור של SFace ייכתב כ-RGB מתוך אצוות BGR של הגלאי."),
+    exact(/^= sample\(image, bgr_channel/, "Stores the bilinearly sampled source value in the selected aligned-face output pixel.", "Записывает билинейно выбранное значение исходника в текущий пиксель выровненного лица.", "שומרת את ערך המקור שנדגם בילינאריות בפיקסל הפלט הנוכחי של הפנים המיושרות."),
+    exact(/^void normalize\(float\* vector/, "Defines in-place L2 normalization for one embedding of the supplied length.", "Определяет L2-нормализацию на месте для одного вектора заданной длины.", "מגדירה נרמול L2 במקום עבור embedding אחד באורך שסופק."),
+    exact(/^const float norm =/, "Computes vector length as sqrt(sum of squares) and protects division from zero.", "Вычисляет длину vector как sqrt суммы квадратов и защищает деление от нуля.", "מחשבת את אורך ה-vector כשורש סכום הריבועים ומגינה על החלוקה מאפס."),
+    exact(/^std::vector<SFaceResult> recognize/, "Defines the request-level method that chooses CUDA batching or sequential CPU inference and returns one decision per path.", "Определяет метод запроса, выбирающий CUDA batching или последовательный CPU-инференс и возвращающий решение для каждого пути.", "מגדירה את מתודת הבקשה הבוחרת אצוות CUDA או הסקת CPU סדרתית ומחזירה החלטה לכל נתיב."),
+    exact(/^const auto started =/, "Captures the request start timestamp before image decoding and inference.", "Запоминает время начала запроса до декодирования и инференса.", "שומרת את חותמת זמן תחילת הבקשה לפני פענוח התמונות וההסקה."),
+    exact(/^images\.reserve/, "Reserves exactly one decoded-image slot per requested path to avoid vector reallocations.", "Резервирует по одному месту декодированного изображения на каждый путь без reallocations.", "שומרת מראש מקום לתמונה מפוענחת אחת לכל נתיב כדי למנוע הקצאות מחדש."),
+    exact(/^embedded = embed_images\(images\)/, "CUDA branch: submits every decoded request image together in one dynamic YuNet/SFace batch.", "CUDA-ветка: совместно передаёт все снимки запроса одним динамическим пакетом YuNet/SFace.", "ענף CUDA: שולח יחד את כל תמונות הבקשה המפוענחות באצוות YuNet/SFace דינמית אחת."),
+    exact(/^embedded\.vectors\.resize/, "CPU branch: allocates the flat B x 128 destination where sequential one-image embeddings will be copied.", "CPU-ветка: выделяет плоский B x 128 буфер для последовательного копирования одиночных embeddings.", "ענף CPU: מקצה יעד שטוח B x 128 שאליו יועתקו embeddings של תמונה יחידה ברצף."),
+    exact(/^embedded\.valid\.resize/, "CPU branch: allocates one face-validity flag per requested image.", "CPU-ветка: выделяет один флаг валидного лица на каждый снимок.", "ענף CPU: מקצה דגל תקינות פנים אחד לכל תמונה מבוקשת."),
+    exact(/^auto one = embed_images/, "Runs YuNet and SFace for only the current image, preserving a strictly sequential CPU baseline.", "Запускает YuNet и SFace только для текущего снимка, сохраняя строго последовательный CPU baseline.", "מריצה YuNet ו-SFace רק עבור התמונה הנוכחית ושומרת על קו בסיס CPU סדרתי לחלוטין."),
+    exact(/^std::copy_n\(one\.vectors/, "Copies exactly 128 values from the one-image result into this image's row of the flat batch vector.", "Копирует ровно 128 значений одиночного результата в строку текущего снимка плоского batch-vector.", "מעתיקה בדיוק 128 ערכים מתוצאת התמונה היחידה לשורת התמונה הנוכחית ב-vector האצווה השטוח."),
+    exact(/^embedded\.valid\[index\] =/, "Copies the current one-image face-validity flag into its batch position.", "Копирует флаг валидности текущего одиночного снимка в его позицию пакета.", "מעתיקה את דגל תקינות הפנים של התמונה היחידה למיקומה באצווה."),
+    exact(/^flat_references\.reserve/, "Reserves N x 128 floats before concatenating all cached reference vectors.", "Резервирует N x 128 float перед объединением всех эталонных векторов.", "שומרת מראש N x 128 ערכי float לפני שרשור כל וקטורי הייחוס השמורים."),
+    exact(/^flat_references\.insert/, "Appends this reference's complete 128D vector to the contiguous matrix passed to CUDA or CPU scoring.", "Добавляет полный 128D-вектор текущего эталона в непрерывную матрицу CUDA/CPU scoring.", "מוסיפה את וקטור 128D המלא של הייחוס למטריצה הרציפה הנמסרת לחישוב CUDA או CPU."),
+    exact(/^scores = sface_cuda_scores/, "Invokes the explicit sface_cuda.cu path to compute every query/reference dot product on the GPU.", "Вызывает явный путь sface_cuda.cu для вычисления всех query/reference dot products на GPU.", "קוראת למסלול המפורש sface_cuda.cu לחישוב כל המכפלות הסקלריות query/reference ב-GPU."),
+    exact(/^scores\[query .*std::inner_product/, "CPU baseline: begins one sequential 128D dot product for the selected query/reference pair.", "CPU baseline: начинает один последовательный 128D dot product выбранной пары query/reference.", "קו בסיס CPU: מתחילה מכפלה סקלרית סדרתית אחת בגודל 128D לזוג query/reference שנבחר."),
+    exact(/^const auto finished =/, "Captures the end timestamp after inference and all score calculations have completed.", "Запоминает конечное время после завершения инференса и всех оценок.", "שומרת את חותמת זמן הסיום לאחר השלמת ההסקה וכל חישובי הציונים."),
+    exact(/^result\.face_found =/, "Copies YuNet validity for this query into its public result record.", "Записывает флаг найденного YuNet-лица текущего query в публичный результат.", "מעתיקה את תקינות YuNet עבור query זה לרשומת התוצאה הציבורית."),
+    exact(/^result\.recognition_ms =/, "Assigns the request's average per-image elapsed time to this result.", "Записывает в результат среднее время запроса на одно изображение.", "מקצה לתוצאה את הזמן הממוצע לתמונה של הבקשה."),
+    exact(/^const float score = scores/, "Reads this query's cosine score against the current reference from the flat score matrix.", "Читает cosine-оценку текущего query с текущим эталоном из плоской матрицы scores.", "קוראת ממטריצת הציונים השטוחה את ציון ה-cosine של query זה מול הייחוס הנוכחי."),
+    exact(/^auto& best = label_scores/, "Selects the retained best-score record for the current reference's identity label.", "Выбирает запись лучшей оценки для имени текущего эталона.", "בוחרת את רשומת הציון הטוב ביותר עבור תווית הזהות של הייחוס הנוכחי."),
+    exact(/^std::vector<std::pair<std::string, LabelBest>> ranked/, "Copies the per-identity best scores into a vector that can be sorted.", "Копирует лучшие оценки каждой личности в vector для сортировки.", "מעתיקה את הציונים הטובים ביותר לכל זהות ל-vector שניתן למיין."),
+    exact(/^std::sort\(ranked/, "Sorts identities by descending best cosine score using the following comparator.", "Сортирует личности по убыванию лучшей cosine-оценки с помощью следующего comparator.", "ממיינת זהויות לפי ציון cosine מיטבי בסדר יורד באמצעות ה-comparator הבא."),
+    exact(/^return left\.second\.score/, "Comparator returns true when the left identity has a higher score, producing descending order.", "Comparator возвращает true, когда оценка слева выше, формируя убывающий порядок.", "ה-comparator מחזיר true כאשר הציון השמאלי גבוה יותר וכך יוצר סדר יורד."),
+    exact(/^result\.best_label =/, "Stores the identity name ranked first.", "Сохраняет имя личности на первом месте.", "שומרת את שם הזהות שדורגה ראשונה."),
+    exact(/^result\.best_score =/, "Stores the highest per-identity cosine score.", "Сохраняет максимальную cosine-оценку по личностям.", "שומרת את ציון ה-cosine הגבוה ביותר בין הזהויות."),
+    exact(/^result\.runner_label =/, "Stores the identity name ranked second.", "Сохраняет имя личности на втором месте.", "שומרת את שם הזהות שדורגה שנייה."),
+    exact(/^result\.runner_score =/, "Stores the runner-up cosine score used for the margin test.", "Сохраняет cosine-оценку второго места для проверки margin.", "שומרת את ציון ה-cosine של המקום השני לצורך בדיקת margin."),
+    exact(/^result\.margin =/, "Computes the confidence margin as best score minus runner-up score.", "Вычисляет margin уверенности: best score минус runner-up score.", "מחשבת את פער הביטחון: הציון הטוב ביותר פחות ציון המקום השני."),
+    exact(/^result\.matched_reference =/, "Stores the exact reference-image path that produced the winning identity score.", "Сохраняет точный путь эталонного снимка, давшего победившую оценку.", "שומרת את נתיב תמונת הייחוס המדויק שהפיק את הציון המנצח."),
+    exact(/^result\.accepted =/, "Accepts the label only when both minimum similarity and minimum margin conditions are true.", "Принимает имя только при одновременном прохождении minimum similarity и minimum margin.", "מקבלת את התווית רק כאשר גם תנאי הדמיון המינימלי וגם תנאי הפער המינימלי מתקיימים."),
+    exact(/^result\.identity =/, "Returns the winning name for an accepted result; otherwise records the literal identity Unknown.", "Записывает имя победителя при принятом результате, иначе literal identity Unknown.", "מחזירה את שם המנצח עבור תוצאה שהתקבלה; אחרת רושמת את הזהות המילולית Unknown.")
+  ].find(Boolean);
+  if (exactRules) return exactRules;
+  const indexedRules = [
+    [[4], "Declares storage for one reference's normalized 128D SFace vector.", "Объявляет память для нормализованного 128D SFace-вектора одного эталона.", "מצהירה על אחסון לוקטור SFace מנורמל בגודל 128D של ייחוס אחד."],
+    [[10], "Creates the persistent ONNX Runtime environment with warning-level logging and the name native-sface.", "Создаёт постоянную среду ONNX Runtime с уровнем warning и именем native-sface.", "יוצרת סביבת ONNX Runtime קבועה עם רמת רישום warning והשם native-sface."],
+    [[11], "Declares the session-options object later configured for graph optimization and CPU/CUDA provider selection.", "Объявляет настройки сессии для последующей оптимизации графа и выбора CPU/CUDA provider.", "מצהירה על אובייקט אפשרויות הסשן שיוגדר בהמשך לאופטימיזציית גרף ולבחירת CPU/CUDA provider."],
+    [[12], "Creates an initially empty YuNet session handle that the constructor fills after provider configuration.", "Создаёт первоначально пустой handle сессии YuNet, который constructor заполнит после настройки provider.", "יוצרת handle ריק בתחילה לסשן YuNet שה-constructor ימלא לאחר הגדרת ה-provider."],
+    [[13], "Creates an initially empty SFace session handle for the persistent embedding graph.", "Создаёт первоначально пустой handle сессии SFace для постоянного embedding-графа.", "יוצרת handle ריק בתחילה לסשן SFace עבור גרף ה-embedding הקבוע."],
+    [[14], "Declares the persistent vector of labelled reference records reused by every request.", "Объявляет постоянный vector размеченных эталонов, повторно используемый всеми запросами.", "מצהירה על vector קבוע של רשומות ייחוס מסומנות המשמש מחדש בכל בקשה."],
+    [[31], "Declares the startup batch of decoded reference images.", "Объявляет стартовый пакет декодированных эталонных изображений.", "מצהירה על אצוות ההפעלה של תמונות הייחוס המפוענחות."],
+    [[32], "Declares the parallel metadata vector that preserves each reference image's label and source path.", "Объявляет параллельный vector metadata, сохраняющий имя и путь каждого эталонного снимка.", "מצהירה על vector metadata מקביל השומר את התווית ואת נתיב המקור של כל תמונת ייחוס."],
+    [[52], "Starts constructing the 128-float vector copied from this image's row of the batch embedding output.", "Начинает создание vector из 128 float, копируемых из строки текущего снимка в batch-выходе embeddings.", "מתחילה ליצור vector בן 128 ערכי float המועתקים משורת התמונה בפלט אצוות ה-embeddings."],
+    [[55], "Closes the 128D vector constructor after its begin/end iterator range.", "Закрывает constructor 128D-vector после диапазона begin/end iterators.", "סוגרת את constructor של וקטור 128D לאחר טווח ה-iterators מסוג begin/end."],
+    [[56], "Completes insertion of the label, path, and copied 128D vector as one Reference record.", "Завершает добавление имени, пути и скопированного 128D-вектора как одной записи Reference.", "משלימה את הכנסת התווית, הנתיב והווקטור 128D שהועתק כרשומת Reference אחת."],
+    [[64], "Creates an empty PreparedBatch whose dimensions and NCHW storage are filled by the following loops.", "Создаёт пустой PreparedBatch, размеры и NCHW-память которого заполняют следующие циклы.", "יוצרת PreparedBatch ריק שממדיו ואחסון NCHW שלו ימולאו בלולאות הבאות."],
+    [[99], "Begins the four-dimensional YuNet input-shape declaration.", "Начинает объявление четырёхмерной формы входа YuNet.", "מתחילה את הצהרת צורת הקלט הארבע-ממדית של YuNet."],
+    [[100], "Sets YuNet input shape to batch-size x 3 BGR channels x padded height x padded width.", "Задаёт форму YuNet: batch-size x 3 BGR-канала x дополненная высота x дополненная ширина.", "מגדירה את צורת YuNet כגודל אצווה x ‏3 ערוצי BGR x גובה מרופד x רוחב מרופד."],
+    [[105], "Passes the address of the first prepared NCHW float to the YuNet tensor view.", "Передаёт адрес первого подготовленного NCHW float в представление тензора YuNet.", "מעבירה לתצוגת טנזור YuNet את הכתובת של ערך ה-float הראשון ב-NCHW המוכן."],
+    [[106], "Passes the total float-element count of the prepared YuNet batch.", "Передаёт общее число float-элементов подготовленного пакета YuNet.", "מעבירה את המספר הכולל של איברי float באצוות YuNet המוכנה."],
+    [[107], "Passes the address of the four input dimensions to ONNX Runtime.", "Передаёт ONNX Runtime адрес четырёх размеров входа.", "מעבירה ל-ONNX Runtime את כתובת ארבעת ממדי הקלט."],
+    [[108], "States that the YuNet input shape contains four dimensions.", "Указывает, что форма входа YuNet содержит четыре размерности.", "מציינת שצורת הקלט של YuNet מכילה ארבעה ממדים."],
+    [[109], "Completes construction of the YuNet tensor view from memory, data, element count, and shape.", "Завершает создание тензора YuNet из memory, data, числа элементов и формы.", "משלימה את יצירת טנזור YuNet מתוך memory, data, מספר האיברים והצורה."],
+    [[110], "Creates ONNX Runtime's default allocator for retrieving graph input and output names.", "Создаёт стандартный allocator ONNX Runtime для получения имён входов и выходов графа.", "יוצרת את allocator ברירת המחדל של ONNX Runtime לקבלת שמות קלט ופלט של הגרף."],
+    [[112], "Builds the one-element input-name array required by Ort::Session::Run.", "Создаёт массив из одного имени входа, требуемый Ort::Session::Run.", "בונה מערך בן שם קלט אחד הנדרש על ידי Ort::Session::Run."],
+    [[113], "Begins the exact list of twelve YuNet output-node names requested from the graph.", "Начинает точный список 12 имён выходных узлов YuNet, запрашиваемых у графа.", "מתחילה את הרשימה המדויקת של 12 שמות צמתי הפלט של YuNet המבוקשים מן הגרף."],
+    [[114], "Requests class-probability outputs for strides 8, 16, and 32.", "Запрашивает class probability для шагов 8, 16 и 32.", "מבקשת פלטי הסתברות class עבור stride-ים 8, 16 ו-32."],
+    [[115], "Requests objectness-probability outputs for strides 8, 16, and 32.", "Запрашивает objectness probability для шагов 8, 16 и 32.", "מבקשת פלטי הסתברות objectness עבור stride-ים 8, 16 ו-32."],
+    [[116], "Requests encoded bounding-box outputs for all three YuNet strides.", "Запрашивает закодированные bounding boxes для трёх шагов YuNet.", "מבקשת פלטי bounding box מקודדים עבור שלושת ה-stride-ים של YuNet."],
+    [[117], "Requests five-landmark keypoint outputs for all three YuNet strides.", "Запрашивает выходы пяти landmarks для трёх шагов YuNet.", "מבקשת פלטי חמש נקודות ציון עבור שלושת ה-stride-ים של YuNet."],
+    [[120], "Allocates one DetectedFace slot per input image, initially invalid until a candidate passes selection.", "Выделяет по одной записи DetectedFace на снимок; до прохождения кандидата записи невалидны.", "מקצה רשומת DetectedFace אחת לכל תמונה, בתחילה לא תקינה עד שמועמד עובר את הבחירה."],
+    [[137], "Clamps class and object probabilities to [0,1] and multiplies them before the square root forms confidence.", "Ограничивает class и object probability диапазоном [0,1] и перемножает их перед вычислением sqrt confidence.", "מגבילה את הסתברויות class ו-object לטווח [0,1] וכופלת אותן לפני שהשורש יוצר confidence."],
+    [[138], "Closes the multi-line square-root expression that computes YuNet confidence.", "Закрывает многострочное выражение sqrt, вычисляющее confidence YuNet.", "סוגרת את ביטוי השורש הרב-שורי המחשב את confidence של YuNet."],
+    [[148], "Adds vertical distance from the preferred 43% image height, completing the face-centering penalty.", "Добавляет вертикальное расстояние от предпочтительных 43% высоты и завершает штраф за смещение лица.", "מוסיפה מרחק אנכי מגובה מועדף של 43% ומשלימה את קנס מרכוז הפנים."],
+    [[164], "Begins the four-dimensional SFace input-shape declaration.", "Начинает объявление четырёхмерной формы входа SFace.", "מתחילה את הצהרת צורת הקלט הארבע-ממדית של SFace."],
+    [[165], "Sets SFace input shape to batch-size x 3 channels x 112 x 112 pixels.", "Задаёт форму входа SFace: batch-size x 3 канала x 112 x 112 пикселей.", "מגדירה את צורת קלט SFace כגודל אצווה x ‏3 ערוצים x ‏112 x ‏112 פיקסלים."],
+    [[168], "Passes CPU memory, aligned-face data, element count, and the four SFace dimensions to CreateTensor.", "Передаёт CreateTensor CPU memory, данные aligned-face, число элементов и четыре размера SFace.", "מעבירה ל-CreateTensor זיכרון CPU, נתוני פנים מיושרות, מספר איברים וארבעת ממדי SFace."],
+    [[169], "Completes construction of the SFace input tensor view.", "Завершает создание представления входного тензора SFace.", "משלימה את יצירת תצוגת טנזור הקלט של SFace."],
+    [[172], "Builds the one-element SFace input-name array required by Session::Run.", "Создаёт массив из одного имени входа SFace для Session::Run.", "בונה מערך בן שם קלט אחד של SFace הנדרש ל-Session::Run."],
+    [[173], "Builds the one-element SFace output-name array for the embedding tensor.", "Создаёт массив из одного имени выхода SFace для embedding-тензора.", "בונה מערך בן שם פלט אחד של SFace עבור טנזור ה-embedding."],
+    [[175], "Supplies default run options, one SFace input tensor, and one requested embedding output.", "Передаёт default run options, один входной тензор SFace и один запрашиваемый embedding-выход.", "מעבירה אפשרויות ריצה ברירת מחדל, טנזור קלט אחד של SFace ופלט embedding מבוקש אחד."],
+    [[176], "Completes the single batched SFace Session::Run call.", "Завершает единый пакетный вызов SFace Session::Run.", "משלימה את קריאת SFace Session::Run האצוותית היחידה."],
+    [[178], "Creates the native embedding result that will hold B x 128 vectors and B validity flags.", "Создаёт native-результат для B x 128 векторов и B флагов валидности.", "יוצרת תוצאת embedding ב-native שתכיל וקטורי B x 128 ו-B דגלי תקינות."],
+    [[180], "Reserves one validity flag for every detected-face slot.", "Резервирует по одному флагу валидности для каждой записи DetectedFace.", "שומרת מראש דגל תקינות אחד לכל רשומת DetectedFace."],
+    [[189], "Receives the prepared padded NCHW batch containing source pixels for alignment.", "Получает подготовленный дополненный NCHW-пакет исходных пикселей для alignment.", "מקבלת את אצוות NCHW המרופדת והמוכנה המכילה פיקסלי מקור ליישור."],
+    [[190], "Receives one validity flag and five landmark pairs for every batch image.", "Получает флаг валидности и пять пар координат landmarks для каждого снимка.", "מקבלת דגל תקינות וחמישה זוגות קואורדינטות של נקודות ציון לכל תמונת אצווה."],
+    [[191], "Closes the alignment parameter list and opens its function body.", "Закрывает список параметров alignment и открывает тело функции.", "סוגרת את רשימת פרמטרי היישור ופותחת את גוף הפונקציה."],
+    [[207], "Adds the upper-right pixel weighted by the horizontal fraction, completing interpolation of the upper row.", "Добавляет верхний правый пиксель с горизонтальным весом и завершает интерполяцию верхней строки.", "מוסיפה את הפיקסל הימני העליון במשקל האופקי ומשלימה את אינטרפולציית השורה העליונה."],
+    [[209], "Adds the lower-right pixel weighted by the horizontal fraction, completing interpolation of the lower row.", "Добавляет нижний правый пиксель с горизонтальным весом и завершает интерполяцию нижней строки.", "מוסיפה את הפיקסל הימני התחתון במשקל האופקי ומשלימה את אינטרפולציית השורה התחתונה."],
+    [[254], "Selects the exact image, RGB channel, y, and x element in the flat B x 3 x 112 x 112 output tensor.", "Выбирает точный элемент image, RGB-channel, y, x в плоском выходном тензоре B x 3 x 112 x 112.", "בוחרת את איבר image, RGB-channel, y, x המדויק בטנזור הפלט השטוח B x 3 x 112 x 112."],
+    [[277], "Opens an anonymous namespace so CUDA helper symbols remain private to this translation unit.", "Открывает anonymous namespace, оставляя CUDA helpers закрытыми внутри этого translation unit.", "פותחת namespace אנונימי כדי שסמלי העזר של CUDA יישארו פרטיים ליחידת תרגום זו."],
+    [[322], "Begins the protected allocation-copy-launch-readback section whose failures require device-memory cleanup.", "Начинает защищённый блок allocation-copy-launch-readback, где при ошибке нужно освободить device memory.", "מתחילה את מקטע allocation-copy-launch-readback המוגן שבו כשל מחייב ניקוי זיכרון התקן."],
+    [[339], "Catches any CUDA exception so all three device buffers are freed before the same error is rethrown.", "Перехватывает CUDA-ошибку, чтобы освободить три device-буфера перед повторным throw.", "לוכדת כל חריגת CUDA כדי לשחרר את שלושת מאגרי ההתקן לפני זריקה מחדש של אותה שגיאה."],
+    [[348], "Declares the request's decoded RGBA image vector.", "Объявляет vector декодированных RGBA-изображений запроса.", "מצהירה על vector תמונות RGBA המפוענחות של הבקשה."],
+    [[352], "Declares the combined embeddings and validity flags produced by either backend branch.", "Объявляет общие embeddings и флаги валидности, формируемые любой backend-веткой.", "מצהירה על embeddings ועל דגלי תקינות משותפים המופקים על ידי כל אחד מענפי ה-backend."],
+    [[357], "Opens the sequential CPU branch used when CUDA mode is not selected.", "Открывает последовательную CPU-ветку, когда CUDA-режим не выбран.", "פותחת את ענף ה-CPU הסדרתי כאשר מצב CUDA אינו נבחר."],
+    [[369], "Declares the contiguous N x 128 reference matrix assembled for score calculation.", "Объявляет непрерывную матрицу эталонов N x 128 для вычисления оценок.", "מצהירה על מטריצת ייחוס רציפה N x 128 לצורך חישוב ציונים."],
+    [[374], "Allocates the complete B x N score matrix, one slot for every query/reference pair.", "Выделяет полную матрицу scores B x N: по одному элементу на каждую пару query/reference.", "מקצה מטריצת ציונים מלאה B x N, תא אחד לכל זוג query/reference."],
+    [[380], "Passes the contiguous B x 128 query-embedding matrix to the CUDA scoring function.", "Передаёт непрерывную B x 128 матрицу query-embeddings в CUDA scoring.", "מעבירה לפונקציית הדירוג ב-CUDA את מטריצת ה-query embeddings הרציפה B x 128."],
+    [[382], "Passes B, the exact number of requested image paths, as a 32-bit kernel dimension.", "Передаёт B, точное число запрошенных путей, как 32-bit размер kernel.", "מעבירה את B, מספר נתיבי התמונות המדויק, כממד kernel של 32 ביט."],
+    [[383], "Passes N, the exact number of cached reference vectors, as a 32-bit kernel dimension.", "Передаёт N, точное число кэшированных эталонов, как 32-bit размер kernel.", "מעבירה את N, מספר וקטורי הייחוס השמורים המדויק, כממד kernel של 32 ביט."],
+    [[384], "Passes D=128, the number of float components multiplied by every CUDA scoring thread.", "Передаёт D=128: число float-компонентов, перемножаемых каждым CUDA thread.", "מעבירה D=128, מספר רכיבי ה-float שכל CUDA thread מכפיל."],
+    [[385], "Completes the sface_cuda_scores call with query, reference, and B/N/D dimensions.", "Завершает вызов sface_cuda_scores с query/reference и размерами B/N/D.", "משלימה את קריאת sface_cuda_scores עם query, reference והממדים B/N/D."],
+    [[386], "Selects the CPU scoring block when runtime CUDA is false in the CUDA-compiled executable.", "Выбирает CPU scoring block, когда runtime use_cuda=false в CUDA executable.", "בוחרת את בלוק הדירוג של CPU כאשר use_cuda=false בזמן ריצה בקובץ CUDA."],
+    [[392], "Supplies the first element of the selected query's 128D embedding to std::inner_product.", "Передаёт std::inner_product первый элемент 128D-вектора выбранного query.", "מעבירה ל-std::inner_product את האיבר הראשון ב-embedding 128D של query שנבחר."],
+    [[393], "Supplies the one-past-end iterator of that 128D query embedding.", "Передаёт iterator сразу после 128D-вектора query.", "מעבירה את ה-iterator שאחרי סוף ה-embedding 128D של query."],
+    [[394], "Supplies the first element of the selected reference's normalized 128D vector.", "Передаёт первый элемент нормализованного 128D-вектора выбранного эталона.", "מעבירה את האיבר הראשון בווקטור 128D המנורמל של הייחוס שנבחר."],
+    [[395], "Uses zero as the initial accumulator for the sequential CPU dot product.", "Использует 0 как начальный accumulator последовательного CPU dot product.", "משתמשת באפס כצובר ההתחלתי של המכפלה הסקלרית הסדרתית ב-CPU."],
+    [[396], "Completes the sequential 128D inner product and stores its cosine score in the B x N matrix.", "Завершает последовательный 128D inner product и записывает cosine score в матрицу B x N.", "משלימה את המכפלה הסקלרית הסדרתית 128D ושומרת את ציון ה-cosine במטריצת B x N."],
+    [[403], "Divides total elapsed time by max(1,B), preventing division by zero and producing average milliseconds per image.", "Делит общее время на max(1,B), защищаясь от нуля и получая среднее ms на изображение.", "מחלקת את הזמן הכולל ב-max(1,B), מונעת חלוקה באפס ומפיקה מילישניות ממוצעות לתמונה."],
+    [[404], "Allocates one public SFaceResult record for every requested image path.", "Выделяет одну публичную запись SFaceResult на каждый путь изображения.", "מקצה רשומת SFaceResult ציבורית אחת לכל נתיב תמונה מבוקש."],
+    [[411], "Creates a map from identity label to that identity's current best score and reference index.", "Создаёт map: имя личности -> её текущие best score и reference index.", "יוצרת map מתווית זהות אל הציון הטוב ביותר הנוכחי ואינדקס הייחוס שלה."],
+    [[420], "Closes the descending-score comparator and completes sorting of the identity ranking.", "Закрывает comparator убывающих оценок и завершает сортировку личностей.", "סוגרת את comparator של ציונים יורדים ומשלימה את מיון דירוג הזהויות."]
+  ].find((rule) => rule[0].includes(index));
+  if (indexedRules) return say(indexedRules[1], indexedRules[2], indexedRules[3]);
+  if (/^\/\//.test(text)) return nativeCommentAnnotation(text, lang);
+  if (/^[{}];?$/.test(text)) return say(
+    `Marks the ${text.startsWith("{") ? "start" : "end"} of the current scope inside ${context}; it changes control lifetime but performs no numerical operation.`,
+    `${text.startsWith("{") ? "Открывает" : "Закрывает"} текущую область внутри ${context}; строка задаёт время жизни и управление, но не выполняет численную операцию.`,
+    `${text.startsWith("{") ? "פותחת" : "סוגרת"} את התחום הנוכחי בתוך ${context}; השורה מגדירה זרימת בקרה ואורך חיים אך אינה מבצעת פעולה מספרית.`
+  );
+  if (/^(?:const\s+)?(?:float|double|int|bool|std::size_t|std::string|fs::path|auto(?:&)?|const auto&|const float\*|float\*)\s+([A-Za-z_]\w*)/.test(text)) {
+    const name = text.match(/^(?:const\s+)?(?:float|double|int|bool|std::size_t|std::string|fs::path|auto(?:&)?|const auto&|const float\*|float\*)\s+([A-Za-z_]\w*)/)?.[1] || "value";
+    const meaning = nativeValueMeaning(name, lang);
+    if (meaning) {
+      const initializer = text.match(/=\s*(.+?);?$/)?.[1];
+      if (initializer) return say(
+        `Computes ${meaning} as ${initializer}; this value is consumed by ${context}.`,
+        `Вычисляет ${meaning} по формуле ${initializer}; это значение используется на этапе ${context}.`,
+        `מחשבת את ${meaning} לפי ${initializer}; הערך משמש בתוך ${context}.`
+      );
+      return say(
+        `Declares storage for ${meaning}; ${context} fills it before the value is read.`,
+        `Объявляет память для значения «${meaning}»; этап ${context} заполняет её до чтения.`,
+        `מצהירה על אחסון עבור ${meaning}; ‏${context} ממלא אותו לפני קריאת הערך.`
+      );
+    }
+  }
+  const identifier = text.match(/^([A-Za-z_]\w*)[,;]?$/)?.[1];
+  if (identifier) {
+    const meaning = nativeValueMeaning(identifier, lang);
+    if (meaning) return say(
+      `Passes ${meaning} as this exact argument of the surrounding function or CUDA launch.`,
+      `Передаёт ${meaning} как данный аргумент окружающего вызова функции или CUDA kernel.`,
+      `מעבירה את ${meaning} כארגומנט המדויק הזה של קריאת הפונקציה או שיגור CUDA הסובבים.`
+    );
+  }
+  if (/^(for|while)\s*\(/.test(text)) {
+    const loop = text.match(/(?:const auto&|std::size_t|int)\s+([A-Za-z_]\w*)/)?.[1] || "index";
+    const loops = {
+      label: ["the three known identities Adi, Faraj, and Slava", "три известные личности Adi, Faraj и Slava", "שלוש הזהויות הידועות Adi, Faraj ו-Slava"],
+      entry: ["every directory entry in the current identity's reference folder", "каждую запись папки эталонов текущей личности", "כל רשומה בתיקיית הייחוס של הזהות הנוכחית"],
+      image: ["every input image in the current batch", "каждое входное изображение текущего пакета", "כל תמונת קלט באצווה הנוכחית"],
+      level: ["YuNet feature-map levels with strides 8, 16, and 32", "уровни feature map YuNet с шагами 8, 16 и 32", "רמות מפת התכונות של YuNet עם stride-ים 8, 16 ו-32"],
+      anchor: ["every YuNet anchor candidate at the current stride", "каждый anchor-кандидат YuNet на текущем шаге", "כל מועמד anchor של YuNet ב-stride הנוכחי"],
+      point: ["the five facial landmarks", "пять ориентиров лица", "חמש נקודות הציון של הפנים"],
+      y: ["all output rows", "все строки выхода", "כל שורות הפלט"],
+      x: ["all output columns", "все столбцы выхода", "כל עמודות הפלט"],
+      channel: ["the three BGR channels", "три канала BGR", "שלושת ערוצי BGR"],
+      rgb_channel: ["the three RGB channels of the aligned SFace tensor", "три RGB-канала выровненного тензора SFace", "שלושת ערוצי RGB של טנזור SFace המיושר"],
+      query: ["every requested image result", "результат каждого запрошенного снимка", "תוצאת כל תמונה מבוקשת"],
+      reference: ["every cached reference embedding", "каждый кэшированный эталонный вектор", "כל embedding שמור לייחוס"],
+      index: ["each element in the current vector or batch", "каждый элемент текущего vector или пакета", "כל איבר ב-vector או באצווה הנוכחיים"]
+    }[loop] || ["the explicitly bounded data items", "явно ограниченные элементы данных", "פריטי הנתונים בעלי הגבול המפורש"];
+    return say(`Iterates over ${loops[0]}.`, `Перебирает ${loops[1]}.`, `עוברת על ${loops[2]}.`);
+  }
+  if (/^if\s*\(/.test(text)) {
+    const condition = text.match(/^if\s*\((.*?)\)/)?.[1] || text;
+    return say(
+      `Evaluates ${condition} to decide whether the current item is valid for ${context}; the body applies the displayed accept, skip, or error action.`,
+      `Проверяет условие ${condition}, чтобы решить, пригоден ли текущий элемент для этапа ${context}; тело выполняет показанное принятие, пропуск или ошибку.`,
+      `בודקת את התנאי ${condition} כדי להחליט אם הפריט הנוכחי תקין עבור ${context}; גוף התנאי מבצע את פעולת הקבלה, הדילוג או השגיאה המוצגת.`
+    );
+  }
+  if (/^return\b/.test(text)) {
+    const returnedName = text.match(/^return\s+([A-Za-z_]\w*)/)?.[1] || "";
+    const returnedMeaning = nativeValueMeaning(returnedName, lang);
+    if (returnedMeaning) return say(
+      `Returns ${returnedMeaning} to the native C++ caller after ${context} completes.`,
+      `Возвращает ${returnedMeaning} вызвавшему native C++-коду после завершения этапа ${context}.`,
+      `מחזירה ${returnedMeaning} אל קוד ה-native C++ שקרא לפונקציה לאחר השלמת ${context}.`
+    );
+    return say(
+      `Returns the displayed computed value to the native C++ caller and ends ${context}.`,
+      `Возвращает показанное вычисленное значение вызвавшему native C++-коду и завершает этап ${context}.`,
+      `מחזירה את הערך המחושב המוצג אל קוד ה-native C++ שקרא לפונקציה ומסיימת את ${context}.`
+    );
+  }
+  if (/^(#if|#endif|#include)/.test(text)) return say(
+    `Controls compilation of ${context}: ${text}. CUDA-only declarations are present in identity_cuda.exe and absent from the CPU executable.`,
+    `Управляет компиляцией ${context}: ${text}. CUDA-объявления входят в identity_cuda.exe и отсутствуют в CPU executable.`,
+    `שולטת בהידור של ${context}: ${text}. הצהרות CUDA נכללות ב-identity_cuda.exe ואינן נכללות בקובץ ה-CPU.`
+  );
+  const assignment = text.match(/^(.+?)\s*(\+=|-=|\*=|\/=|=)\s*(.+?);?$/);
+  if (assignment) {
+    const [, target, operator, expression] = assignment;
+    const targetName = target.trim().match(/([A-Za-z_]\w*)(?:\[[^\]]+\])?$/)?.[1] || "";
+    const targetMeaning = nativeValueMeaning(targetName, lang);
+    const verbs = operator === "="
+      ? ["Stores", "Записывает", "שומרת"]
+      : operator === "+="
+        ? ["Adds to", "Добавляет к", "מוסיפה אל"]
+        : operator === "/="
+          ? ["Divides", "Делит", "מחלקת את"]
+          : ["Updates", "Обновляет", "מעדכנת את"];
+    if (targetMeaning) return say(
+      `${verbs[0]} ${targetMeaning} from ${expression.trim()}; the result is used by ${context}.`,
+      `${verbs[1]} ${targetMeaning} из ${expression.trim()}; результат используется на этапе ${context}.`,
+      `${verbs[2]} ${targetMeaning} מתוך ${expression.trim()}; התוצאה משמשת בתוך ${context}.`
+    );
+    return say(
+      `${verbs[0]} ${target.trim()} from ${expression.trim()}, updating the exact state consumed by ${context}.`,
+      `${verbs[1]} ${target.trim()} из ${expression.trim()}, обновляя точное состояние, используемое на этапе ${context}.`,
+      `${verbs[2]} ${target.trim()} מתוך ${expression.trim()}, ומעדכנת את המצב המדויק המשמש בתוך ${context}.`
+    );
+  }
+  return say(
+    `Provides the concrete value ${text} to the immediately surrounding ${context} operation; its name and indexing identify the exact tensor slice or dimension being used.`,
+    `Передаёт конкретное значение ${text} соседней операции ${context}; имя и индексы точно указывают используемый срез тензора или размерность.`,
+    `מעבירה את הערך המפורש ${text} לפעולה הסמוכה של ${context}; השם והאינדקסים מזהים במדויק את פרוסת הטנזור או הממד שבשימוש.`
+  );
+}
+
 function contextualNativeSourceAnnotation(lines, index) {
   const lang = document.documentElement.lang || "en";
   const text = lines[index].trim();
@@ -4811,7 +5288,34 @@ function contextualNativeSourceAnnotation(lines, index) {
         ? "שורה ריקה מפרידה בין חלקים לוגיים סמוכים במקור C++/CUDA ואינה יוצרת פקודה לביצוע."
         : "Blank line separating adjacent C++/CUDA source sections; it creates no executable instruction.";
   }
-  return currentCppSourceAnnotation(text, lang);
+  if (index < 271 || index > 345) return nativeContextFallback(lines, index, lang);
+  const detailed = currentCppSourceAnnotation(text, lang);
+  const genericMarkers = [
+    "Declares or calls the named C++ operation",
+    "Объявляет или вызывает указанную C++-операцию",
+    "מצהיר או קורא לפעולת C++",
+    "Creates a typed C++ value",
+    "Создаёт типизированное значение C++",
+    "יוצר ערך C++ מטיפוס מוגדר",
+    "Supplies part of the surrounding C++ declaration or call",
+    "Передаёт часть окружающего объявления или вызова C++",
+    "מספק חלק מהצהרת או מקריאת C++",
+    "Non-executable C++ documentation comment",
+    "Неисполняемый комментарий C++",
+    "הערת C++ שאינה מבוצעת",
+    "Declares a C++ data type that groups",
+    "Объявляет тип данных C++",
+    "מצהיר על טיפוס נתונים ב‑C++",
+    "Opens or names the C++ namespace",
+    "Открывает или называет пространство имён C++",
+    "פותח או מציין מרחב שמות C++",
+    "Opens or closes the current C++ scope",
+    "Открывает или закрывает текущую область C++",
+    "פותח או סוגר את תחום C++ הנוכחי"
+  ];
+  return genericMarkers.some((marker) => detailed.includes(marker))
+    ? nativeContextFallback(lines, index, lang)
+    : detailed;
 }
 
 function patternCodeAnnotation(line) {
