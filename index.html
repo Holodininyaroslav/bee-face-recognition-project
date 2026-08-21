@@ -123,12 +123,12 @@
           <p class="kicker" data-i18n="howKicker">HOW THE DETECTOR WORKS</p>
           <h3 id="howItWorksTitle" data-i18n="howTitle">What happens to the image inside the neural network</h3>
           <p data-i18n="howIntro">
-            This inspector follows one screenshot through CPU file decoding and the CUDA YuNet, alignment, SFace, and reference-scoring pipeline.
+            This inspector follows the native C++ path from one screenshot through host preparation, CUDA YuNet/SFace inference, the explicit CUDA score kernel, and one identity result.
           </p>
         </div>
         <div class="detector-variant-panel" aria-labelledby="detectorVariantTitle">
           <div>
-            <p class="kicker" data-i18n="variantKicker">CUDA SINGLE-IMAGE SOURCE</p>
+            <p class="kicker" data-i18n="variantKicker">NATIVE C++ / CUDA RUNTIME</p>
             <h4 id="detectorVariantTitle" data-i18n="variantTitle">Architecture being inspected</h4>
             <p id="detectorVariantDescription"></p>
           </div>
@@ -142,45 +142,45 @@
         <div class="pipeline" aria-label="Detector pipeline stages">
           <article class="pipeline-step" role="button" tabindex="0" data-stage="0">
             <strong>01</strong>
-            <h4 data-i18n="step1Title">CUDA runtime and model sessions</h4>
-            <p data-i18n="step1Text">Creates CUDA-only YuNet and SFace sessions and places cached reference vectors on the GPU.</p>
+              <h4 data-i18n="step1Title">Native C++ CUDA worker initialization</h4>
+              <p data-i18n="step1Text">Starts identity_cuda.exe, attaches CUDAExecutionProvider, and loads YuNet, SFace, and reference embeddings.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="1">
             <strong>02</strong>
-            <h4 data-i18n="step2Title">One screenshot: decode, upload, resize</h4>
-            <p data-i18n="step2Text">Decodes one image on the CPU, uploads it once, and performs resize, normalization, and padding on CUDA.</p>
+              <h4 data-i18n="step2Title">Host image preparation for the CUDA batch</h4>
+              <p data-i18n="step2Text">Native C++ decodes, resizes, pads, and converts one screenshot into an NCHW input tensor.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="2">
             <strong>03</strong>
-            <h4 data-i18n="step3Title">YuNet face and landmarks on CUDA</h4>
-            <p data-i18n="step3Text">Runs YuNet and decodes the face box and five landmarks without copying intermediates to the CPU.</p>
+              <h4 data-i18n="step3Title">YuNet and SFace inference through CUDA</h4>
+              <p data-i18n="step3Text">ONNX Runtime executes both neural graphs through CUDAExecutionProvider.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="3">
             <strong>04</strong>
-            <h4 data-i18n="step4Title">Five-landmark alignment on CUDA</h4>
-            <p data-i18n="step4Text">Uses a CUDA similarity transform and grid_sample to produce one aligned 112 × 112 face.</p>
+              <h4 data-i18n="step4Title">Five-landmark alignment in native C++</h4>
+              <p data-i18n="step4Text">Computes the similarity transform and bilinear 112 × 112 SFace crop on the host.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="4">
             <strong>05</strong>
-            <h4 data-i18n="step5Title">SFace embedding and GPU identity scores</h4>
-            <p data-i18n="step5Text">Runs SFace and compares its vector with all cached reference vectors on the GPU.</p>
+              <h4 data-i18n="step5Title">Explicit CUDA cosine-score kernel</h4>
+              <p data-i18n="step5Text">Runs the project-owned sface_cuda.cu kernel for every query/reference pair.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="5">
             <strong>06</strong>
-            <h4 data-i18n="step6Title">One result for one screenshot</h4>
-            <p data-i18n="step6Text">Uses FP32 for one physical recognition and returns one identity result with CUDA timings.</p>
+              <h4 data-i18n="step6Title">Native batch dispatch and identity decision</h4>
+              <p data-i18n="step6Text">Uses the CUDA batch path with B=1, ranks identities, and applies score and margin thresholds.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
         </div>
         <div class="explain-note">
           <h4 data-i18n="modeExplainTitle">CUDA and CPU mode</h4>
           <p data-i18n="modeExplainText">
-            CUDA mode keeps detector, alignment, embedding, and scoring intermediates on the NVIDIA GPU. Only compressed-file decoding and final JSON construction run on the host.
+            CUDA mode runs YuNet and SFace through ONNX Runtime CUDA and compares embeddings with a native CUDA kernel. File decoding, tensor preparation, landmark decoding, alignment, and JSON construction remain native C++ host operations.
           </p>
         </div>
         <section id="stageDetail" class="stage-detail hidden" aria-live="polite">
@@ -252,7 +252,7 @@
             </div>
             <div class="source-actions">
               <button id="loadFullDetectorSource" class="ghost" type="button" data-i18n="openDetectorSource">Show the complete combined code</button>
-              <a class="ghost link" href="source/local_detector_v2/sface_identity_verifier.py" target="_blank" rel="noreferrer" data-i18n="openRawDetectorSource">Open current CUDA verifier source</a>
+              <a class="ghost link" href="source/native_face_cuda/src/sface_engine.cpp" target="_blank" rel="noreferrer" data-i18n="openRawDetectorSource">Open current native CUDA engine source</a>
             </div>
           </div>
           <p id="fullSourceMeta" class="source-meta" data-i18n="sourceClosed">Closed. Open it to verify the total against stages 1–6.</p>
@@ -286,6 +286,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=stage-six-lines-20260813a"></script>
+  <script src="script.js?v=native-cuda-flow-20260821a"></script>
 </body>
 </html>
