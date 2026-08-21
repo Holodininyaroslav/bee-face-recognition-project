@@ -39,9 +39,10 @@
 - לאחר מכן נמדדות 50 איטרציות לכל מימוש.
 - `kernel_ms` נמדד עם CUDA Events.
 - `end_to_end_ms` כולל H2D, kernels, synchronization ו-D2H במצב warmed steady-state.
-- זמן ה-CPU כולל יצירת vectors זמניים של `scores/output` בכל קריאה למימוש
-  הנאיבי. מאגרי ההתקן של CUDA מוקצים פעם אחת לפני ה-warm-up, ולכן זמן CUDA
-  מתאר worker מחומם שנעשה בו שימוש חוזר.
+- מרחבי העבודה `scores/output` של CPU ומאגרי ההתקן של CUDA מוקצים פעם אחת לפני
+  ה-warm-up. לכן זמן CPU מודד רק את לולאות Attention הסדרתיות, בעוד שזמן CUDA
+  end-to-end כולל בנוסף H2D ו-D2H. מתודולוגיה שמרנית זו אינה מנפחת את ה-speedup
+  באמצעות הקצאות CPU חוזרות.
 - זמן הפעלת התהליך, יצירת CUDA context ואתחול first-use אינם נכללים; זוהי
   השוואת steady-state throughput ולא cold start.
 - כל פלט CUDA מושווה איבר-איבר ל-CPU.
@@ -54,9 +55,9 @@ CUDA Toolkit/NVCC 13.2.
 
 | מימוש | Kernel ms | End-to-end ms | Speedup לעומת CPU | סטטוס |
 |---|---:|---:|---:|---|
-| CPU naive | - | 10.6346 | 1.00x | PASS |
-| CUDA basic | 0.251794 | 0.350112 | 30.37x | PASS |
-| CUDA optimized | 0.114701 | 0.211658 | 50.24x | PASS |
+| CPU naive | - | 10.4136 | 1.00x | PASS |
+| CUDA basic | 0.268333 | 0.392016 | 26.56x | PASS |
+| CUDA optimized | 0.128844 | 0.233012 | 44.69x | PASS |
 
 בשני מימושי CUDA התקבל `max_abs_error=4.47035e-08`. התוצאה מוכיחה שההאצה
 אינה מתקבלת על חשבון נכונות החישוב.

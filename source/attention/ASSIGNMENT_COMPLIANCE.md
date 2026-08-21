@@ -22,7 +22,10 @@ This directory implements the exact required formula:
 - A failed tolerance check returns exit code 2.
 - `kernel_ms` is measured with CUDA Events.
 - `end_to_end_ms` includes H2D copies, kernels, synchronization and D2H output.
-- `speedup_vs_cpu` uses end-to-end CUDA time for the fair headline comparison.
+- CPU and CUDA workspaces are allocated once before warm-up; the CPU timer
+  covers only sequential arithmetic, while CUDA end-to-end also covers H2D/D2H.
+- `speedup_vs_cpu` therefore uses a conservative comparison that does not count
+  repeated CPU allocations against the baseline.
 - `verify_cuda_assignment.bat` builds and runs the required `N=512`, `d=64` case.
 
 The face-recognition simulation is an additional real-world CUDA demonstration.

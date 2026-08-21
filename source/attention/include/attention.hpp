@@ -46,6 +46,17 @@ std::vector<float> scaled_dot_product_attention_cpu(
     Timing* timing = nullptr
 );
 
+void scaled_dot_product_attention_cpu_into(
+    const std::vector<float>& q,
+    const std::vector<float>& k,
+    const std::vector<float>& v,
+    int n,
+    int d,
+    std::vector<float>& scores,
+    std::vector<float>& output,
+    Timing* timing = nullptr
+);
+
 ErrorStats compare_outputs(
     const std::vector<float>& expected,
     const std::vector<float>& actual

@@ -1,0 +1,3 @@
+run,mode,images,repeat_each,requested_physical_attempts,manifest_sha256,wall_ms,pipeline_ms,completed,attempts,accepted,missed,errors,result_signature,cuda_microbatch_size,cuda_microbatch_count,effective_parallel_images,cpu_cuda_label_agreement
+1,CPU,50,1,50,536ecd8fa98166cb9660e2483fc0837d0564e037ffbc8d4eb3655dd424efda03,6730.196199991042,6191.300699982094,50,50,50,0,0,3565ed6370d4198bbdbe90b83755da9aa501248ce088367c5c56b055cb573e43,0,0,1.0,1.0
+1,CUDA,50,1,50,536ecd8fa98166cb9660e2483fc0837d0564e037ffbc8d4eb3655dd424efda03,3121.5069000027142,2412.7875000122003,50,50,50,0,0,3565ed6370d4198bbdbe90b83755da9aa501248ce088367c5c56b055cb573e43,50,1,50.0,1.0

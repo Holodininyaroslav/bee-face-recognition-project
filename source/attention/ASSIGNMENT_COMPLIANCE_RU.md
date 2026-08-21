@@ -27,6 +27,8 @@
   завершает программу с кодом 2.
 - `kernel_ms` измеряется CUDA Events, а `end_to_end_ms` включает H2D, kernels,
   synchronization и D2H.
+- CPU-буферы `scores/output` и CUDA device-буферы выделяются один раз до
+  warm-up; повторные CPU-аллокации не увеличивают заявленный speedup.
 - `verify_cuda_assignment.bat` строго собирает NVCC и проверяет обязательный
   случай `N=512`, `d=64`; скрытого перехода на CPU нет.
 

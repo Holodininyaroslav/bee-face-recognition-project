@@ -1,0 +1,255 @@
+{
+  "manifest_sha256": "536ecd8fa98166cb9660e2483fc0837d0564e037ffbc8d4eb3655dd424efda03",
+  "images": [
+    {
+      "index": 0,
+      "file": "Adi\\Adi_yaw_000_pitch_m15.jpg",
+      "sha256": "0fa0935d75eb865f89f33bf61faece065ac60041b78d5d3a725fd36bd29a8c3f"
+    },
+    {
+      "index": 1,
+      "file": "Faraj\\Faraj_yaw_000_pitch_m15.jpg",
+      "sha256": "1ff70b2ad60e97d64be39cf8931f608f45ceae5f9ea2b9217765dd3ee1af7746"
+    },
+    {
+      "index": 2,
+      "file": "Slava\\Slava_yaw_000_pitch_m15.jpg",
+      "sha256": "c8d0b1d06e51f64b8eac8634bcc826727afd0b79f242690381f33b8b14ad0806"
+    },
+    {
+      "index": 3,
+      "file": "Adi\\Adi_yaw_000_pitch_p00.jpg",
+      "sha256": "d6bd29363e490e352586468766f6867491fe553f2d2a05f0580d28c4a17a6dfa"
+    },
+    {
+      "index": 4,
+      "file": "Faraj\\Faraj_yaw_000_pitch_p00.jpg",
+      "sha256": "77361d4c93d08d49aab8e009efe0a9518ccb12ae371890d62d130786a0e57e22"
+    },
+    {
+      "index": 5,
+      "file": "Slava\\Slava_yaw_000_pitch_p00.jpg",
+      "sha256": "7c16577159d03398b255b22a359186b7c7b8a84dd7daa0f6bbb477687f1e663b"
+    },
+    {
+      "index": 6,
+      "file": "Adi\\Adi_yaw_000_pitch_p15.jpg",
+      "sha256": "fd93c54bc6ac9122af7e4c0212ff1e1979beee57a2f88b49a095e274baf19dd6"
+    },
+    {
+      "index": 7,
+      "file": "Faraj\\Faraj_yaw_000_pitch_p15.jpg",
+      "sha256": "6894df5b4a0d87f68b374ea4665d39ab8aafd5b5b7d7afd9c939c08990c49947"
+    },
+    {
+      "index": 8,
+      "file": "Slava\\Slava_yaw_000_pitch_p15.jpg",
+      "sha256": "a4a8a9312a174c176862371274d098603a93c6ecbceb330b19459f0aca458ffc"
+    },
+    {
+      "index": 9,
+      "file": "Adi\\Adi_yaw_015_pitch_m15.jpg",
+      "sha256": "962e4d1cc2d50919b8b6419f40ebd0806f667f5f1f1fe45149458a773edf30d5"
+    },
+    {
+      "index": 10,
+      "file": "Faraj\\Faraj_yaw_015_pitch_m15.jpg",
+      "sha256": "071a1919d449b727d0d958faad3558c520cf985527fc67f09f831e5cb7078358"
+    },
+    {
+      "index": 11,
+      "file": "Slava\\Slava_yaw_015_pitch_m15.jpg",
+      "sha256": "b337a7e5c272fe9316af6df39318f18941bb0b7a5c337888febe8b5dce6aea3b"
+    },
+    {
+      "index": 12,
+      "file": "Adi\\Adi_yaw_015_pitch_p00.jpg",
+      "sha256": "e345aa0978587e26d47a175c7a6571c32b19198364763cbbb748ecff81359f70"
+    },
+    {
+      "index": 13,
+      "file": "Faraj\\Faraj_yaw_015_pitch_p00.jpg",
+      "sha256": "8753ee5e975f9b6ad5eda7fed882a9133d9c4df8fe9c9bb4038351bda08c90d8"
+    },
+    {
+      "index": 14,
+      "file": "Slava\\Slava_yaw_015_pitch_p00.jpg",
+      "sha256": "e904365955836fe08f8c614ee846e93a46d229372244a32c0294035ed9e542cc"
+    },
+    {
+      "index": 15,
+      "file": "Adi\\Adi_yaw_015_pitch_p15.jpg",
+      "sha256": "eb51083c4e50331bb0acd15798a031279234bf9aece9373c4b45eb5b4c2783f3"
+    },
+    {
+      "index": 16,
+      "file": "Faraj\\Faraj_yaw_015_pitch_p15.jpg",
+      "sha256": "63c9c4c5afac4aa4368838d806741cf374336a05321bafe0a89e593d9f7ac6bd"
+    },
+    {
+      "index": 17,
+      "file": "Slava\\Slava_yaw_015_pitch_p15.jpg",
+      "sha256": "4a109eee1368fa14e0e913c662c25dd0750f1fdd4de544188b333d05117ed52f"
+    },
+    {
+      "index": 18,
+      "file": "Adi\\Adi_yaw_030_pitch_m15.jpg",
+      "sha256": "7a92f81bacdcbed3a2993898da0a0adcafe6fb216de97c83a1ff8565eb0f5e08"
+    },
+    {
+      "index": 19,
+      "file": "Faraj\\Faraj_yaw_030_pitch_m15.jpg",
+      "sha256": "204af3e01edf088b6fb72207ad7de0c3475589fa0a88a128f58cae86d0d8ab18"
+    },
+    {
+      "index": 20,
+      "file": "Slava\\Slava_yaw_030_pitch_m15.jpg",
+      "sha256": "b87d3292e6c872f89435237be4aacc54d54df0ee8f7788de0641970b54bf7692"
+    },
+    {
+      "index": 21,
+      "file": "Adi\\Adi_yaw_030_pitch_p00.jpg",
+      "sha256": "5db887b057285f69d384ac416637b0da222f093e6cb4245e2627b912d55f2ecd"
+    },
+    {
+      "index": 22,
+      "file": "Faraj\\Faraj_yaw_030_pitch_p00.jpg",
+      "sha256": "1e9d3289776bff887b1c083a21538d885d934cddf1a7a478410b6d2f345df31d"
+    },
+    {
+      "index": 23,
+      "file": "Slava\\Slava_yaw_030_pitch_p00.jpg",
+      "sha256": "d4933636845efb8eea1f19413f3810cc06ccf4d2130f7b83138e858d39652081"
+    },
+    {
+      "index": 24,
+      "file": "Adi\\Adi_yaw_030_pitch_p15.jpg",
+      "sha256": "af195fa8095bc7b5f2eab604bd8e6d8aee0ed6e676f4e7a6de0e5997f21ea82a"
+    },
+    {
+      "index": 25,
+      "file": "Faraj\\Faraj_yaw_030_pitch_p15.jpg",
+      "sha256": "ce5c26594913ae1b4a8830a254dff3a18c9f8a07a30f2e03c4d23ee7f6c88c93"
+    },
+    {
+      "index": 26,
+      "file": "Slava\\Slava_yaw_030_pitch_p15.jpg",
+      "sha256": "31ecfe75b8d91a8a4f71eaf36f5a2df78a2703e0e247d70256b3ce46c24c2bef"
+    },
+    {
+      "index": 27,
+      "file": "Adi\\Adi_yaw_045_pitch_m15.jpg",
+      "sha256": "c593198708d15f80ebc4128f887632f08254b3273ebe5d8919598ff74aa31af9"
+    },
+    {
+      "index": 28,
+      "file": "Faraj\\Faraj_yaw_045_pitch_m15.jpg",
+      "sha256": "947decd1a5722f8ba56a60a60f3d875aa9fb9b211e7d2cc78dfecc70a208ef10"
+    },
+    {
+      "index": 29,
+      "file": "Slava\\Slava_yaw_045_pitch_m15.jpg",
+      "sha256": "bcb1d7be65dad5a591085c8f7dc1d41dcba8f8ed31b767b2056d3f78b8fea0c2"
+    },
+    {
+      "index": 30,
+      "file": "Adi\\Adi_yaw_045_pitch_p00.jpg",
+      "sha256": "56f7139ae67e1a4af0711a686b0c7000fd7f07cff084c3c56c7bf1824b5aa09e"
+    },
+    {
+      "index": 31,
+      "file": "Faraj\\Faraj_yaw_045_pitch_p00.jpg",
+      "sha256": "17b83e339322179da827dbbb4f37ec667dc5ab144431bf9a674cea2ce4daefe2"
+    },
+    {
+      "index": 32,
+      "file": "Slava\\Slava_yaw_045_pitch_p00.jpg",
+      "sha256": "a7b4cfaacb62a1b7a323a45217df7615f3bd974866f776aa9dd4caef912c619a"
+    },
+    {
+      "index": 33,
+      "file": "Adi\\Adi_yaw_045_pitch_p15.jpg",
+      "sha256": "e7c4a62749fcd064ab9eb05f4f501b2a82658a13cf13974f3a9a997fb1c0cfe8"
+    },
+    {
+      "index": 34,
+      "file": "Faraj\\Faraj_yaw_045_pitch_p15.jpg",
+      "sha256": "70c5bd3c3006c3a242eb96198a8f7f7f268203f4ef1f9988c35222e288a8cc54"
+    },
+    {
+      "index": 35,
+      "file": "Slava\\Slava_yaw_045_pitch_p15.jpg",
+      "sha256": "33cb6864d752afc8c2aeda5e4b834fa095881539006c10b639634e9692577ebf"
+    },
+    {
+      "index": 36,
+      "file": "Adi\\Adi_yaw_060_pitch_m15.jpg",
+      "sha256": "d2ba860d4ab422708cdc4864db6c68f15c415fd80e479f490c1d41e7b8b025b8"
+    },
+    {
+      "index": 37,
+      "file": "Faraj\\Faraj_yaw_060_pitch_m15.jpg",
+      "sha256": "274f5d30cdab0f60a0a9bac819f67e181b389a3f41d4c631b2029f338ea73717"
+    },
+    {
+      "index": 38,
+      "file": "Slava\\Slava_yaw_060_pitch_m15.jpg",
+      "sha256": "6f5e978d6d860a73054bb154dae484d2ae937e3227c003c72559a1d62d36727c"
+    },
+    {
+      "index": 39,
+      "file": "Adi\\Adi_yaw_060_pitch_p00.jpg",
+      "sha256": "dda58cf328c63750dac77fe1fed8da39b145e85cebe9def775a7142b0749570f"
+    },
+    {
+      "index": 40,
+      "file": "Faraj\\Faraj_yaw_060_pitch_p00.jpg",
+      "sha256": "b3a2ee9a212335c3bfa21e22cf16fb62c32b9355638a65a6d5e4e3433045d193"
+    },
+    {
+      "index": 41,
+      "file": "Slava\\Slava_yaw_060_pitch_p00.jpg",
+      "sha256": "de9963ec42ee31fe229cdbc79d87f736213eb06a82ecea893f61e6a2efbd4961"
+    },
+    {
+      "index": 42,
+      "file": "Adi\\Adi_yaw_060_pitch_p15.jpg",
+      "sha256": "c2266cb94c360e4a0623c63905dd8d61bf21d04f82cc10939abdc1898f835c76"
+    },
+    {
+      "index": 43,
+      "file": "Faraj\\Faraj_yaw_060_pitch_p15.jpg",
+      "sha256": "c3d949ef0f36fefa487b3cc6e8bea5156d0a1288f1a3ab44e31a8eef3af5b16e"
+    },
+    {
+      "index": 44,
+      "file": "Slava\\Slava_yaw_060_pitch_p15.jpg",
+      "sha256": "2373eb7408dbea8a7e98afda1de768f215221b1394593d436cb9ba21416c2a9b"
+    },
+    {
+      "index": 45,
+      "file": "Adi\\Adi_yaw_075_pitch_m15.jpg",
+      "sha256": "57d3358495daa46195afbdd6c78b90250f7998d4dce38694b0b0d887d0113c17"
+    },
+    {
+      "index": 46,
+      "file": "Faraj\\Faraj_yaw_075_pitch_m15.jpg",
+      "sha256": "766effd33bb8044152575c76e0da7d7308327bdc3a4128c7d9805876ad25b2bf"
+    },
+    {
+      "index": 47,
+      "file": "Slava\\Slava_yaw_075_pitch_m15.jpg",
+      "sha256": "f186b350f9505974876639f5b030c4d39781c307f1e3b8ef65f004b78498b227"
+    },
+    {
+      "index": 48,
+      "file": "Adi\\Adi_yaw_075_pitch_p00.jpg",
+      "sha256": "786c494c327b02e803866d37585057020d36b7991c3d3adb543367b3afc7908f"
+    },
+    {
+      "index": 49,
+      "file": "Faraj\\Faraj_yaw_075_pitch_p00.jpg",
+      "sha256": "71fb6ea47cfebf286eccb531a993434f2ca4a587398cb62a73532781bd36f8e5"
+    }
+  ]
+}

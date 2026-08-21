@@ -26,5 +26,7 @@ verify_cuda_assignment.bat
 - `ASSIGNMENT_COMPLIANCE_HE.md` - התאמה מפורשת לדרישות המטלה.
 - `results/rtx4060-n512-d64.csv` - תוצאה מאומתת על RTX 4060.
 
-ההשוואה הראשית משתמשת בזמן CUDA end-to-end, כולל העברות Host-to-Device
-ו-Device-to-Host. זיהוי הפנים הוא הדגמה נוספת ואינו מחליף את מימוש ה-Attention.
+מרחבי העבודה `scores/output` של CPU ומאגרי ההתקן של CUDA מוקצים פעם אחת לפני
+ה-warm-up. ההשוואה הראשית משתמשת בזמן CUDA end-to-end, כולל העברות
+Host-to-Device ו-Device-to-Host, בעוד שזמן CPU כולל רק את לולאות ה-Attention
+הסדרתיות. זיהוי הפנים הוא הדגמה נוספת ואינו מחליף את מימוש ה-Attention.

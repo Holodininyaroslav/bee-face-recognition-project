@@ -2511,9 +2511,9 @@ auto input = Ort::Value::CreateTensor<float>(
     },
     diagram: { en: ["NCHW input", "YuNet CUDA", "5 landmarks", "SFace CUDA", "128D embedding"], ru: ["Вход NCHW", "YuNet CUDA", "5 ориентиров", "SFace CUDA", "Embedding 128D"], he: ["קלט NCHW", "YuNet CUDA", "5 נקודות ציון", "SFace CUDA", "embedding 128D"] },
     diagramNotes: {
-      en: ["YuNet runs once for the current batch.", "C++ selects the strongest centered face and its five landmarks.", "The aligned crop is represented as a 112x112 NCHW tensor.", "SFace runs through the same CUDA provider and produces normalized identity vectors."],
-      ru: ["YuNet запускается один раз для текущего пакета.", "C++ выбирает наиболее сильное центральное лицо и пять его ориентиров.", "Выровненная область представляется тензором NCHW 112x112.", "SFace запускается через тот же CUDA provider и формирует нормализованные векторы личности."],
-      he: ["YuNet רץ פעם אחת עבור האצווה הנוכחית.", "C++ בוחר את הפנים המרכזיות החזקות ואת חמש נקודות הציון שלהן.", "החיתוך המיושר מיוצג כטנזור NCHW בגודל 112x112.", "SFace רץ דרך אותו CUDA provider ומפיק וקטורי זהות מנורמלים."]
+      en: ["YuNet runs once for the current batch.", "C++ selects the strongest centered face and its five landmarks.", "The five landmarks define the transform used to align each valid face.", "The aligned 112x112 NCHW batch enters SFace through the same CUDA provider.", "SFace returns one normalized 128D identity vector per valid image."],
+      ru: ["YuNet запускается один раз для текущего пакета.", "C++ выбирает наиболее сильное центральное лицо и пять его ориентиров.", "Пять ориентиров задают преобразование для выравнивания каждого допустимого лица.", "Пакет выровненных лиц NCHW 112x112 поступает в SFace через тот же CUDA provider.", "SFace возвращает один нормализованный 128D-вектор личности на допустимое изображение."],
+      he: ["YuNet רץ פעם אחת עבור האצווה הנוכחית.", "C++ בוחר את הפנים המרכזיות החזקות ואת חמש נקודות הציון שלהן.", "חמש נקודות הציון מגדירות את ההתמרה ליישור כל פנים תקינות.", "אצוות NCHW מיושרת בגודל 112x112 נכנסת ל-SFace דרך אותו CUDA provider.", "SFace מחזיר וקטור זהות מנורמל אחד בגודל 128D לכל תמונה תקינה."]
     },
     layers: { en: "YuNet ONNX graph + SFace ONNX graph", ru: "ONNX-граф YuNet + ONNX-граф SFace", he: "גרף ONNX של YuNet וגרף ONNX של SFace" },
     connections: { en: "One CUDA graph execution per model for the batch", ru: "По одному выполнению CUDA-графа каждой модели на пакет", he: "הרצת גרף CUDA אחת לכל מודל עבור האצווה" },
@@ -2587,9 +2587,9 @@ cosine_scores_kernel<<<grid, block>>>(
     },
     diagram: { en: ["One screenshot", "CUDA batch size 1", "Per-person best", "Score + margin", "Native result"], ru: ["Один снимок", "CUDA batch=1", "Лучшее по человеку", "Score + margin", "Native-результат"], he: ["צילום מסך אחד", "CUDA batch=1", "הטוב ביותר לכל אדם", "Score ו-margin", "תוצאת native"] },
     diagramNotes: {
-      en: ["The same method handles one, 50, or 500 physical inference attempts.", "CUDA calls embed_images once for the complete request; CPU calls it once per image sequentially.", "Scores are grouped by Adi, Faraj, and Slava before ranking.", "The label is accepted only when both minimum score and minimum margin pass."],
-      ru: ["Один метод обрабатывает одну, 50 или 500 физических попыток инференса.", "CUDA вызывает embed_images один раз для всего запроса; CPU вызывает его отдельно для каждого изображения последовательно.", "Оценки группируются по Adi, Faraj и Slava до ранжирования.", "Имя принимается только после прохождения минимального score и минимального margin."],
-      he: ["אותה שיטה מטפלת בניסיון הסקה אחד, ב-50 או ב-500 ניסיונות פיזיים.", "CUDA קורא ל-embed_images פעם אחת לכל הבקשה; CPU קורא לה בנפרד לכל תמונה באופן סדרתי.", "הציונים מקובצים לפי Adi, ‏Faraj ו-Slava לפני הדירוג.", "התווית מתקבלת רק אם גם ציון המינימום וגם פער המינימום עברו."]
+      en: ["The same method handles one, 50, or 500 physical inference attempts.", "CUDA calls embed_images once for the complete request; CPU calls it once per image sequentially.", "Scores are grouped by Adi, Faraj, and Slava before ranking.", "The label is accepted only when both minimum score and minimum margin pass.", "The native result reports the accepted identity, scores, matched reference, backend, and timing."],
+      ru: ["Один метод обрабатывает одну, 50 или 500 физических попыток инференса.", "CUDA вызывает embed_images один раз для всего запроса; CPU вызывает его отдельно для каждого изображения последовательно.", "Оценки группируются по Adi, Faraj и Slava до ранжирования.", "Имя принимается только после прохождения минимального score и минимального margin.", "Native-результат сообщает принятое имя, оценки, совпавший эталон, backend и время."],
+      he: ["אותה שיטה מטפלת בניסיון הסקה אחד, ב-50 או ב-500 ניסיונות פיזיים.", "CUDA קורא ל-embed_images פעם אחת לכל הבקשה; CPU קורא לה בנפרד לכל תמונה באופן סדרתי.", "הציונים מקובצים לפי Adi, ‏Faraj ו-Slava לפני הדירוג.", "התווית מתקבלת רק אם גם ציון המינימום וגם פער המינימום עברו.", "תוצאת ה-native מדווחת על הזהות שהתקבלה, הציונים, הייחוס התואם, ה-backend וזמן הביצוע."]
     },
     layers: { en: "Per-identity reduction, ranking, score and margin rules", ru: "Сведение по людям, ранжирование и правила score/margin", he: "צמצום לכל זהות, דירוג וכללי score/margin" },
     connections: { en: "One physical recognition in this simple demo", ru: "Одно физическое распознавание в простой демонстрации", he: "זיהוי פיזי אחד בהדגמה הפשוטה" },
@@ -5652,10 +5652,130 @@ function cleanLocalizedCodeAnnotation(match, lang) {
   return repairLocalizedText(match && (match[lang] || match.en));
 }
 
+const nativeShortCodeAnnotations = {
+  "OrtCUDAProviderOptions cuda_options{};": {
+    en: "Creates a zero-initialized CUDA provider configuration for the native worker.",
+    ru: "Создаёт обнулённую конфигурацию CUDA provider для native worker.",
+    he: "יוצרת תצורת CUDA provider מאותחלת לאפס עבור ה-worker ה-native."
+  },
+  "cuda_options.device_id = 0;": {
+    en: "Selects NVIDIA GPU 0 for the YuNet and SFace ONNX sessions.",
+    ru: "Выбирает NVIDIA GPU 0 для ONNX-сессий YuNet и SFace.",
+    he: "בוחרת את NVIDIA GPU 0 עבור סשני ONNX של YuNet ושל SFace."
+  },
+  "options.AppendExecutionProvider_CUDA(cuda_options);": {
+    en: "Attaches CUDAExecutionProvider to the session options; failure stops startup instead of falling back silently.",
+    ru: "Подключает CUDAExecutionProvider к настройкам сессии; ошибка останавливает запуск без скрытого перехода на CPU.",
+    he: "מחברת את CUDAExecutionProvider להגדרות הסשן; כשל עוצר את ההפעלה במקום לעבור בשקט ל-CPU."
+  },
+  "yunet = Ort::Session(env, yunet_model, options);": {
+    en: "Loads the YuNet face-detector graph into a persistent ONNX Runtime session using the selected provider.",
+    ru: "Загружает граф детектора YuNet в постоянную ONNX Runtime session с выбранным provider.",
+    he: "טוענת את גרף גלאי YuNet לסשן קבוע של ONNX Runtime עם ה-provider שנבחר."
+  },
+  "sface = Ort::Session(env, sface_model, options);": {
+    en: "Loads the SFace embedding graph into a second persistent session with the same CPU/CUDA provider contract.",
+    ru: "Загружает граф SFace embeddings во вторую постоянную session с тем же контрактом CPU/CUDA provider.",
+    he: "טוענת את גרף ה-embeddings של SFace לסשן קבוע שני עם אותו חוזה CPU/CUDA provider."
+  },
+  "auto prepared = prepare_detection_batch(images);": {
+    en: "Decodes, resizes, pads, and packs every request image into one float32 NCHW BGR host batch.",
+    ru: "Декодирует, изменяет размер, дополняет и упаковывает все изображения запроса в один host-пакет float32 NCHW BGR.",
+    he: "מפענחת, משנה גודל, מרפדת ואורזת את כל תמונות הבקשה לאצוות מארח אחת מסוג float32 NCHW BGR."
+  },
+  "auto memory = Ort::MemoryInfo::CreateCpu(...);": {
+    en: "Creates the ONNX Runtime descriptor for the host memory that owns the prepared input values.",
+    ru: "Создаёт дескриптор ONNX Runtime для host-памяти, содержащей подготовленные входные значения.",
+    he: "יוצרת תיאור זיכרון של ONNX Runtime עבור זיכרון המארח שמכיל את ערכי הקלט המוכנים."
+  },
+  "auto input = Ort::Value::CreateTensor<float>(": {
+    en: "Begins constructing a float tensor view over the prepared NCHW batch without copying the C++ vector.",
+    ru: "Начинает создание float-тензора поверх подготовленного NCHW-пакета без копирования C++ vector.",
+    he: "מתחילה ליצור תצוגת טנזור float מעל אצוות NCHW המוכנה בלי להעתיק את ה-vector של C++."
+  },
+  "memory, prepared.nchw_bgr.data(), prepared.nchw_bgr.size(), ...);": {
+    en: "Completes the tensor view with its host-memory descriptor, first float address, element count, and dimensions.",
+    ru: "Завершает тензор, передавая дескриптор host-памяти, адрес первого float, число элементов и размеры.",
+    he: "משלימה את תצוגת הטנזור עם תיאור זיכרון המארח, כתובת ה-float הראשון, מספר האיברים והממדים."
+  },
+  "auto yunet_outputs = yunet.Run(...);": {
+    en: "Runs one batched YuNet inference; CUDAExecutionProvider executes the neural graph when CUDA mode is active.",
+    ru: "Запускает один пакетный инференс YuNet; в режиме CUDA нейросетевой граф выполняет CUDAExecutionProvider.",
+    he: "מריצה הסקת YuNet אחת באצווה; במצב CUDA הגרף העצבי מבוצע על ידי CUDAExecutionProvider."
+  },
+  "auto faces = decode_yunet_outputs(yunet_outputs);": {
+    en: "Decodes YuNet boxes, confidence values, and five landmarks, then retains one valid face per image.",
+    ru: "Декодирует рамки YuNet, confidence и пять ориентиров, затем сохраняет одно допустимое лицо на изображение.",
+    he: "מפענחת תיבות YuNet, ערכי confidence וחמש נקודות ציון, ואז שומרת פנים תקינות אחת לכל תמונה."
+  },
+  "auto aligned = align_faces(prepared, faces);": {
+    en: "Uses the five landmarks to create one canonical 3x112x112 SFace input for every valid face.",
+    ru: "По пяти ориентирам создаёт канонический вход SFace 3x112x112 для каждого допустимого лица.",
+    he: "משתמשת בחמש נקודות הציון כדי ליצור קלט SFace קנוני בגודל 3x112x112 לכל פנים תקינות."
+  },
+  "auto sface_outputs = sface.Run(...);": {
+    en: "Runs the aligned-face batch through SFace and produces one 128D identity embedding per input image.",
+    ru: "Пропускает пакет выровненных лиц через SFace и получает один 128D-вектор личности на изображение.",
+    he: "מריצה את אצוות הפנים המיושרות דרך SFace ומפיקה embedding זהות אחד בגודל 128D לכל תמונה."
+  },
+  "const dim3 block(256);": {
+    en: "Defines a one-dimensional CUDA block of 256 threads; each valid thread computes one reference score.",
+    ru: "Задаёт одномерный CUDA block из 256 threads; каждый допустимый thread вычисляет одну оценку эталона.",
+    he: "מגדירה CUDA block חד-ממדי בן 256 threads; כל thread תקין מחשב ציון ייחוס אחד."
+  },
+  "const dim3 grid((reference_count + 255) / 256, query_count);": {
+    en: "Builds a 2D grid: X covers all references in 256-thread blocks and Y selects the query image.",
+    ru: "Строит двумерный grid: X покрывает все эталоны блоками по 256 threads, а Y выбирает query-изображение.",
+    he: "בונה grid דו-ממדי: ציר X מכסה את כל הייחוסים בבלוקים של 256 threads וציר Y בוחר את תמונת ה-query."
+  },
+  "cosine_scores_kernel<<<grid, block>>>(": {
+    en: "Launches the project-owned CUDA kernel once with the previously defined grid and block geometry.",
+    ru: "Один раз запускает собственный CUDA kernel проекта с ранее заданными grid и block.",
+    he: "משגרת פעם אחת את CUDA kernel של הפרויקט עם גאומטריית ה-grid וה-block שהוגדרה."
+  },
+  "device_queries, device_references, device_scores,": {
+    en: "Passes device pointers for the Bx128 queries, Nx128 references, and BxN output score matrix.",
+    ru: "Передаёт device-указатели на queries Bx128, references Nx128 и выходную матрицу scores BxN.",
+    he: "מעבירה מצביעי התקן ל-queries בגודל Bx128, ל-references בגודל Nx128 ולמטריצת scores בגודל BxN."
+  },
+  "query_count, reference_count, dimensions);": {
+    en: "Passes B, N, and D=128 so the kernel can guard boundaries and execute the complete dot product.",
+    ru: "Передаёт B, N и D=128, чтобы kernel проверял границы и выполнял полное скалярное произведение.",
+    he: "מעבירה B, ‏N ו-D=128 כדי שה-kernel יבדוק גבולות ויבצע את המכפלה הפנימית המלאה."
+  },
+  "if (use_cuda) {": {
+    en: "Selects the CUDA request path when this executable was configured for GPU inference.",
+    ru: "Выбирает CUDA-путь запроса, когда executable настроен на GPU-инференс.",
+    he: "בוחרת במסלול בקשת CUDA כאשר קובץ ההרצה הוגדר להסקה ב-GPU."
+  },
+  "embedded = embed_images(images); // one dynamic CUDA batch": {
+    en: "Submits every requested image together as one dynamic YuNet/SFace CUDA batch.",
+    ru: "Совместно передаёт все изображения запроса как один динамический CUDA-пакет YuNet/SFace.",
+    he: "שולחת יחד את כל התמונות המבוקשות כאצוות CUDA דינמית אחת של YuNet/SFace."
+  },
+  "}": {
+    en: "Closes the CUDA branch after the complete request batch has produced its embeddings.",
+    ru: "Закрывает CUDA-ветку после получения embeddings для всего пакета запроса.",
+    he: "סוגרת את ענף CUDA לאחר שהופקו embeddings עבור כל אצוות הבקשה."
+  },
+  "scores = sface_cuda_scores(embedded.vectors, references, ...);": {
+    en: "Calls sface_cuda.cu to compute every query/reference cosine score in the complete BxN matrix.",
+    ru: "Вызывает sface_cuda.cu для вычисления каждой cosine-оценки query/reference в полной матрице BxN.",
+    he: "קוראת ל-sface_cuda.cu כדי לחשב כל ציון cosine של query/reference במטריצה המלאה BxN."
+  },
+  "accepted = best_score >= min_score && margin >= min_margin;": {
+    en: "Accepts the winning identity only when both its similarity score and its lead over second place pass the configured thresholds.",
+    ru: "Принимает победившую личность только когда и similarity score, и отрыв от второго места проходят заданные пороги.",
+    he: "מקבלת את הזהות המנצחת רק כאשר גם ציון הדמיון וגם הפער מן המקום השני עוברים את הספים שהוגדרו."
+  }
+};
+
 function codeAnnotation(stage, line) {
   const lang = document.documentElement.lang || "en";
   const trimmed = line.trim();
   if (stage?.variantKey === "single") {
+    const nativeExact = nativeShortCodeAnnotations[trimmed];
+    if (nativeExact) return repairLocalizedText(nativeExact[lang] || nativeExact.en);
     return contextualNativeSourceAnnotation([line], 0);
   }
   if (!trimmed) return repairLocalizedText(codeBlankAnnotation[lang] || codeBlankAnnotation.en);

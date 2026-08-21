@@ -1,0 +1,31 @@
+{
+  "CPU": {
+    "runs": 1,
+    "mean_wall_ms": 62080.363000015495,
+    "median_wall_ms": 62080.363000015495,
+    "p95_wall_ms": 62080.363000015495,
+    "min_wall_ms": 62080.363000015495,
+    "max_wall_ms": 62080.363000015495,
+    "mean_throughput_attempts_per_second": 8.054076616785814,
+    "mean_label_agreement": 1.0
+  },
+  "CUDA": {
+    "runs": 1,
+    "mean_wall_ms": 12321.790299989516,
+    "median_wall_ms": 12321.790299989516,
+    "p95_wall_ms": 12321.790299989516,
+    "min_wall_ms": 12321.790299989516,
+    "max_wall_ms": 12321.790299989516,
+    "mean_throughput_attempts_per_second": 40.57851885374363,
+    "mean_label_agreement": 1.0
+  },
+  "comparison": {
+    "speedup_mean_wall": 5.038258360886755,
+    "speedup_median_wall": 5.038258360886755,
+    "same_fixed_manifest": true,
+    "source_images": 50,
+    "repeat_each": 10,
+    "requested_physical_attempts": 500,
+    "manifest_sha256": "536ecd8fa98166cb9660e2483fc0837d0564e037ffbc8d4eb3655dd424efda03"
+  }
+}

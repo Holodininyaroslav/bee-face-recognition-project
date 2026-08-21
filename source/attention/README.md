@@ -32,11 +32,13 @@ independent CPU reference, and writes `results/rtx4060-n512-d64.csv`.
 
 ## Timing policy
 
-- CPU time measures the complete naive C++ Attention calculation.
+- CPU time measures the naive sequential loops with score/output workspaces
+  allocated once before warm-up.
 - `kernel_ms` uses CUDA Events and measures only the CUDA kernels.
 - `end_to_end_ms` includes Q/K/V host-to-device copies, all kernels,
   synchronization and output device-to-host copy.
-- Headline speedup is `CPU / CUDA end_to_end_ms`.
+- Headline speedup is `CPU compute / CUDA end_to_end_ms`; CUDA includes H2D/D2H,
+  so repeated CPU allocation cannot inflate the result.
 - Both paths use identical deterministic inputs, warm-up counts and measured
   iteration counts.
 

@@ -13,6 +13,8 @@
 - [x] מימוש CPU נאיבי ועצמאי.
 - [x] השוואת CPU, CUDA basic ו-CUDA optimized.
 - [x] warm-up, ‏CUDA Events וזמן end-to-end.
+- [x] מרחבי העבודה של CPU ומאגרי CUDA מוקצים פעם אחת לפני warm-up, ללא ניפוח
+  speedup באמצעות הקצאות CPU חוזרות.
 - [x] בדיקת דיוק ו-exit code שאינו אפס בכישלון.
 - [x] מקרה הבדיקה הנדרש `N=512`, `d=64` על RTX 4060.
 - [x] תוצאות הרצה, speedup ודיון בצווארי בקבוק.

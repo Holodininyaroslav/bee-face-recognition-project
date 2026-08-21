@@ -27,35 +27,17 @@ void validate_inputs(
     }
 }
 
-}  // namespace
-
-std::vector<float> make_random_matrix(int rows, int columns, unsigned seed) {
-    if (rows <= 0 || columns <= 0) {
-        throw std::invalid_argument("matrix dimensions must be positive");
-    }
-    std::mt19937 generator(seed);
-    std::uniform_real_distribution<float> distribution(-1.0f, 1.0f);
-    std::vector<float> matrix(static_cast<std::size_t>(rows) * columns);
-    for (float& value : matrix) {
-        value = distribution(generator);
-    }
-    return matrix;
-}
-
-std::vector<float> scaled_dot_product_attention_cpu(
+void compute_attention_cpu(
     const std::vector<float>& q,
     const std::vector<float>& k,
     const std::vector<float>& v,
     int n,
     int d,
+    std::vector<float>& scores,
+    std::vector<float>& output,
     Timing* timing
 ) {
-    validate_inputs(q, k, v, n, d);
     const auto begin = std::chrono::steady_clock::now();
-
-    const std::size_t score_count = static_cast<std::size_t>(n) * n;
-    std::vector<float> scores(score_count, 0.0f);
-    std::vector<float> output(static_cast<std::size_t>(n) * d, 0.0f);
     const float scale = 1.0f / std::sqrt(static_cast<float>(d));
 
     // Stage 1 and 2: Q*K^T followed by scaling.
@@ -104,7 +86,56 @@ std::vector<float> scaled_dot_product_attention_cpu(
     if (timing != nullptr) {
         timing->milliseconds = std::chrono::duration<double, std::milli>(end - begin).count();
     }
+}
+
+}  // namespace
+
+std::vector<float> make_random_matrix(int rows, int columns, unsigned seed) {
+    if (rows <= 0 || columns <= 0) {
+        throw std::invalid_argument("matrix dimensions must be positive");
+    }
+    std::mt19937 generator(seed);
+    std::uniform_real_distribution<float> distribution(-1.0f, 1.0f);
+    std::vector<float> matrix(static_cast<std::size_t>(rows) * columns);
+    for (float& value : matrix) {
+        value = distribution(generator);
+    }
+    return matrix;
+}
+
+std::vector<float> scaled_dot_product_attention_cpu(
+    const std::vector<float>& q,
+    const std::vector<float>& k,
+    const std::vector<float>& v,
+    int n,
+    int d,
+    Timing* timing
+) {
+    validate_inputs(q, k, v, n, d);
+    const std::size_t score_count = static_cast<std::size_t>(n) * n;
+    std::vector<float> scores(score_count, 0.0f);
+    std::vector<float> output(static_cast<std::size_t>(n) * d, 0.0f);
+    compute_attention_cpu(q, k, v, n, d, scores, output, timing);
     return output;
+}
+
+void scaled_dot_product_attention_cpu_into(
+    const std::vector<float>& q,
+    const std::vector<float>& k,
+    const std::vector<float>& v,
+    int n,
+    int d,
+    std::vector<float>& scores,
+    std::vector<float>& output,
+    Timing* timing
+) {
+    validate_inputs(q, k, v, n, d);
+    const std::size_t expected_scores = static_cast<std::size_t>(n) * n;
+    const std::size_t expected_output = static_cast<std::size_t>(n) * d;
+    if (scores.size() != expected_scores || output.size() != expected_output) {
+        throw std::invalid_argument("CPU workspace sizes must be N*N and N*d");
+    }
+    compute_attention_cpu(q, k, v, n, d, scores, output, timing);
 }
 
 ErrorStats compare_outputs(

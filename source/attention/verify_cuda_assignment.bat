@@ -14,9 +14,14 @@ echo === REQUIRED CUDA CASE: N=512, d=64 ===
 "%EXE%" --n 512 --d 64 --warmup 5 --iterations 50 --seed 2026 --variant all --csv "%CSV%"
 if errorlevel 1 exit /b %errorlevel%
 
-findstr /c:"CUDA,basic" /c:"CUDA,optimized" "%CSV%" >nul
+findstr /c:"CUDA,basic" "%CSV%" >nul
 if errorlevel 1 (
-    echo ERROR: Required CUDA CSV rows were not generated.
+    echo ERROR: Required CUDA basic CSV row was not generated.
+    exit /b 2
+)
+findstr /c:"CUDA,optimized" "%CSV%" >nul
+if errorlevel 1 (
+    echo ERROR: Required CUDA optimized CSV row was not generated.
     exit /b 2
 )
 findstr /c:",FAIL" "%CSV%" >nul

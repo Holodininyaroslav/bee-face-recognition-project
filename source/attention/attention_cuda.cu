@@ -309,18 +309,21 @@ std::vector<float> run_cpu_average(
     int iterations,
     double& average_milliseconds
 ) {
-    double ignored = 0.0;
+    std::vector<float> scores(static_cast<std::size_t>(n) * n, 0.0f);
+    std::vector<float> output(static_cast<std::size_t>(n) * d, 0.0f);
     for (int iteration = 0; iteration < warmup_iterations; ++iteration) {
         attention::Timing timing;
-        attention::scaled_dot_product_attention_cpu(q, k, v, n, d, &timing);
-        ignored += timing.milliseconds;
+        attention::scaled_dot_product_attention_cpu_into(
+            q, k, v, n, d, scores, output, &timing
+        );
     }
 
     double total_milliseconds = 0.0;
-    std::vector<float> output;
     for (int iteration = 0; iteration < iterations; ++iteration) {
         attention::Timing timing;
-        output = attention::scaled_dot_product_attention_cpu(q, k, v, n, d, &timing);
+        attention::scaled_dot_product_attention_cpu_into(
+            q, k, v, n, d, scores, output, &timing
+        );
         total_milliseconds += timing.milliseconds;
     }
     average_milliseconds = total_milliseconds / iterations;

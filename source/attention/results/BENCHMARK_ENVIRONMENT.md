@@ -16,9 +16,9 @@
 - Correctness tolerance: max absolute error <= 2e-4
 
 The CPU reference is intentionally single-threaded and naive, as required by
-the assignment. Its measured function body includes construction of the
-temporary score and output vectors on every call. CUDA headline speedup uses a
-warmed, reusable-device-buffer end-to-end time: H2D input copies, kernels,
-synchronization and D2H output copy. CUDA context creation and `cudaMalloc`
-occur once before warm-up and are excluded. The reported speedup therefore
-describes steady-state repeated inference, not cold process startup.
+the assignment. CPU score/output workspaces and CUDA device buffers are both
+allocated once before warm-up. The measured CPU time contains only the nested
+Attention loops. CUDA headline speedup uses a warmed end-to-end time that also
+includes H2D input copies, kernels, synchronization and D2H output copy. CUDA
+context creation and `cudaMalloc` are excluded. This is a conservative
+steady-state comparison: repeated CPU allocation cannot inflate the speedup.

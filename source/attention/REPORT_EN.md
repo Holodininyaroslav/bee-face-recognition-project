@@ -43,9 +43,11 @@ extra global-memory pass. `__syncthreads()` protects both tile-loading phases.
 - Fifty iterations are measured for each implementation.
 - CUDA Events measure `kernel_ms`.
 - `end_to_end_ms` includes H2D copies, all kernels, synchronization, and D2H.
-- CPU time includes the temporary score/output vector construction performed
-  by the naive reference on every call. CUDA device buffers are allocated once
-  before warm-up, so the CUDA number represents a warmed reusable worker.
+- CPU score/output workspaces and CUDA device buffers are both allocated once
+  before warm-up. CPU time therefore measures only the sequential Attention
+  loops, while CUDA end-to-end time additionally includes H2D and D2H copies.
+  This deliberately conservative scope does not inflate the reported speedup
+  with repeated CPU allocation overhead.
 - Process startup, CUDA context creation, and first-use initialization are not
   included; the table is a steady-state throughput comparison.
 - Every output is compared element by element with the CPU reference.
@@ -56,9 +58,9 @@ compute capability 8.9, 24 SMs, CUDA Toolkit/NVCC 13.2.
 
 | Implementation | Kernel ms | End-to-end ms | Speedup vs CPU | Status |
 |---|---:|---:|---:|---|
-| CPU naive | - | 10.6346 | 1.00x | PASS |
-| CUDA basic | 0.251794 | 0.350112 | 30.37x | PASS |
-| CUDA optimized | 0.114701 | 0.211658 | 50.24x | PASS |
+| CPU naive | - | 10.4136 | 1.00x | PASS |
+| CUDA basic | 0.268333 | 0.392016 | 26.56x | PASS |
+| CUDA optimized | 0.128844 | 0.233012 | 44.69x | PASS |
 
 Both CUDA variants produced `max_abs_error=4.47035e-08`, so the measured
 acceleration did not trade away numerical correctness.
