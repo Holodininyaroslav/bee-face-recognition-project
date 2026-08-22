@@ -82,6 +82,8 @@ __global__ void row_softmax(float* scores, int n) {
     }
 
     const float row_maximum = scratch[0];
+    // Every thread must capture the maximum before scratch is reused for the sum reduction.
+    __syncthreads();
     float local_sum = 0.0f;
     for (int column = lane; column < n; column += blockDim.x) {
         const float value = expf(scores[row * n + column] - row_maximum);

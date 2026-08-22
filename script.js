@@ -2933,6 +2933,43 @@ Object.assign(translations.he, {
   sourceLoaded: "אומת: {total} שורות מקור מדויקות במסלול «{variant}» = {sum} שורות בשלבים 1–6."
 });
 
+Object.assign(translations.en, {
+  kicker: "CUDA COURSE PROJECT / SCALED DOT-PRODUCT ATTENTION",
+  title: "Scaled Dot-Product Attention on CUDA",
+  lead: "Start with the required CUDA C/C++ Attention implementation: QK transpose, scaling, stable Softmax, P times V, validation, and timing. Face recognition is an additional CUDA demonstration below.",
+  simpleKicker: "CUDA COURSE REQUIREMENT",
+  simple: "Open CUDA Attention",
+  simpleTitle: "Scaled Dot-Product Attention on CUDA",
+  simpleNote: "The required CUDA Attention implementation is shown first. The native face-recognition demonstration appears below as an additional CUDA capability.",
+  howKicker: "ADDITIONAL CUDA DEMONSTRATION",
+  howTitle: "Face recognition with native C++ and CUDA",
+  howIntro: "This separate, expanded demonstration follows one image through native C++ preparation, CUDA YuNet/SFace inference, an explicit CUDA score kernel, and one identity result. It supplements, but does not replace, the required Attention assignment."
+});
+Object.assign(translations.ru, {
+  kicker: "КУРСОВОЙ CUDA-ПРОЕКТ / SCALED DOT-PRODUCT ATTENTION",
+  title: "Scaled Dot-Product Attention на CUDA",
+  lead: "Сначала показана обязательная реализация Attention на CUDA C/C++: QK transpose, масштабирование, стабильный Softmax, P умножить на V, проверка и измерение времени. Распознавание лиц ниже — дополнительная CUDA-демонстрация.",
+  simpleKicker: "ОБЯЗАТЕЛЬНОЕ ЗАДАНИЕ CUDA-КУРСА",
+  simple: "Открыть CUDA Attention",
+  simpleTitle: "Scaled Dot-Product Attention на CUDA",
+  simpleNote: "Сначала расположена обязательная реализация CUDA Attention. Native-демонстрация распознавания лиц ниже показывает дополнительные возможности CUDA.",
+  howKicker: "ДОПОЛНИТЕЛЬНАЯ CUDA-ДЕМОНСТРАЦИЯ",
+  howTitle: "Распознавание лиц на native C++ и CUDA",
+  howIntro: "Это отдельная расширенная демонстрация: одно изображение проходит подготовку native C++, инференс YuNet/SFace на CUDA, явный CUDA kernel оценок и выдачу одной личности. Она дополняет, но не заменяет обязательное Attention-задание."
+});
+Object.assign(translations.he, {
+  kicker: "פרויקט קורס CUDA / ‏SCALED DOT-PRODUCT ATTENTION",
+  title: "Scaled Dot-Product Attention ב-CUDA",
+  lead: "תחילה מוצג מימוש ה-Attention הנדרש ב-CUDA C/C++: ‏QK transpose, קנה מידה, Softmax יציב, P כפול V, אימות ומדידת זמן. זיהוי הפנים למטה הוא הדגמת CUDA נוספת.",
+  simpleKicker: "דרישת קורס CUDA",
+  simple: "פתיחת CUDA Attention",
+  simpleTitle: "Scaled Dot-Product Attention ב-CUDA",
+  simpleNote: "תחילה מוצג מימוש CUDA Attention הנדרש. הדגמת זיהוי הפנים ב-native למטה מציגה יכולות CUDA נוספות.",
+  howKicker: "הדגמת CUDA נוספת",
+  howTitle: "זיהוי פנים ב-native C++ וב-CUDA",
+  howIntro: "זוהי הדגמה מורחבת ונפרדת: תמונה אחת עוברת הכנת native C++, הסקת YuNet/SFace ב-CUDA, kernel CUDA מפורש לציונים ותוצאת זהות אחת. היא משלימה את מטלת Attention אך אינה מחליפה אותה."
+});
+
 function activeVariantDefinition() {
   return detectorVariantCatalog[activeDetectorVariant] || detectorVariantCatalog.single;
 }
@@ -3039,10 +3076,10 @@ function courseRequirementsText() {
     en: {
       kicker: "CUDA COURSE REQUIREMENTS",
       title: "Verify a requirement in the exact CUDA source",
-      intro: "Choose a requirement to open the related one-image execution stage and highlight the exact Scaled Dot-Product Attention code that satisfies it.",
+      intro: "Choose a requirement to inspect its exact implementation in the final Scaled Dot-Product Attention CUDA source.",
       source: "Open attention_cuda.cu",
       proof: "REQUIREMENT PROOF",
-      stage: "Related one-image stage",
+      stage: "Final course source",
       loading: "Loading the exact CUDA Attention source...",
       error: "The source could not be loaded. Use the source link above.",
       codeNote: "Highlighted lines implement this course requirement."
@@ -3050,10 +3087,10 @@ function courseRequirementsText() {
     ru: {
       kicker: "ТРЕБОВАНИЯ CUDA-КУРСА",
       title: "Проверка требования по точному CUDA-исходнику",
-      intro: "Выберите требование: откроется связанный этап обработки одного изображения, а точный код Scaled Dot-Product Attention будет подсвечен ниже.",
+      intro: "Выберите требование, чтобы посмотреть его точную реализацию в финальном CUDA-исходнике Scaled Dot-Product Attention.",
       source: "Открыть attention_cuda.cu",
       proof: "ДОКАЗАТЕЛЬСТВО В КОДЕ",
-      stage: "Связанный этап одного изображения",
+      stage: "Финальный исходник курса",
       loading: "Загружается точный CUDA Attention исходник...",
       error: "Не удалось загрузить исходник. Используйте ссылку выше.",
       codeNote: "Подсвеченные строки реализуют выбранное требование курса."
@@ -3061,10 +3098,10 @@ function courseRequirementsText() {
     he: {
       kicker: "דרישות קורס CUDA",
       title: "אימות דרישה בקוד CUDA המדויק",
-      intro: "בחרו דרישה כדי לפתוח שלב קשור בהרצת תמונה אחת ולהדגיש את קוד Scaled Dot-Product Attention המדויק שמממש אותה.",
+      intro: "בחרו דרישה כדי לבדוק את המימוש המדויק שלה בקוד ה-CUDA הסופי של Scaled Dot-Product Attention.",
       source: "פתיחת attention_cuda.cu",
       proof: "הוכחה בקוד",
-      stage: "שלב קשור לתמונה אחת",
+      stage: "קוד מקור סופי של הקורס",
       loading: "טוען את מקור CUDA Attention המדויק...",
       error: "לא ניתן לטעון את קוד המקור. השתמשו בקישור שמעל.",
       codeNote: "השורות המודגשות מממשות את דרישת הקורס שנבחרה."
@@ -3091,6 +3128,31 @@ function attentionRequirementRange(lines, requirement) {
     ? lines.findIndex((line, index) => index >= start && requirement.end.test(line))
     : start;
   return { start, end: end >= start ? end : start };
+}
+
+function attentionSourceAnnotation(line) {
+  const source = line.trim();
+  const lang = document.documentElement.lang || "en";
+  const say = (en, ru, he) => ({ en, ru, he }[lang] || en);
+  if (!source) return say("Visual separator between logical parts of the CUDA implementation.", "Визуальный разделитель между логическими частями CUDA-реализации.", "מפריד חזותי בין חלקים לוגיים במימוש CUDA.");
+  if (source.startsWith("__global__")) return say("Declares a CUDA kernel executed by many GPU threads.", "Объявляет CUDA kernel, выполняемый множеством потоков GPU.", "מכריזה על CUDA kernel שמבוצע על ידי threads רבים של GPU.");
+  if (/blockIdx|threadIdx/.test(source)) return say("Maps this thread to one logical output coordinate.", "Сопоставляет текущий поток с координатой логического выходного элемента.", "ממפה את ה-thread הנוכחי לקואורדינטטה לוגית של פלט.");
+  if (/row >= n|column >= n|feature >= d|index < count/.test(source)) return say("Boundary check: extra threads leave without accessing invalid memory.", "Boundary check: лишние потоки завершаются без доступа к недопустимой памяти.", "בדיקת גבול: threads עודפים מסיימים ללא גישה לזיכרון לא תקין.");
+  if (/sum \+= q\[/.test(source)) return say("Accumulates one Q row against one K row: one QK transpose score.", "Накапливает одну строку Q по одной строке K: один элемент QK transpose.", "צובר שורת Q מול שורת K אחת: ציון אחד של QK transpose.");
+  if (/scores\[.*\] = sum/.test(source)) return say("Writes the completed score into the QK score matrix.", "Записывает готовую оценку в матрицу QK.", "כותבת את הציון המלא למטריצת QK.");
+  if (/sqrt\(static_cast<float>\(d\)\)/.test(source)) return say("Computes the required 1 divided by sqrt(d) scale factor.", "Вычисляет обязательный коэффициент 1 / sqrt(d).", "מחשבת את מקדם הקנה הנדרש 1 / sqrt(d).");
+  if (/scores\[index\] \*= scale/.test(source)) return say("Applies the scale factor to every QK score in the basic CUDA path.", "Применяет масштабирование к каждой QK-оценке в basic CUDA-пути.", "מחילה את מקדם הקנה על כל ציון QK במסלול CUDA הבסיסי.");
+  if (/local_maximum|row_maximum/.test(source)) return say("Finds the maximum of this row before exponentiation for numerical stability.", "Находит максимум строки до экспоненты для численной стабильности.", "מוצאת את מקסימום השורה לפני האקספוננטה ליציבות נומרית.");
+  if (/__syncthreads/.test(source)) return say("Synchronizes the block before shared memory is read or reused.", "Синхронизирует block перед чтением или повторным использованием shared memory.", "מסנכרנת את ה-block לפני קריאה או שימוש חוזר ב-shared memory.");
+  if (/expf\(/.test(source)) return say("Exponentiates the score after subtracting the row maximum.", "Вычисляет экспоненту оценки после вычитания максимума строки.", "מחשבת אקספוננטה של הציון לאחר חיסור מקסימום השורה.");
+  if (/inverse_sum|\*= inverse_sum/.test(source)) return say("Normalizes the row so its Softmax probabilities sum to one.", "Нормализует строку, чтобы вероятности Softmax давали сумму один.", "מנרמלת את השורה כך שהסתברויות Softmax יסתכמו לאחת.");
+  if (/sum \+= probabilities/.test(source)) return say("Accumulates one P row times one V column for the Attention output.", "Накапливает одну строку P на один столбец V для выхода Attention.", "צוברת שורת P אחת כפול עמודת V אחת עבור פלט Attention.");
+  if (/cudaMalloc/.test(source)) return say("Allocates an explicit device-memory buffer on the GPU.", "Выделяет явный буфер device-памяти на GPU.", "מקצה מאגר זיכרון מפורש על ה-GPU.");
+  if (/cudaMemcpy/.test(source)) return say("Copies data between host RAM and GPU device memory.", "Копирует данные между host RAM и device-памятью GPU.", "מעתיקה נתונים בין RAM של המארח לזיכרון ההתקן של GPU.");
+  if (/cudaEvent/.test(source)) return say("Uses CUDA events to measure completed GPU kernel time.", "Использует CUDA events для измерения завершённого времени GPU kernels.", "משתמשת באירועי CUDA למדידת זמן kernels שהושלמו ב-GPU.");
+  if (/compare_outputs|maximum_absolute|verification/.test(source)) return say("Compares the CUDA output with the CPU reference within the allowed tolerance.", "Сравнивает CUDA-выход с CPU-эталоном в пределах заданного допуска.", "משווה את פלט ה-CUDA לייחוס ה-CPU בתוך הטולרנס המותר.");
+  if (/int n = 512|int d = 64/.test(source)) return say("Sets the required default problem dimension.", "Задаёт обязательный размер задачи по умолчанию.", "מגדירה את ממד המשימה הנדרש כברירת מחדל.");
+  return say("Exact line from the final CUDA Attention source used by this requirement.", "Точная строка финального CUDA Attention исходника для этого требования.", "שורה מדויקת ממקור CUDA Attention הסופי עבור דרישה זו.");
 }
 
 function renderCourseRequirements() {
@@ -3121,8 +3183,7 @@ async function renderCourseProof(requirement) {
   requirementProof.classList.remove("hidden");
   requirementProofTitle.textContent = localized(requirement.label);
   requirementProofText.textContent = `${localized(requirement.text)} ${text.codeNote}`;
-  const stage = stageDetails[requirement.stage];
-  requirementProofStage.textContent = `${text.stage}: ${stage?.level || "--"}`;
+  requirementProofStage.textContent = "final attention_cuda.cu";
   if (!attentionCourseSource) {
     requirementCode.textContent = text.loading;
     try {
@@ -3137,16 +3198,19 @@ async function renderCourseProof(requirement) {
   }
   const lines = attentionCourseSource.replace(/\r\n/g, "\n").split("\n");
   const range = attentionRequirementRange(lines, requirement);
+  const displayStart = Math.max(0, range.start - 2);
+  const displayEnd = Math.min(lines.length - 1, range.end + 2);
   requirementCode.innerHTML = "";
   let firstFocused = null;
-  lines.forEach((line, index) => {
+  lines.slice(displayStart, displayEnd + 1).forEach((line, offset) => {
+    const index = displayStart + offset;
     const row = document.createElement("div");
     row.className = `code-line-note${line.trim() ? "" : " blank"}`;
     const code = document.createElement("code");
     code.textContent = `${String(index + 1).padStart(3, " ")}  ${line || " "}`;
     const note = document.createElement("span");
     note.className = "code-note";
-    note.textContent = index >= range.start && index <= range.end ? text.codeNote : "";
+    note.textContent = attentionSourceAnnotation(line);
     row.append(code, note);
     if (index >= range.start && index <= range.end) {
       row.classList.add("code-focus");
@@ -3175,10 +3239,8 @@ function focusCourseStageSubstep(requirement) {
 function openCourseRequirement(requirement) {
   activeCourseRequirement = requirement.key;
   renderCourseRequirements();
-  renderStageDetail(requirement.stage, false);
-  focusCourseStageSubstep(requirement);
   renderCourseProof(requirement);
-  stageDetail.scrollIntoView({ behavior: "smooth", block: "start" });
+  requirementProof.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 const codeAnnotationFallback = {
