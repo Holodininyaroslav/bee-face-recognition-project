@@ -605,6 +605,9 @@ const courseRequirementsKicker = document.getElementById("courseRequirementsKick
 const courseRequirementsTitle = document.getElementById("courseRequirementsTitle");
 const courseRequirementsIntro = document.getElementById("courseRequirementsIntro");
 const courseRequirementsSource = document.getElementById("courseRequirementsSource");
+const attentionStageButtons = document.getElementById("attentionStageButtons");
+const attentionStagesLabel = document.getElementById("attentionStagesLabel");
+const courseRequirementListLabel = document.getElementById("courseRequirementListLabel");
 const requirementProof = document.getElementById("requirementProof");
 const requirementProofKicker = document.getElementById("requirementProofKicker");
 const requirementProofTitle = document.getElementById("requirementProofTitle");
@@ -627,8 +630,18 @@ const courseRequirements = [
   { key: "threads", stage: 4, step: 2, start: /__global__ void qk_matmul_basic/, end: /__global__ void scale_scores/, label: { en: "Thread mapping and bounds", ru: "Распараллеливание и boundary checks", he: "מיפוי threads ובדיקות גבול" }, text: { en: "2D blocks map rows and columns to score elements, with explicit bounds checks for partial tiles.", ru: "Двумерные блоки сопоставляют строки и столбцы элементам оценок, а boundary checks обрабатывают неполные tiles.", he: "בלוקים דו-ממדיים ממפים שורות ועמודות לאיברי ציונים, עם בדיקות גבול מפורשות עבור tiles חלקיים." } }
 ];
 let activeCourseRequirement = "";
+let activeAttentionStage = "";
 let attentionCourseSource = "";
 const finalAttentionSourceUrl = "https://raw.githubusercontent.com/Holodininyaroslav/bee-face-recognition-project/77c0dc8/source/attention/attention_cuda.cu";
+
+const attentionStages = [
+  { key: "shape", number: "01", label: { en: "Input dimensions", ru: "Размеры входа", he: "ממדי קלט" }, note: { en: "Required N = 512 and d = 64", ru: "Требуемые N = 512 и d = 64", he: "N = 512 ו-d = 64 הנדרשים" } },
+  { key: "qk", number: "02", label: { en: "Q x K transpose", ru: "Q x K transpose", he: "Q x K transpose" }, note: { en: "One CUDA thread produces one score", ru: "Один CUDA-поток создаёт одну оценку", he: "כל thread CUDA מפיק ציון אחד" } },
+  { key: "scale", number: "03", label: { en: "Scale scores", ru: "Масштабирование оценок", he: "קנה מידה לציונים" }, note: { en: "Multiply by 1 / sqrt(d)", ru: "Умножение на 1 / sqrt(d)", he: "כפל ב-1 / sqrt(d)" } },
+  { key: "softmax", number: "04", label: { en: "Stable Softmax", ru: "Стабильный Softmax", he: "Softmax יציב" }, note: { en: "Max reduction, exp, normalization", ru: "Максимум, exp, нормализация", he: "הפחתת מקסימום, exp, נרמול" } },
+  { key: "pv", number: "05", label: { en: "P x V output", ru: "Выход P x V", he: "פלט P x V" }, note: { en: "Probabilities form the output embedding", ru: "Вероятности формируют выходной embedding", he: "ההסתברויות יוצרות את embedding הפלט" } },
+  { key: "variants", number: "06", label: { en: "CUDA pipeline launch", ru: "Запуск CUDA-конвейера", he: "הפעלת צינור CUDA" }, note: { en: "Basic or tiled optimized kernels", ru: "Basic или tiled optimized kernels", he: "kernels בסיסיים או מרוצפים ממוטבים" } }
+];
 
 const stageDetails = [
   {
@@ -3076,36 +3089,42 @@ function courseRequirementsText() {
   return {
     en: {
       kicker: "CUDA COURSE REQUIREMENTS",
-      title: "Verify a requirement in the exact CUDA source",
-      intro: "Choose a requirement to inspect its exact implementation in the final Scaled Dot-Product Attention CUDA source.",
+      title: "Walk through the exact CUDA Attention source",
+      intro: "Choose an Attention execution stage or a course requirement. The complete final CUDA source stays open and scrolls to the exact implementation.",
       source: "Open final attention_cuda.cu",
-      proof: "REQUIREMENT PROOF",
+      stages: "ATTENTION EXECUTION STAGES",
+      checks: "COURSE REQUIREMENT CHECKS",
+      proof: "SELECTED CUDA CODE STEP",
       stage: "Final course source",
       loading: "Loading the exact CUDA Attention source...",
       error: "The source could not be loaded. Use the source link above.",
-      codeNote: "Highlighted lines implement this course requirement."
+      codeNote: "The full final source is shown; highlighted lines implement the selected item."
     },
     ru: {
       kicker: "ТРЕБОВАНИЯ CUDA-КУРСА",
-      title: "Проверка требования по точному CUDA-исходнику",
-      intro: "Выберите требование, чтобы посмотреть его точную реализацию в финальном CUDA-исходнике Scaled Dot-Product Attention.",
+      title: "Поэтапный разбор точного CUDA-исходника Attention",
+      intro: "Выберите этап выполнения Attention или требование курса. Полный финальный CUDA-исходник остаётся открытым и прокручивается к точной реализации.",
       source: "Открыть финальный attention_cuda.cu",
-      proof: "ДОКАЗАТЕЛЬСТВО В КОДЕ",
+      stages: "ЭТАПЫ ВЫПОЛНЕНИЯ ATTENTION",
+      checks: "ПРОВЕРКИ ТРЕБОВАНИЙ КУРСА",
+      proof: "ВЫБРАННЫЙ ШАГ CUDA-КОДА",
       stage: "Финальный исходник курса",
       loading: "Загружается точный CUDA Attention исходник...",
       error: "Не удалось загрузить исходник. Используйте ссылку выше.",
-      codeNote: "Подсвеченные строки реализуют выбранное требование курса."
+      codeNote: "Показан полный финальный исходник; подсвеченные строки реализуют выбранный пункт."
     },
     he: {
       kicker: "דרישות קורס CUDA",
-      title: "אימות דרישה בקוד CUDA המדויק",
-      intro: "בחרו דרישה כדי לבדוק את המימוש המדויק שלה בקוד ה-CUDA הסופי של Scaled Dot-Product Attention.",
+      title: "מעבר שלבי על קוד ה-CUDA המדויק של Attention",
+      intro: "בחרו שלב ביצוע של Attention או דרישת קורס. קוד ה-CUDA הסופי המלא נשאר פתוח וגולל אל המימוש המדויק.",
       source: "פתיחת attention_cuda.cu הסופי",
-      proof: "הוכחה בקוד",
+      stages: "שלבי ביצוע ATTENTION",
+      checks: "בדיקות דרישות הקורס",
+      proof: "שלב קוד CUDA שנבחר",
       stage: "קוד מקור סופי של הקורס",
       loading: "טוען את מקור CUDA Attention המדויק...",
       error: "לא ניתן לטעון את קוד המקור. השתמשו בקישור שמעל.",
-      codeNote: "השורות המודגשות מממשות את דרישת הקורס שנבחרה."
+      codeNote: "קוד המקור הסופי המלא מוצג; השורות המודגשות מממשות את הפריט שנבחר."
     }
   }[lang] || courseRequirementsText.en;
 }
@@ -3164,6 +3183,32 @@ function renderCourseRequirements() {
   courseRequirementsIntro.textContent = text.intro;
   courseRequirementsSource.textContent = text.source;
   requirementProofKicker.textContent = text.proof;
+  if (attentionStagesLabel) attentionStagesLabel.textContent = text.stages;
+  if (courseRequirementListLabel) courseRequirementListLabel.textContent = text.checks;
+  if (attentionStageButtons) {
+    attentionStageButtons.innerHTML = "";
+    attentionStages.forEach((stage) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "attention-stage-button";
+      const active = activeAttentionStage === stage.key;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+      button.setAttribute("aria-label", `${stage.number}. ${localized(stage.label)}`);
+      const number = document.createElement("span");
+      number.className = "attention-stage-number";
+      number.textContent = stage.number;
+      const details = document.createElement("span");
+      const title = document.createElement("strong");
+      title.textContent = localized(stage.label);
+      const note = document.createElement("small");
+      note.textContent = localized(stage.note);
+      details.append(title, note);
+      button.append(number, details);
+      button.addEventListener("click", () => openAttentionStage(stage));
+      attentionStageButtons.appendChild(button);
+    });
+  }
   courseRequirementButtons.innerHTML = "";
   courseRequirements.forEach((requirement) => {
     const button = document.createElement("button");
@@ -3199,12 +3244,13 @@ async function renderCourseProof(requirement) {
   }
   const lines = attentionCourseSource.replace(/\r\n/g, "\n").split("\n");
   const range = attentionRequirementRange(lines, requirement);
-  const displayStart = Math.max(0, range.start - 2);
-  const displayEnd = Math.min(lines.length - 1, range.end + 2);
+  if (range.start < 0) {
+    requirementCode.textContent = text.error;
+    return;
+  }
   requirementCode.innerHTML = "";
   let firstFocused = null;
-  lines.slice(displayStart, displayEnd + 1).forEach((line, offset) => {
-    const index = displayStart + offset;
+  lines.forEach((line, index) => {
     const row = document.createElement("div");
     row.className = `code-line-note${line.trim() ? "" : " blank"}`;
     const code = document.createElement("code");
@@ -3238,6 +3284,17 @@ function focusCourseStageSubstep(requirement) {
 }
 
 function openCourseRequirement(requirement) {
+  activeCourseRequirement = requirement.key;
+  activeAttentionStage = attentionStages.some((stage) => stage.key === requirement.key) ? requirement.key : "";
+  renderCourseRequirements();
+  renderCourseProof(requirement);
+  requirementProof.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function openAttentionStage(stage) {
+  const requirement = courseRequirements.find((item) => item.key === stage.key);
+  if (!requirement) return;
+  activeAttentionStage = stage.key;
   activeCourseRequirement = requirement.key;
   renderCourseRequirements();
   renderCourseProof(requirement);
