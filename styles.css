@@ -365,6 +365,95 @@ html[dir="rtl"] .honey-art {
   font-size: 13px;
 }
 
+.requirements-panel {
+  margin-top: 20px;
+  padding: 18px 0 0;
+  border-top: 1px solid rgba(56, 215, 255, .42);
+}
+
+.requirements-head,
+.requirement-proof-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.requirements-head h4,
+.requirement-proof-head h4 {
+  margin: 4px 0 8px;
+  color: var(--text);
+  font-size: 20px;
+}
+
+.requirements-head p:last-child,
+.requirement-proof-head p:last-child {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.requirement-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.requirement-button {
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid rgba(56, 215, 255, .35);
+  background: #0a1222;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+.requirement-button:hover,
+.requirement-button:focus-visible {
+  border-color: var(--cyan);
+  background: #14213a;
+  outline: 2px solid rgba(56, 215, 255, .18);
+  outline-offset: 2px;
+}
+
+.requirement-button.active,
+.requirement-button[aria-pressed="true"] {
+  border-color: var(--gold-2);
+  background: rgba(255, 176, 0, .14);
+  color: #fff5cf;
+}
+
+.requirement-proof {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid rgba(255, 194, 61, .5);
+  background: #08101d;
+}
+
+.requirement-stage {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid rgba(56, 215, 255, .45);
+  color: var(--cyan);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.requirement-code {
+  max-height: 420px;
+  margin-top: 14px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  background: #050912;
+}
+
 .pipeline {
   display: grid;
   grid-template-columns: repeat(3, minmax(220px, 1fr));
@@ -988,6 +1077,15 @@ iframe {
   .detector-variant-panel,
   .detector-variant-switch {
     grid-template-columns: 1fr;
+  }
+  .requirements-head,
+  .requirement-proof-head {
+    display: block;
+  }
+  .requirements-head .ghost,
+  .requirement-stage {
+    display: inline-block;
+    margin-top: 14px;
   }
   .stage-detail-head,
   .stage-detail-grid,

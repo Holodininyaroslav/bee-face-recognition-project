@@ -600,6 +600,34 @@ const fullSourceMeta = document.getElementById("fullSourceMeta");
 const detectorVariantDescription = document.getElementById("detectorVariantDescription");
 const detectorVariantSource = document.getElementById("detectorVariantSource");
 const detectorVariantButtons = Array.from(document.querySelectorAll("[data-detector-variant]"));
+const courseRequirementButtons = document.getElementById("courseRequirementButtons");
+const courseRequirementsKicker = document.getElementById("courseRequirementsKicker");
+const courseRequirementsTitle = document.getElementById("courseRequirementsTitle");
+const courseRequirementsIntro = document.getElementById("courseRequirementsIntro");
+const courseRequirementsSource = document.getElementById("courseRequirementsSource");
+const requirementProof = document.getElementById("requirementProof");
+const requirementProofKicker = document.getElementById("requirementProofKicker");
+const requirementProofTitle = document.getElementById("requirementProofTitle");
+const requirementProofText = document.getElementById("requirementProofText");
+const requirementProofStage = document.getElementById("requirementProofStage");
+const requirementCode = document.getElementById("requirementCode");
+
+const courseRequirements = [
+  { key: "attention", stage: 2, step: 0, start: /__global__ void qk_matmul_basic/, end: /__global__ void attention_v_basic/, label: { en: "Scaled Dot-Product Attention", ru: "Scaled Dot-Product Attention", he: "Scaled Dot-Product Attention" }, text: { en: "The required formula is implemented as QK transpose, scaling, stable Softmax, then P times V.", ru: "Требуемая формула реализована как QK transpose, масштабирование, стабильный Softmax и затем P умножить на V.", he: "הנוסחה הנדרשת ממומשת כ-QK transpose, קנה מידה, Softmax יציב ולאחר מכן P כפול V." } },
+  { key: "qk", stage: 2, step: 0, start: /__global__ void qk_matmul_basic/, wholeBlock: true, label: { en: "Q x K transpose", ru: "Q x K transpose", he: "Q x K transpose" }, text: { en: "One CUDA thread computes one score matrix element by accumulating d features.", ru: "Один CUDA-поток вычисляет один элемент матрицы оценок, суммируя d признаков.", he: "כל thread של CUDA מחשב איבר אחד במטריצת הציונים על ידי צבירת d מאפיינים." } },
+  { key: "scale", stage: 2, step: 0, start: /__global__ void scale_scores/, wholeBlock: true, label: { en: "Scale 1 / sqrt(d)", ru: "Масштаб 1 / sqrt(d)", he: "קנה מידה 1 / sqrt(d)" }, text: { en: "The basic kernel scales scores separately; the optimized tiled QK kernel fuses the same scale.", ru: "Базовый вариант масштабирует оценки отдельным kernel; оптимизированный tiled QK объединяет ту же операцию.", he: "הגרסה הבסיסית מבצעת קנה מידה ב-kernel נפרד; QK המרוצף הממוטב ממזג את אותה הפעולה." } },
+  { key: "softmax", stage: 2, step: 1, start: /__global__ void row_softmax/, end: /__global__ void attention_v_basic/, label: { en: "Stable Softmax", ru: "Численно стабильный Softmax", he: "Softmax יציב נומרית" }, text: { en: "Each row subtracts its maximum before exponentiation, then normalizes by the reduced sum.", ru: "Из каждой строки вычитается максимум до экспоненты, затем строка нормализуется по сумме.", he: "מכל שורה מחסרים את המקסימום לפני האקספוננטה, ולאחר מכן מנרמלים לפי הסכום." } },
+  { key: "pv", stage: 2, step: 3, start: /__global__ void attention_v_basic/, end: /__global__ void qk_matmul_tiled_scaled/, label: { en: "P x V", ru: "P x V", he: "P x V" }, text: { en: "The probability matrix is multiplied by V to produce the attention output.", ru: "Матрица вероятностей умножается на V и формирует выход Attention.", he: "מטריצת ההסתברויות מוכפלת ב-V ומפיקה את פלט ה-Attention." } },
+  { key: "shape", stage: 1, step: 3, start: /int n = 512;/, end: /int d = 64;/, label: { en: "N = 512, d = 64", ru: "Размеры N = 512, d = 64", he: "ממדים N = 512, d = 64" }, text: { en: "The CUDA executable defaults to the exact required sequence length and embedding dimension.", ru: "CUDA executable по умолчанию использует требуемую длину последовательности и размер embedding.", he: "קובץ ה-CUDA משתמש כברירת מחדל באורך הרצף ובממד embedding הנדרשים." } },
+  { key: "cpu", stage: 5, step: 0, start: /std::vector<float> run_cpu_average\(/, wholeBlock: true, label: { en: "CPU reference", ru: "CPU-версия для сравнения", he: "גרסת CPU להשוואה" }, text: { en: "The sequential CPU implementation is executed as the correctness baseline for the CUDA results.", ru: "Последовательная CPU-реализация запускается как эталон корректности для CUDA-результатов.", he: "מימוש ה-CPU הסדרתי מופעל כקו בסיס לנכונות תוצאות ה-CUDA." } },
+  { key: "variants", stage: 4, step: 8, start: /void launch_pipeline\(/, end: /struct CudaRunResult/, label: { en: "CUDA basic and optimized", ru: "CUDA basic и optimized", he: "CUDA basic ו-optimized" }, text: { en: "The dispatcher launches either basic kernels or tiled shared-memory optimized kernels.", ru: "Диспетчер запускает либо basic kernels, либо оптимизированные tiled kernels с shared memory.", he: "ה-dispatcher מפעיל kernels בסיסיים או kernels ממוטבים ומרוצפים עם shared memory." } },
+  { key: "validate", stage: 5, step: 2, start: /const attention::ErrorStats error =/, end: /passed = passed && correct;/, label: { en: "CPU/GPU validation", ru: "Проверка CPU/GPU результатов", he: "אימות תוצאות CPU/GPU" }, text: { en: "The program compares CUDA output to the CPU reference and reports absolute and relative errors.", ru: "Программа сравнивает выход CUDA с CPU-эталоном и сообщает абсолютную и относительную ошибки.", he: "התוכנית משווה את פלט ה-CUDA לייחוס ה-CPU ומדווחת שגיאות מוחלטות ויחסיות." } },
+  { key: "timing", stage: 5, step: 3, start: /cudaEvent_t start/, end: /result.end_to_end_milliseconds/, label: { en: "Timing and speedup", ru: "Замер времени и ускорение", he: "מדידת זמן והאצה" }, text: { en: "CUDA events measure kernel time, while end-to-end timing includes transfers; both are reported for comparison.", ru: "CUDA events измеряют время kernels, а end-to-end учитывает переносы; оба значения выводятся для сравнения.", he: "אירועי CUDA מודדים זמן kernels, ומדידת end-to-end כוללת העברות; שני הערכים מוצגים להשוואה." } },
+  { key: "memory", stage: 4, step: 7, start: /struct DeviceMemory/, end: /CudaRunResult run_cuda/, label: { en: "GPU memory transfers", ru: "Память GPU и Host-Device копии", he: "זיכרון GPU והעתקות Host-Device" }, text: { en: "Q, K, V, scores, and output have explicit device allocation, H2D copies, D2H readback, and cleanup.", ru: "Для Q, K, V, scores и output есть явное выделение device-памяти, H2D-копии, D2H-чтение и очистка.", he: "ל-Q, K, V, scores ול-output יש הקצאת זיכרון התקן מפורשת, העתקות H2D, קריאת D2H וניקוי." } },
+  { key: "threads", stage: 4, step: 2, start: /__global__ void qk_matmul_basic/, end: /__global__ void scale_scores/, label: { en: "Thread mapping and bounds", ru: "Распараллеливание и boundary checks", he: "מיפוי threads ובדיקות גבול" }, text: { en: "2D blocks map rows and columns to score elements, with explicit bounds checks for partial tiles.", ru: "Двумерные блоки сопоставляют строки и столбцы элементам оценок, а boundary checks обрабатывают неполные tiles.", he: "בלוקים דו-ממדיים ממפים שורות ועמודות לאיברי ציונים, עם בדיקות גבול מפורשות עבור tiles חלקיים." } }
+];
+let activeCourseRequirement = "";
+let attentionCourseSource = "";
 
 const stageDetails = [
   {
@@ -2970,6 +2998,11 @@ function setLanguage(lang) {
     button.classList.toggle("active", button.dataset.lang === lang);
   });
   renderDetectorVariantUi();
+  renderCourseRequirements();
+  if (activeCourseRequirement) {
+    const activeRequirement = courseRequirements.find((item) => item.key === activeCourseRequirement);
+    if (activeRequirement) renderCourseProof(activeRequirement);
+  }
   if (!imageInput.files?.length) renderPreviews([]);
   if (currentStageIndex >= 0 && !stageDetail.classList.contains("hidden")) {
     renderStageDetail(currentStageIndex, false);
@@ -2998,6 +3031,154 @@ function localized(value) {
   const lang = document.documentElement.lang || "en";
   const selected = value[lang] || value.en || "";
   return Array.isArray(selected) ? selected.map((item) => repairLocalizedText(item)) : repairLocalizedText(selected);
+}
+
+function courseRequirementsText() {
+  const lang = document.documentElement.lang || "en";
+  return {
+    en: {
+      kicker: "CUDA COURSE REQUIREMENTS",
+      title: "Verify a requirement in the exact CUDA source",
+      intro: "Choose a requirement to open the related one-image execution stage and highlight the exact Scaled Dot-Product Attention code that satisfies it.",
+      source: "Open attention_cuda.cu",
+      proof: "REQUIREMENT PROOF",
+      stage: "Related one-image stage",
+      loading: "Loading the exact CUDA Attention source...",
+      error: "The source could not be loaded. Use the source link above.",
+      codeNote: "Highlighted lines implement this course requirement."
+    },
+    ru: {
+      kicker: "ТРЕБОВАНИЯ CUDA-КУРСА",
+      title: "Проверка требования по точному CUDA-исходнику",
+      intro: "Выберите требование: откроется связанный этап обработки одного изображения, а точный код Scaled Dot-Product Attention будет подсвечен ниже.",
+      source: "Открыть attention_cuda.cu",
+      proof: "ДОКАЗАТЕЛЬСТВО В КОДЕ",
+      stage: "Связанный этап одного изображения",
+      loading: "Загружается точный CUDA Attention исходник...",
+      error: "Не удалось загрузить исходник. Используйте ссылку выше.",
+      codeNote: "Подсвеченные строки реализуют выбранное требование курса."
+    },
+    he: {
+      kicker: "דרישות קורס CUDA",
+      title: "אימות דרישה בקוד CUDA המדויק",
+      intro: "בחרו דרישה כדי לפתוח שלב קשור בהרצת תמונה אחת ולהדגיש את קוד Scaled Dot-Product Attention המדויק שמממש אותה.",
+      source: "פתיחת attention_cuda.cu",
+      proof: "הוכחה בקוד",
+      stage: "שלב קשור לתמונה אחת",
+      loading: "טוען את מקור CUDA Attention המדויק...",
+      error: "לא ניתן לטעון את קוד המקור. השתמשו בקישור שמעל.",
+      codeNote: "השורות המודגשות מממשות את דרישת הקורס שנבחרה."
+    }
+  }[lang] || courseRequirementsText.en;
+}
+
+function attentionRequirementRange(lines, requirement) {
+  const start = lines.findIndex((line) => requirement.start.test(line));
+  if (start < 0) return { start: -1, end: -1 };
+  if (requirement.wholeBlock) {
+    let depth = 0;
+    let opened = false;
+    for (let index = start; index < lines.length; index += 1) {
+      const line = lines[index];
+      const opens = (line.match(/\{/g) || []).length;
+      const closes = (line.match(/\}/g) || []).length;
+      if (opens > 0) opened = true;
+      depth += opens - closes;
+      if (opened && depth === 0) return { start, end: index };
+    }
+  }
+  const end = requirement.end
+    ? lines.findIndex((line, index) => index >= start && requirement.end.test(line))
+    : start;
+  return { start, end: end >= start ? end : start };
+}
+
+function renderCourseRequirements() {
+  if (!courseRequirementButtons) return;
+  const text = courseRequirementsText();
+  courseRequirementsKicker.textContent = text.kicker;
+  courseRequirementsTitle.textContent = text.title;
+  courseRequirementsIntro.textContent = text.intro;
+  courseRequirementsSource.textContent = text.source;
+  requirementProofKicker.textContent = text.proof;
+  courseRequirementButtons.innerHTML = "";
+  courseRequirements.forEach((requirement) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "requirement-button";
+    button.textContent = localized(requirement.label);
+    const active = activeCourseRequirement === requirement.key;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+    button.addEventListener("click", () => openCourseRequirement(requirement));
+    courseRequirementButtons.appendChild(button);
+  });
+}
+
+async function renderCourseProof(requirement) {
+  if (!requirementProof || !requirementCode) return;
+  const text = courseRequirementsText();
+  requirementProof.classList.remove("hidden");
+  requirementProofTitle.textContent = localized(requirement.label);
+  requirementProofText.textContent = `${localized(requirement.text)} ${text.codeNote}`;
+  const stage = stageDetails[requirement.stage];
+  requirementProofStage.textContent = `${text.stage}: ${stage?.level || "--"}`;
+  if (!attentionCourseSource) {
+    requirementCode.textContent = text.loading;
+    try {
+      const response = await fetch("source/attention/attention_cuda.cu", { cache: "no-store" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      attentionCourseSource = await response.text();
+    } catch (error) {
+      console.error("Could not load CUDA Attention source", error);
+      requirementCode.textContent = text.error;
+      return;
+    }
+  }
+  const lines = attentionCourseSource.replace(/\r\n/g, "\n").split("\n");
+  const range = attentionRequirementRange(lines, requirement);
+  requirementCode.innerHTML = "";
+  let firstFocused = null;
+  lines.forEach((line, index) => {
+    const row = document.createElement("div");
+    row.className = `code-line-note${line.trim() ? "" : " blank"}`;
+    const code = document.createElement("code");
+    code.textContent = `${String(index + 1).padStart(3, " ")}  ${line || " "}`;
+    const note = document.createElement("span");
+    note.className = "code-note";
+    note.textContent = index >= range.start && index <= range.end ? text.codeNote : "";
+    row.append(code, note);
+    if (index >= range.start && index <= range.end) {
+      row.classList.add("code-focus");
+      if (!firstFocused) firstFocused = row;
+    }
+    if (index === range.start) row.classList.add("code-focus-start");
+    if (index === range.end) row.classList.add("code-focus-end");
+    requirementCode.appendChild(row);
+  });
+  if (firstFocused) {
+    requestAnimationFrame(() => {
+      requirementCode.scrollTop = Math.max(0, firstFocused.offsetTop - requirementCode.offsetTop - 18);
+    });
+  }
+}
+
+function focusCourseStageSubstep(requirement) {
+  const stage = stageDetails[currentStageIndex];
+  if (!stage) return;
+  activeStageFiveCodeStep = requirement.step;
+  renderStageCode(stage);
+  const labels = localized(stage.diagram);
+  buildStageDiagram(labels, detectorDiagramNotes(stage, labels), stage);
+}
+
+function openCourseRequirement(requirement) {
+  activeCourseRequirement = requirement.key;
+  renderCourseRequirements();
+  renderStageDetail(requirement.stage, false);
+  focusCourseStageSubstep(requirement);
+  renderCourseProof(requirement);
+  stageDetail.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 const codeAnnotationFallback = {
@@ -6513,7 +6694,9 @@ function buildStageDiagram(labels, notes, data) {
       node.type = "button";
       node.classList.add("code-linked");
       node.dataset.codeStep = String(index);
-      node.setAttribute("aria-pressed", activeStageFiveCodeStep === index ? "true" : "false");
+      const selected = activeStageFiveCodeStep === index;
+      node.classList.toggle("code-active", selected);
+      node.setAttribute("aria-pressed", selected ? "true" : "false");
       const action = data.level === "05" && usesLegacyStageInspector(data)
         ? uiText("focusOnnxAction")
         : uiText("focusCodeAction");
