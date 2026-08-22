@@ -2231,7 +2231,7 @@ const currentRuntimeStageSources = [
   { path: "source/native_face_cuda/src/sface_engine.cpp", fromMatch: "^PreparedBatch prepare_detection_batch", toMatch: "^std::vector<float> align_faces" },
   { path: "source/native_face_cuda/src/sface_engine.cpp", fromMatch: "^    EmbeddingBatch embed_images", toMatch: "^        auto aligned = align_faces" },
   { path: "source/native_face_cuda/src/sface_engine.cpp", fromMatch: "^std::vector<float> align_faces", toMatch: "^struct NativeSFaceEngine::Impl" },
-  { path: "source/native_face_cuda/src/sface_engine.cpp", fromMatch: "^        const std::array<int64_t, 4> sface_shape", toMatch: "^    std::vector<SFaceResult> recognize" },
+  { path: "source/native_face_cuda/src/sface_manual_cuda.cu", fromMatch: "^__global__ void pointwise_gemm_kernel", toMatch: "^struct ManualSFaceCudaContext" },
   { path: "source/native_face_cuda/src/sface_cuda.cu", fromMatch: "^#include <cuda_runtime.h>", to: null },
   { path: "source/native_face_cuda/src/sface_engine.cpp", fromMatch: "^    std::vector<SFaceResult> recognize", toMatch: "^NativeSFaceEngine::NativeSFaceEngine" }
 ];
@@ -2591,27 +2591,39 @@ auto faces = decode_yunet_outputs(yunet_outputs);`
   },
   {
     level: "05",
-    title: { en: "Create the face vector with SFace", ru: "Создание вектора лица через SFace", he: "יצירת וקטור הפנים עם SFace" },
+    title: { en: "Manual SFace forward pass in CUDA", ru: "Ручной forward pass SFace на CUDA", he: "מעבר קדמי ידני של SFace ב-CUDA" },
     summary: {
-      en: "The aligned 1x3x112x112 face enters the SFace ONNX graph through CUDAExecutionProvider. SFace runs its neural layers on the GPU and returns one normalized 128D face vector.",
-      ru: "Выровненное лицо 1x3x112x112 поступает в ONNX-граф SFace через CUDAExecutionProvider. SFace выполняет свои нейросетевые слои на GPU и возвращает один нормализованный 128D-вектор лица.",
-      he: "הפנים המיושרות בגודל 1x3x112x112 נכנסות לגרף ONNX של SFace דרך CUDAExecutionProvider. ‏SFace מריצה את שכבות הרשת ב-GPU ומחזירה וקטור פנים מנורמל אחד בגודל 128D."
+      en: "The project executes the trained SFace network with its own NVCC-compiled CUDA kernels. It explicitly performs preprocessing, 27 convolutions, fused BatchNorm/PReLU, tiled 1x1 matrix multiplications, the Bx50176 by 50176x128 fully connected multiplication, final BatchNorm and L2 normalization. The CUDA route never calls sface.Run(...).",
+      ru: "Проект выполняет обученную сеть SFace собственными CUDA kernels, собранными NVCC. Код явно выполняет предобработку, 27 свёрток, объединённые BatchNorm/PReLU, плиточные матричные умножения 1x1, финальное умножение Bx50176 на 50176x128, последний BatchNorm и L2-нормализацию. CUDA-маршрут не вызывает sface.Run(...).",
+      he: "הפרויקט מריץ את רשת SFace המאומנת באמצעות CUDA kernels עצמאיים שנבנים ב-NVCC. הקוד מבצע במפורש קדם-עיבוד, 27 קונבולוציות, BatchNorm/PReLU מאוחדים, כפל מטריצות מרוצף עבור 1x1, כפל מלא Bx50176 ב-50176x128, ‏BatchNorm סופי ונרמול L2. מסלול CUDA אינו קורא ל-sface.Run(...)."
     },
-    diagram: { en: ["Aligned 112x112 face", "SFace input tensor", "SFace CUDA", "128D embedding", "L2 normalization"], ru: ["Выровненное лицо 112x112", "Входной тензор SFace", "SFace CUDA", "Embedding 128D", "L2-нормализация"], he: ["פנים מיושרות 112x112", "טנזור קלט SFace", "SFace CUDA", "embedding 128D", "נרמול L2"] },
+    diagram: {
+      en: ["01 Load trained weights", "02 Copy B aligned faces to GPU", "03 Normalize input values", "04 Standard 3x3 convolution", "05 Fused BatchNorm + PReLU", "06 Depthwise 3x3 convolution", "07 Tiled pointwise 1x1 GEMM", "08 Repeat 13 depthwise/pointwise blocks", "09 Final feature BatchNorm", "10 Tiled Bx50176 x 50176x128 GEMM", "11 Final 128D BatchNorm", "12 Parallel L2 normalization", "13 Copy Bx128 embeddings to host"],
+      ru: ["01 Загрузка обученных весов", "02 Копирование B лиц на GPU", "03 Нормализация входных значений", "04 Обычная свёртка 3x3", "05 Объединённые BatchNorm + PReLU", "06 Depthwise-свёртка 3x3", "07 Плиточный pointwise 1x1 GEMM", "08 Повтор 13 depthwise/pointwise-блоков", "09 Финальный BatchNorm признаков", "10 Плиточный GEMM Bx50176 x 50176x128", "11 Финальный 128D BatchNorm", "12 Параллельная L2-нормализация", "13 Копирование Bx128 embeddings в RAM"],
+      he: ["01 טעינת המשקלים המאומנים", "02 העתקת B פנים ל-GPU", "03 נרמול ערכי הקלט", "04 קונבולוציה רגילה 3x3", "05 BatchNorm ו-PReLU מאוחדים", "06 קונבולוציית depthwise בגודל 3x3", "07 GEMM מרוצף pointwise בגודל 1x1", "08 חזרה על 13 בלוקי depthwise/pointwise", "09 BatchNorm סופי של המאפיינים", "10 GEMM מרוצף Bx50176 x 50176x128", "11 BatchNorm סופי בגודל 128D", "12 נרמול L2 מקבילי", "13 העתקת embeddings בגודל Bx128 לזיכרון המארח"]
+    },
     diagramNotes: {
-      en: ["Receives exactly the aligned face produced in stage 04.", "Creates the ONNX Runtime tensor with shape Bx3x112x112; this page uses B=1.", "CUDAExecutionProvider runs all SFace neural operations, including the learned convolutions and final matrix multiplication.", "Reads the 128 values produced for the face.", "Normalizes the vector so its later dot products are cosine similarities."],
-      ru: ["Получает ровно то выровненное лицо, которое создано на этапе 04.", "Создаёт тензор ONNX Runtime формы Bx3x112x112; на этой странице B=1.", "CUDAExecutionProvider выполняет все нейросетевые операции SFace, включая обученные свёртки и финальное матричное умножение.", "Считывает 128 значений, созданных для лица.", "Нормализует вектор, чтобы последующие скалярные произведения были cosine similarity."],
-      he: ["מקבלת בדיוק את הפנים המיושרות שנוצרו בשלב 04.", "יוצרת טנזור ONNX Runtime בצורה Bx3x112x112; בעמוד זה B=1.", "CUDAExecutionProvider מריץ את כל פעולות הרשת של SFace, כולל קונבולוציות מאומנות וכפל המטריצות הסופי.", "קוראת את 128 הערכים שנוצרו עבור הפנים.", "מנרמלת את הווקטור כך שהמכפלות הסקלריות הבאות יהיו דמיון cosine."]
+      en: ["The exporter writes every learned SFace tensor to sface_manual_weights.bin; the CUDA runtime uploads these immutable weights once when the worker starts.", "cudaMemcpy places the complete Bx3x112x112 batch in device memory, so B can be 1, 50 or 500.", "preprocess_kernel applies (pixel - 127.5) / 128 independently to every tensor element.", "standard_conv3x3_kernel computes the first learned convolution across all input channels; every output element is assigned to a CUDA thread.", "BatchNorm scale/shift are fused with PReLU inside activate(), avoiding a library call and an extra intermediate tensor.", "depthwise_conv3x3_kernel applies one learned 3x3 filter per channel and performs the stride-2 reductions used by SFace.", "pointwise_gemm_kernel interprets every spatial position as a matrix row. A 16x16 thread block loads activation and weight tiles into shared memory and executes the learned 1x1 channel mixing.", "The native layer table launches one initial convolution followed by 13 depthwise and 13 pointwise operations, preserving the trained SFace graph and tensor dimensions.", "affine_in_place_kernel applies the trained BatchNorm parameters to the final 1024x7x7 feature map.", "fully_connected_kernel manually multiplies every flattened 50176-value face feature row by the learned 50176x128 weight matrix. A batch is therefore one Bx50176 by 50176x128 CUDA matrix multiplication.", "The same fully connected kernel adds the trained bias and applies the final 128-channel BatchNorm scale and shift.", "normalize_embeddings_kernel uses a 256-thread reduction per face to calculate the norm and divide all 128 values, producing cosine-ready vectors.", "Only the finished Bx128 embeddings return to host memory. No intermediate neural tensor returns to CPU."],
+      ru: ["Экспортёр записывает каждый обученный тензор SFace в sface_manual_weights.bin; CUDA runtime один раз загружает эти неизменяемые веса при старте worker.", "cudaMemcpy помещает полный batch Bx3x112x112 в device-память, поэтому B может быть равен 1, 50 или 500.", "preprocess_kernel независимо применяет (pixel - 127.5) / 128 к каждому элементу тензора.", "standard_conv3x3_kernel вычисляет первую обученную свёртку по всем входным каналам; каждый выходной элемент назначается CUDA thread.", "Масштаб и смещение BatchNorm объединены с PReLU внутри activate(), поэтому не вызывается библиотека и не создаётся лишний промежуточный тензор.", "depthwise_conv3x3_kernel применяет отдельный обученный фильтр 3x3 к каждому каналу и выполняет stride-2 уменьшения, используемые SFace.", "pointwise_gemm_kernel рассматривает каждую пространственную позицию как строку матрицы. Block 16x16 threads загружает плитки признаков и весов в shared memory и вручную выполняет обученное смешивание каналов 1x1.", "Таблица native-слоёв запускает одну начальную свёртку, затем 13 depthwise и 13 pointwise операций, сохраняя обученный граф SFace и его размеры тензоров.", "affine_in_place_kernel применяет обученные параметры BatchNorm к финальной карте признаков 1024x7x7.", "fully_connected_kernel вручную умножает каждую развёрнутую строку из 50176 признаков лица на обученную матрицу весов 50176x128. Поэтому batch является одним CUDA-умножением Bx50176 на 50176x128.", "Тот же fully connected kernel добавляет обученный bias и применяет финальные scale и shift BatchNorm для 128 каналов.", "normalize_embeddings_kernel использует reduction из 256 threads для каждого лица, вычисляет норму и делит все 128 значений, получая векторы для cosine similarity.", "В RAM возвращаются только готовые embeddings Bx128. Ни один промежуточный нейросетевой тензор не возвращается на CPU."],
+      he: ["כל טנזור מאומן של SFace נכתב על ידי כלי הייצוא לקובץ sface_manual_weights.bin; בזמן הפעלת ה-worker, ‏CUDA runtime מעלה את המשקלים הקבועים האלה פעם אחת בלבד.", "cudaMemcpy מעתיק לזיכרון ההתקן את כל האצווה Bx3x112x112, ולכן B יכול להיות 1, 50 או 500.", "preprocess_kernel מחיל באופן עצמאי את החישוב (pixel - 127.5) / 128 על כל איבר בטנזור.", "standard_conv3x3_kernel מחשב את הקונבולוציה המאומנת הראשונה על פני כל ערוצי הקלט; כל איבר פלט מוקצה ל-CUDA thread.", "ה-scale וה-shift של BatchNorm מאוחדים עם PReLU בתוך activate(), ללא קריאת ספרייה וללא טנזור ביניים נוסף.", "depthwise_conv3x3_kernel מחיל מסנן 3x3 מאומן נפרד לכל ערוץ ומבצע את הקטנות stride-2 של SFace.", "pointwise_gemm_kernel מתייחס לכל מיקום מרחבי כשורת מטריצה. בלוק של 16x16 threads טוען אריחי הפעלה ומשקל ל-shared memory ומבצע ידנית ערבוב ערוצים מאומן בגודל 1x1.", "טבלת השכבות ב-native משגרת קונבולוציה התחלתית אחת, אחריה 13 פעולות depthwise ו-13 פעולות pointwise, תוך שמירה על גרף SFace המאומן ועל ממדי הטנזורים שלו.", "affine_in_place_kernel מחיל את פרמטרי BatchNorm המאומנים על מפת המאפיינים הסופית בגודל 1024x7x7.", "fully_connected_kernel מכפיל ידנית כל שורת מאפיינים שטוחה בגודל 50176 במטריצת משקלים מאומנת בגודל 50176x128. לכן אצווה היא כפל CUDA יחיד של Bx50176 ב-50176x128.", "אותו fully connected kernel מוסיף bias מאומן ומחיל scale ו-shift סופיים של BatchNorm על 128 הערוצים.", "normalize_embeddings_kernel משתמש ב-reduction של 256 threads לכל פנים, מחשב את הנורמה ומחלק את כל 128 הערכים כדי ליצור וקטורים המתאימים ל-cosine similarity.", "רק ה-embeddings המוגמרים בגודל Bx128 חוזרים לזיכרון המארח. אף טנזור ביניים של הרשת אינו חוזר ל-CPU."]
     },
-    layers: { en: "SFace ONNX graph: neural layers create a 128D embedding", ru: "ONNX-граф SFace: нейрослои создают embedding 128D", he: "גרף ONNX של SFace: שכבות רשת יוצרות embedding בגודל 128D" },
-    connections: { en: "1x3x112x112 aligned face -> 1x128 vector", ru: "Выровненное лицо 1x3x112x112 -> вектор 1x128", he: "פנים מיושרות 1x3x112x112 -> וקטור 1x128" },
-    tensor: "1x3x112x112 -> SFace CUDA -> 1x128",
-    cudaShort: { en: "All SFace neural layers execute on NVIDIA CUDA", ru: "Все нейросетевые слои SFace выполняются на NVIDIA CUDA", he: "כל שכבות הרשת של SFace רצות ב-NVIDIA CUDA" },
-    cuda: { en: "This is the missing neural-network pass: the native source creates the aligned SFace tensor and calls sface.Run(...). ONNX Runtime then executes the actual SFace graph on CUDA; the following stage only compares the finished vectors.", ru: "Это ранее скрытый нейросетевой проход: native-код создаёт выровненный тензор SFace и вызывает sface.Run(...). Затем ONNX Runtime выполняет сам граф SFace на CUDA; следующий этап лишь сравнивает готовые векторы.", he: "זהו מעבר הרשת שהיה מוסתר: קוד native יוצר את טנזור SFace המיושר וקורא ל-sface.Run(...). לאחר מכן ONNX Runtime מריץ את גרף SFace עצמו ב-CUDA; השלב הבא רק משווה את הווקטורים המוגמרים." },
-    code: `auto sface_input = Ort::Value::CreateTensor<float>(...);
-auto sface_outputs = sface.Run(...);
-result.vectors.assign(output, output + images.size() * kEmbeddingSize);
-normalize(result.vectors.data() + index * kEmbeddingSize, kEmbeddingSize);`
+    layers: { en: "1 standard conv + 13 depthwise conv + 13 tiled pointwise GEMM + tiled FC + CUDA L2 reduction", ru: "1 обычная conv + 13 depthwise conv + 13 плиточных pointwise GEMM + плиточный FC + CUDA L2 reduction", he: "קונבולוציה רגילה אחת + 13 depthwise + 13 פעולות pointwise GEMM מרוצפות + FC מרוצף + CUDA L2 reduction" },
+    connections: { en: "Trained SFace weights are preserved; only the inference executor changed from a library call to explicit project kernels", ru: "Обученные веса SFace сохранены; заменён только исполнитель inference: библиотечный вызов заменён явными kernels проекта", he: "המשקלים המאומנים של SFace נשמרו; רק מנגנון ההרצה הוחלף מקריאת ספרייה ל-kernels מפורשים של הפרויקט" },
+    tensor: "Bx3x112x112 -> 27 manual CUDA convolutions -> Bx50176 x 50176x128 -> Bx128",
+    cudaShort: { en: "Explicit NVCC kernels and shared-memory matrix multiplication; no SFace inference library", ru: "Явные NVCC kernels и матричное умножение через shared memory; без библиотеки SFace inference", he: "NVCC kernels מפורשים וכפל מטריצות ב-shared memory; ללא ספריית inference של SFace" },
+    cuda: { en: "Stage 05 is implemented in sface_manual_cuda.cu. The CUDA worker calls manual_sface_cuda_forward(), which launches every neural operation explicitly. ONNX Runtime remains in the CPU baseline and in CUDA YuNet detection, but it is not used for the CUDA SFace forward pass.", ru: "Этап 05 реализован в sface_manual_cuda.cu. CUDA-worker вызывает manual_sface_cuda_forward(), который явно запускает каждую нейросетевую операцию. ONNX Runtime остаётся в CPU baseline и в CUDA-детекторе YuNet, но не используется для CUDA forward pass SFace.", he: "שלב 05 ממומש בקובץ sface_manual_cuda.cu. ה-CUDA worker קורא ל-manual_sface_cuda_forward(), שמשגר במפורש כל פעולה ברשת. ONNX Runtime נשאר בקו הבסיס של CPU ובזיהוי YuNet על CUDA, אך אינו משמש למעבר הקדמי של SFace ב-CUDA." },
+    code: `const int rows = batch_size * spatial;
+const int row_tiles = (rows + kTile - 1) / kTile;
+const int output_tiles = (layer.output_channels + kTile - 1) / kTile;
+pointwise_gemm_kernel<<<row_tiles * output_tiles, dim3(kTile, kTile)>>>(
+    input, layer.weights, layer.scale, layer.shift, layer.slope, output,
+    rows, layer.input_channels, layer.output_channels, spatial);
+
+fully_connected_kernel<<<row_tiles * output_tiles, dim3(kTile, kTile)>>>(
+    input, context->fc_weights, context->fc_bias,
+    context->embedding_scale, context->embedding_shift,
+    embeddings, batch_size, context->final_dimensions);
+normalize_embeddings_kernel<<<batch_size, 256>>>(embeddings, batch_size);`
   },
   {
     level: "06",
@@ -5449,9 +5461,6 @@ function nativeContextFallback(lines, index, lang) {
     exact(/landmarks\[point \* 2\] =/, "Decodes one landmark x coordinate from its anchor-relative offset into input pixels.", "Декодирует x одного ориентира из смещения относительно anchor в пиксели входа.", "מפענחת קואורדינטת x של נקודת ציון אחת מהיסט יחסי ל-anchor לפיקסלי הקלט."),
     exact(/landmarks\[point \* 2 \+ 1\] =/, "Decodes the matching landmark y coordinate into input pixels.", "Декодирует соответствующую y-координату ориентира в пиксели входа.", "מפענחת את קואורדינטת y המתאימה של נקודת הציון לפיקסלי הקלט."),
     exact(/^auto aligned = align_faces/, "Uses the five decoded landmarks to create one canonical 112 x 112 face tensor per valid image.", "По пяти ориентирам создаёт канонический тензор лица 112 x 112 для каждого валидного снимка.", "משתמשת בחמש נקודות הציון ליצירת טנזור פנים קנוני בגודל 112 x 112 לכל תמונה תקינה."),
-    exact(/^auto sface_outputs = sface\.Run/, "Begins one SFace ONNX execution for the complete aligned-face batch through the same provider.", "Начинает одно выполнение ONNX-графа SFace для всего пакета выровненных лиц через тот же provider.", "מתחילה הרצת ONNX אחת של SFace עבור כל אצוות הפנים המיושרות דרך אותו provider."),
-    exact(/^const float\* output = sface_outputs/, "Obtains a pointer to the contiguous B x 128 SFace output tensor.", "Получает указатель на непрерывный выходной тензор SFace B x 128.", "מקבלת מצביע לטנזור הפלט הרציף B x 128 של SFace."),
-    exact(/^result\.vectors\.assign/, "Copies every B x 128 embedding from the ONNX output into the native result vector.", "Копирует все B x 128 embeddings из ONNX-выхода в native vector результата.", "מעתיקה את כל embeddings בגודל B x 128 מפלט ONNX אל vector תוצאת native."),
     exact(/^result\.valid\.push_back/, "Copies the face-validity flag corresponding to this embedding into the result batch.", "Копирует флаг валидного лица, соответствующий текущему вектору, в пакет результата.", "מעתיקה לאצוות התוצאה את דגל תקינות הפנים המתאים ל-embedding הזה."),
     exact(/^normalize\(result\.vectors/, "L2-normalizes this 128D vector so its dot product with a normalized reference is cosine similarity.", "L2-нормализует текущий 128D-вектор, чтобы dot product с нормализованным эталоном стал cosine similarity.", "מנרמלת ב-L2 את וקטור 128D הזה כדי שהמכפלה הסקלרית שלו עם ייחוס מנורמל תהיה דמיון cosine."),
     exact(/^std::vector<float> align_faces/, "Defines landmark alignment that maps detected faces to the canonical SFace geometry.", "Определяет alignment по ориентирам, переводящий найденные лица в каноническую геометрию SFace.", "מגדירה יישור לפי נקודות ציון הממפה פנים שזוהו לגאומטריית SFace הקנונית."),
@@ -6131,10 +6140,60 @@ const nativeShortCodeAnnotations = {
     ru: "По пяти ориентирам создаёт канонический вход SFace 3x112x112 для каждого допустимого лица.",
     he: "משתמשת בחמש נקודות הציון כדי ליצור קלט SFace קנוני בגודל 3x112x112 לכל פנים תקינות."
   },
-  "auto sface_outputs = sface.Run(...);": {
-    en: "Runs the aligned-face batch through SFace and produces one 128D identity embedding per input image.",
-    ru: "Пропускает пакет выровненных лиц через SFace и получает один 128D-вектор личности на изображение.",
-    he: "מריצה את אצוות הפנים המיושרות דרך SFace ומפיקה embedding זהות אחד בגודל 128D לכל תמונה."
+  "const int rows = batch_size * spatial;": {
+    en: "Flattens the batch and all spatial positions into the row count of the pointwise-convolution matrix.",
+    ru: "Объединяет batch и все пространственные позиции в число строк матрицы pointwise-свёртки.",
+    he: "מאחדת את האצווה ואת כל המיקומים המרחביים למספר השורות במטריצת קונבולוציית pointwise."
+  },
+  "const int row_tiles = (rows + kTile - 1) / kTile;": {
+    en: "Rounds the matrix row count up to the number of 16-row CUDA tiles, including a partially filled final tile.",
+    ru: "Округляет число строк матрицы вверх до количества CUDA-плиток по 16 строк, включая неполную последнюю плитку.",
+    he: "מעגלת את מספר שורות המטריצה כלפי מעלה למספר אריחי CUDA בני 16 שורות, כולל אריח אחרון חלקי."
+  },
+  "const int output_tiles = (layer.output_channels + kTile - 1) / kTile;": {
+    en: "Rounds the output-channel dimension up to the number of 16-column weight tiles.",
+    ru: "Округляет число выходных каналов вверх до количества плиток весов по 16 столбцов.",
+    he: "מעגלת את ממד ערוצי הפלט כלפי מעלה למספר אריחי משקל בני 16 עמודות."
+  },
+  "pointwise_gemm_kernel<<<row_tiles * output_tiles, dim3(kTile, kTile)>>>(": {
+    en: "Launches one 16x16 thread block for every output tile of the learned 1x1 matrix multiplication.",
+    ru: "Запускает block 16x16 threads для каждой выходной плитки обученного матричного умножения 1x1.",
+    he: "משגרת בלוק של 16x16 threads לכל אריח פלט בכפל המטריצות המאומן של 1x1."
+  },
+  "input, layer.weights, layer.scale, layer.shift, layer.slope, output,": {
+    en: "Passes device pointers for activations, trained weights, fused BatchNorm/PReLU parameters and the destination tensor.",
+    ru: "Передаёт device-указатели на признаки, обученные веса, объединённые параметры BatchNorm/PReLU и выходной тензор.",
+    he: "מעבירה מצביעי התקן להפעלות, למשקלים המאומנים, לפרמטרי BatchNorm/PReLU המאוחדים ולטנזור היעד."
+  },
+  "rows, layer.input_channels, layer.output_channels, spatial);": {
+    en: "Supplies the exact M, K, N and spatial dimensions used for boundary checks and matrix indexing.",
+    ru: "Передаёт точные размеры M, K, N и spatial для проверки границ и индексации матриц.",
+    he: "מעבירה את ממדי M, K, N והמרחב המדויקים לבדיקת גבולות ולאינדוקס המטריצות."
+  },
+  "fully_connected_kernel<<<row_tiles * output_tiles, dim3(kTile, kTile)>>>(": {
+    en: "Launches the manual tiled projection from each 50176-value feature row to its 128-value SFace embedding.",
+    ru: "Запускает ручную плиточную проекцию каждой строки из 50176 признаков в 128-мерный SFace embedding.",
+    he: "משגרת את ההטלה המרוצפת הידנית מכל שורת מאפיינים בת 50176 ערכים ל-embedding של SFace בן 128 ערכים."
+  },
+  "input, context->fc_weights, context->fc_bias,": {
+    en: "Passes the flattened feature matrix plus the trained 50176x128 weights and 128-value bias stored on the GPU.",
+    ru: "Передаёт матрицу развёрнутых признаков, обученные веса 50176x128 и bias из 128 значений, хранящиеся на GPU.",
+    he: "מעבירה את מטריצת המאפיינים השטוחה, את המשקלים המאומנים בגודל 50176x128 ואת ה-bias בן 128 הערכים השמורים ב-GPU."
+  },
+  "context->embedding_scale, context->embedding_shift,": {
+    en: "Passes the trained scale and shift of the final 128-channel BatchNorm so they are applied inside the same kernel.",
+    ru: "Передаёт обученные scale и shift финального BatchNorm на 128 каналов, чтобы применить их внутри того же kernel.",
+    he: "מעבירה את ה-scale וה-shift המאומנים של BatchNorm הסופי בן 128 הערוצים כדי להחיל אותם בתוך אותו kernel."
+  },
+  "embeddings, batch_size, context->final_dimensions);": {
+    en: "Writes Bx128 results and supplies B plus K=50176 to control the full matrix-product loop and its bounds.",
+    ru: "Записывает результат Bx128 и передаёт B вместе с K=50176 для полного цикла матричного произведения и проверки границ.",
+    he: "כותבת תוצאות בגודל Bx128 ומעבירה את B ואת K=50176 לשליטה בלולאת כפל המטריצות המלאה ובגבולותיה."
+  },
+  "normalize_embeddings_kernel<<<batch_size, 256>>>(embeddings, batch_size);": {
+    en: "Launches one 256-thread reduction block per face to calculate its L2 norm and normalize all 128 embedding values.",
+    ru: "Запускает reduction-block из 256 threads для каждого лица, вычисляет L2-норму и нормализует все 128 значений embedding.",
+    he: "משגרת בלוק reduction בן 256 threads לכל פנים כדי לחשב נורמת L2 ולנרמל את כל 128 ערכי ה-embedding."
   },
   "const dim3 block(256);": {
     en: "Defines a one-dimensional CUDA block of 256 threads; each valid thread computes one reference score.",
@@ -6187,6 +6246,68 @@ const nativeShortCodeAnnotations = {
     he: "מקבלת את הזהות המנצחת רק כאשר גם ציון הדמיון וגם הפער מן המקום השני עוברים את הספים שהוגדרו."
   }
 };
+
+function manualSfaceSourceAnnotation(lines, index) {
+  const lang = document.documentElement.lang || "en";
+  const text = lines[index].trim();
+  const say = (en, ru, he) => repairLocalizedText(lang === "ru" ? ru : lang === "he" ? he : en);
+  const kernelLine = [...lines.slice(0, index + 1)].reverse().find((line) => line.trim().startsWith("__global__ void ")) || "";
+  const kernel = kernelLine.match(/void\s+(\w+)/)?.[1] || "manual SFace CUDA kernel";
+  if (!text) return say("Blank separator; no instruction is executed.", "Пустой разделитель; инструкция не выполняется.", "מפריד ריק; לא מתבצעת הוראה.");
+  const rules = [
+    [/^__global__ void pointwise_gemm_kernel/, "Declares the project kernel that evaluates every learned 1x1 convolution as tiled matrix multiplication.", "Объявляет kernel проекта, вычисляющий каждую обученную свёртку 1x1 как плиточное матричное умножение.", "מגדירה kernel של הפרויקט שמחשב כל קונבולוציה מאומנת 1x1 ככפל מטריצות מרוצף."],
+    [/^__global__ void affine_in_place_kernel/, "Declares the in-place kernel for the trained final feature BatchNorm.", "Объявляет in-place kernel обученного финального BatchNorm признаков.", "מגדירה kernel במקום עבור BatchNorm המאומן הסופי של המאפיינים."],
+    [/^__global__ void fully_connected_kernel/, "Declares the tiled Bx50176 by 50176x128 learned projection kernel.", "Объявляет плиточный kernel обученной проекции Bx50176 на 50176x128.", "מגדירה kernel מרוצף להטלה המאומנת Bx50176 כפול 50176x128."],
+    [/^__global__ void normalize_embeddings_kernel/, "Declares one CUDA reduction per face for 128D L2 normalization.", "Объявляет CUDA reduction для каждого лица при L2-нормализации 128D.", "מגדירה CUDA reduction אחד לכל פנים עבור נרמול L2 של 128D."],
+    [/^const float\* input,?$/, "Receives the device pointer to the input activation matrix.", "Получает device-указатель на входную матрицу признаков.", "מקבלת מצביע התקן למטריצת ההפעלות בקלט."],
+    [/^const float\* transposed_weights,?$/, "Receives trained weights in contiguous KxN order for tiled reads.", "Получает обученные веса в непрерывном порядке KxN для плиточного чтения.", "מקבלת משקלים מאומנים בסדר KxN רציף לקריאה מרוצפת."],
+    [/^const float\* (scale|shift),?$/, "Receives a trained BatchNorm coefficient for every output channel.", "Получает обученный коэффициент BatchNorm для каждого выходного канала.", "מקבלת מקדם BatchNorm מאומן לכל ערוץ פלט."],
+    [/^const float\* slope,?$/, "Receives the trained PReLU slope fused into the pointwise output.", "Получает обученный slope PReLU, объединённый с pointwise-результатом.", "מקבלת שיפוע PReLU מאומן המאוחד בפלט pointwise."],
+    [/^const float\* bias,?$/, "Receives the trained 128-value fully connected bias.", "Получает обученный bias полносвязного слоя из 128 значений.", "מקבלת bias מאומן בן 128 ערכים של השכבה המלאה."],
+    [/^float\* (output|values),?$/, "Receives the device destination; no intermediate tensor returns to CPU.", "Получает device-буфер результата; промежуточный тензор не возвращается на CPU.", "מקבלת יעד בזיכרון ההתקן; אף טנזור ביניים אינו חוזר ל-CPU."],
+    [/^int rows,?$/, "Receives M, the number of matrix rows across the complete batch.", "Получает M — число строк матрицы во всём batch.", "מקבלת את M, מספר שורות המטריצה בכל האצווה."],
+    [/^int input_channels,?$/, "Receives K, the channel dimension reduced by each pointwise result.", "Получает K — размер каналов, суммируемый в каждом pointwise-результате.", "מקבלת את K, ממד הערוצים המצטבר בכל תוצאת pointwise."],
+    [/^int output_channels,?$/, "Receives N, the learned output-channel count.", "Получает N — число обученных выходных каналов.", "מקבלת את N, מספר ערוצי הפלט המאומנים."],
+    [/^int input_dimensions$/, "Receives K=50176, the flattened 1024x7x7 feature count.", "Получает K=50176 — число развёрнутых признаков 1024x7x7.", "מקבלת K=50176, מספר המאפיינים השטוחים 1024x7x7."],
+    [/^int spatial$/, "Receives HxW for mapping a flat row to its image position.", "Получает HxW для преобразования плоской строки в позицию изображения.", "מקבלת HxW למיפוי שורה שטוחה למיקום בתמונה."],
+    [/^std::size_t total,?$|^int channels,?$/, "Supplies the tensor bound or channel count required by the affine kernel.", "Передаёт границу тензора или число каналов для affine-kernel.", "מספקת את גבול הטנזור או מספר הערוצים הדרוש ל-affine kernel."],
+    [/^\) \{$/, `Completes the arguments and opens ${kernel}.`, `Завершает аргументы и открывает тело ${kernel}.`, `משלימה את הארגומנטים ופותחת את ${kernel}.`],
+    [/^__shared__ float input_tile/, "Allocates a 16x16 shared-memory activation tile reused by 256 threads.", "Выделяет плитку признаков shared memory 16x16 для совместного использования 256 threads.", "מקצה אריח הפעלות ב-shared memory בגודל 16x16 לשימוש 256 threads."],
+    [/^__shared__ float weight_tile/, "Allocates a 16x16 shared-memory weight tile to reduce global-memory reads.", "Выделяет плитку весов shared memory 16x16 для сокращения чтений global memory.", "מקצה אריח משקלים ב-shared memory בגודל 16x16 להפחתת קריאות מהזיכרון הגלובלי."],
+    [/^const int output_tiles =/, "Rounds the output dimension to 16-column tiles with a guarded final partial tile.", "Разбивает выходную размерность на плитки по 16 столбцов с проверкой неполной последней плитки.", "מחלקת את ממד הפלט לאריחים בני 16 עמודות עם הגנה על האריח האחרון החלקי."],
+    [/^const int (row_tile|output_tile|local_row|local_output|row|output_channel|output_dimension) =/, "Maps blockIdx/threadIdx coordinates to one global matrix row and output column.", "Преобразует координаты blockIdx/threadIdx в глобальные строку и выходной столбец матрицы.", "ממפה קואורדינטות blockIdx/threadIdx לשורת מטריצה ולעמודת פלט גלובליות."],
+    [/^float sum = 0\.0f/, "Initializes this thread's dot-product accumulator.", "Обнуляет аккумулятор dot product текущего thread.", "מאתחלת את צובר המכפלה הפנימית של ה-thread."],
+    [/^for \(int start = 0;/, "Traverses the full K dimension in 16-value tiles; no trained weight is skipped.", "Проходит полную размерность K плитками по 16 значений; обученные веса не пропускаются.", "עוברת על כל ממד K באריחים בני 16 ערכים; אף משקל מאומן אינו מדולג."],
+    [/^const int (input_channel_for_[ab]|input_for_[ab]) =/, "Selects the K element this thread loads into the activation or weight tile.", "Выбирает элемент K, загружаемый thread в плитку признаков или весов.", "בוחרת את איבר K שה-thread טוען לאריח ההפעלות או המשקלים."],
+    [/^if \(row < rows|^if \(input_channel_for_b|^row < rows &&|^input_for_b </, "Guards a partial boundary tile before reading or writing device memory.", "Проверяет границу неполной плитки до чтения или записи device memory.", "בודקת את גבול האריח החלקי לפני קריאה או כתיבה בזיכרון ההתקן."],
+    [/^const int image = row \/ spatial|^const int position = row % spatial/, "Maps the flattened row to its batch image and HxW position.", "Преобразует плоскую строку в image внутри batch и позицию HxW.", "ממפה את השורה השטוחה לתמונה באצווה ולמיקום HxW."],
+    [/^input_tile\[|^weight_tile\[/, "Writes one guarded activation or trained weight into shared memory.", "Записывает проверенный признак или обученный вес в shared memory.", "כותבת הפעלה מוגנת או משקל מאומן ל-shared memory."],
+    [/^input\[|^transposed_weights\[/, "Reads the exact indexed activation or trained coefficient from device memory.", "Читает точно индексированный признак или обученный коэффициент из device memory.", "קוראת את ההפעלה או המקדם המאומן לפי האינדקס המדויק מזיכרון ההתקן."],
+    [/^: 0\.0f|^.*= 0\.0f;$/, "Writes zero for an out-of-range element of the final partial tile.", "Записывает 0 для элемента за границей последней неполной плитки.", "כותבת אפס עבור איבר מחוץ לגבולות באריח האחרון החלקי."],
+    [/^__syncthreads/, "Synchronizes all 256 threads before shared memory is consumed or reused.", "Синхронизирует 256 threads перед использованием или повторной записью shared memory.", "מסנכרנת את כל 256 ה-threads לפני שימוש או כתיבה מחדש ב-shared memory."],
+    [/^#pragma unroll/, "Asks NVCC to unroll the fixed 16-step inner loop.", "Просит NVCC развернуть фиксированный внутренний цикл из 16 шагов.", "מבקשת מ-NVCC לפרוס את הלולאה הפנימית הקבועה בת 16 הצעדים."],
+    [/^for \(int k = 0;/, "Runs 16 multiply-add operations for the current shared-memory tile.", "Выполняет 16 операций multiply-add для текущей плитки shared memory.", "מבצעת 16 פעולות multiply-add עבור אריח ה-shared memory הנוכחי."],
+    [/^sum \+= input_tile/, "Performs the actual matrix multiply-add for one K element.", "Выполняет реальную операцию matrix multiply-add для одного элемента K.", "מבצעת בפועל פעולת matrix multiply-add עבור איבר K אחד."],
+    [/^const std::size_t output_index|^\(static_cast<std::size_t>\(image\)/, "Calculates the contiguous NCHW address of this output element.", "Вычисляет непрерывный NCHW-адрес текущего элемента результата.", "מחשבת את כתובת NCHW הרציפה של איבר הפלט הנוכחי."],
+    [/^output\[output_index\] = activate/, "Writes the dot product after fused trained BatchNorm and PReLU.", "Записывает dot product после объединённых обученных BatchNorm и PReLU.", "כותבת את המכפלה הפנימית לאחר BatchNorm ו-PReLU מאומנים ומאוחדים."],
+    [/^const std::size_t index =|^if \(index >= total\)|^const int channel =|^values\[index\] =/, "Indexes, guards and applies the trained in-place BatchNorm affine transform.", "Индексирует, проверяет границу и применяет обученное affine-преобразование BatchNorm на месте.", "מאנדקסת, בודקת גבולות ומחילה במקום את התמרת BatchNorm המאומנת."],
+    [/^const float value = sum \+ bias|^output\[static_cast<std::size_t>\(row\)|^value \* scale\[output_dimension\]/, "Adds the trained bias and final BatchNorm, then writes one value of the Bx128 embedding matrix.", "Добавляет обученный bias и финальный BatchNorm, затем записывает одно значение матрицы embeddings Bx128.", "מוסיפה bias מאומן ו-BatchNorm סופי ואז כותבת ערך אחד במטריצת embeddings בגודל Bx128."],
+    [/^__shared__ float sums|^const int row = blockIdx.x|^const int lane = threadIdx.x/, "Assigns one block to one face and prepares shared memory for its norm reduction.", "Назначает один block одному лицу и готовит shared memory для reduction его нормы.", "מקצה בלוק אחד לפנים אחד ומכינה shared memory ל-reduction של הנורמה שלו."],
+    [/^for \(int dimension = lane|^const float value = embeddings|^sum \+= value \* value|^sums\[lane\] = sum/, "Distributes all 128 components across threads and accumulates their squared values.", "Распределяет 128 компонент между threads и накапливает их квадраты.", "מחלקת את 128 הרכיבים בין threads וצוברת את הערכים הריבועיים שלהם."],
+    [/^for \(int width = blockDim.x \/ 2|^if \(lane < width\)/, "Reduces the shared partial sums until lane 0 contains the complete squared norm.", "Выполняет reduction частичных сумм, пока lane 0 не получит полную сумму квадратов.", "מבצעת reduction של הסכומים החלקיים עד ש-lane 0 מחזיק את סכום הריבועים המלא."],
+    [/^const float inverse_norm =/, "Calculates 1/sqrt(sum of squares) on the GPU with zero protection.", "Вычисляет на GPU 1/sqrt(sum of squares) с защитой от нуля.", "מחשבת ב-GPU את 1/sqrt(sum of squares) עם הגנה מאפס."],
+    [/^embeddings\[/, "Multiplies one component by the shared inverse norm, producing a unit-length vector.", "Умножает компоненту на общую обратную норму и получает единичный вектор.", "כופלת רכיב אחד בנורמה ההפוכה המשותפת ויוצרת וקטור באורך יחידה."],
+    [/^\} else \{$/, "Selects the boundary branch that substitutes zero instead of reading outside the matrix.", "Выбирает граничную ветку, подставляющую 0 вместо чтения за пределами матрицы.", "בוחרת בענף הגבול שמציב אפס במקום לקרוא מחוץ למטריצה."],
+    [/^\}$/, `Closes the current loop, branch or ${kernel} scope.`, `Закрывает текущий цикл, ветку или область ${kernel}.`, `סוגרת את הלולאה, הענף או התחום הנוכחי של ${kernel}.`]
+  ];
+  const match = rules.find(([pattern]) => pattern.test(text));
+  if (match) return say(match[1], match[2], match[3]);
+  return say(
+    `Completes the adjacent indexed CUDA expression in ${kernel}; the visible operands define the exact memory address or arithmetic term and no library inference is hidden here.`,
+    `Завершает соседнее индексированное CUDA-выражение в ${kernel}; видимые операнды задают точный адрес памяти или арифметический член, библиотечный inference здесь не скрыт.`,
+    `משלימה את ביטוי CUDA המאונדקס הסמוך ב-${kernel}; האופרנדים הגלויים מגדירים כתובת זיכרון או איבר אריתמטי מדויק ואין כאן inference מוסתר של ספרייה.`
+  );
+}
 
 function codeAnnotation(stage, line) {
   const lang = document.documentElement.lang || "en";
@@ -6406,11 +6527,13 @@ function renderStageCode(stage) {
     note.className = "code-note";
     const annotationLines = fullMode && combinedRecognitionCode ? combinedRecognitionCode.split("\n") : sourceLines;
     const annotationIndex = fullMode ? (stage.exactStartLine || 0) + index : index;
-    note.textContent = fullMode
-      ? stage?.variantKey === "single"
-        ? contextualNativeSourceAnnotation(annotationLines, annotationIndex)
-        : contextualSingleSourceAnnotation(annotationLines, annotationIndex)
-      : codeAnnotation(stage, line);
+    note.textContent = stage?.level === "05" && !usesLegacyStageInspector(stage)
+      ? manualSfaceSourceAnnotation(sourceLines, index)
+      : fullMode
+        ? stage?.variantKey === "single"
+          ? contextualNativeSourceAnnotation(annotationLines, annotationIndex)
+          : contextualSingleSourceAnnotation(annotationLines, annotationIndex)
+        : codeAnnotation(stage, line);
     row.append(code, note);
     stageCode.appendChild(row);
   });

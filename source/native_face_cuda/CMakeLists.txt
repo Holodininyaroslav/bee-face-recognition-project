@@ -52,7 +52,11 @@ target_include_directories(identity_cpu PRIVATE "${ONNXRUNTIME_INCLUDE}")
 target_compile_definitions(identity_cpu PRIVATE FACE_USE_CUDA=0 NOMINMAX WIN32_LEAN_AND_MEAN)
 target_link_libraries(identity_cpu PRIVATE gdiplus "${ONNXRUNTIME_NATIVE}/onnxruntime.lib")
 
-add_executable(identity_cuda ${SFACE_SOURCES} src/sface_cuda.cu)
+add_executable(identity_cuda
+    ${SFACE_SOURCES}
+    src/sface_cuda.cu
+    src/sface_manual_cuda.cu
+)
 target_include_directories(identity_cuda PRIVATE "${ONNXRUNTIME_INCLUDE}")
 target_compile_definitions(identity_cuda PRIVATE FACE_USE_CUDA=1 NOMINMAX WIN32_LEAN_AND_MEAN)
 set_target_properties(identity_cuda PROPERTIES

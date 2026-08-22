@@ -1,4 +1,5 @@
 #include "sface_engine.hpp"
+#include "sface_manual_cuda.hpp"
 
 #include <onnxruntime_cxx_api.h>
 
@@ -211,7 +212,13 @@ struct NativeSFaceEngine::Impl {
     Ort::Env env{ORT_LOGGING_LEVEL_WARNING, "native-sface"};
     Ort::SessionOptions options;
     Ort::Session yunet{nullptr};
-    Ort::Session sface{nullptr};
+    // The CPU baseline keeps the optimized ONNX Runtime implementation.
+    // CUDA never enters this session: its SFace graph is implemented by the
+    // project-owned kernels in sface_manual_cuda.cu.
+    Ort::Session cpu_sface{nullptr};
+#if FACE_USE_CUDA
+    ManualSFaceCudaContext* manual_sface = nullptr;
+#endif
     std::vector<Reference> references;
 
     Impl(const fs::path& model_root, const fs::path& reference_root, bool cuda, float score, float margin)
@@ -227,7 +234,15 @@ struct NativeSFaceEngine::Impl {
             options.AppendExecutionProvider_CUDA(cuda_options);
         }
         yunet = Ort::Session(env, (model_root / "yunet_dynamic.onnx").c_str(), options);
-        sface = Ort::Session(env, (model_root / "sface_dynamic.onnx").c_str(), options);
+        if (use_cuda) {
+#if FACE_USE_CUDA
+            manual_sface = create_manual_sface_cuda(model_root / "sface_manual_weights.bin");
+#else
+            throw std::runtime_error("This executable was built without the manual CUDA SFace runtime");
+#endif
+        } else {
+            cpu_sface = Ort::Session(env, (model_root / "sface_dynamic.onnx").c_str(), options);
+        }
 
         std::vector<Image> images;
         std::vector<std::pair<std::string, fs::path>> metadata;
@@ -257,6 +272,12 @@ struct NativeSFaceEngine::Impl {
             });
         }
         if (references.empty()) throw std::runtime_error("YuNet/SFace could not initialize any reference image");
+    }
+
+    ~Impl() {
+#if FACE_USE_CUDA
+        destroy_manual_sface_cuda(manual_sface);
+#endif
     }
 
     EmbeddingBatch embed_images(const std::vector<Image>& images) {
@@ -327,26 +348,40 @@ struct NativeSFaceEngine::Impl {
         }
 
         auto aligned = align_faces(prepared, faces);
-        const std::array<int64_t, 4> sface_shape{
-            static_cast<int64_t>(images.size()), 3, kAlignedSize, kAlignedSize
-        };
-        auto sface_input = Ort::Value::CreateTensor<float>(
-            memory, aligned.data(), aligned.size(), sface_shape.data(), sface_shape.size()
-        );
-        auto sface_input_name = sface.GetInputNameAllocated(0, allocator);
-        auto sface_output_name = sface.GetOutputNameAllocated(0, allocator);
-        const char* sface_input_names[]{sface_input_name.get()};
-        const char* sface_output_names[]{sface_output_name.get()};
-        auto sface_outputs = sface.Run(
-            Ort::RunOptions{nullptr}, sface_input_names, &sface_input, 1, sface_output_names, 1
-        );
-        const float* output = sface_outputs.front().GetTensorData<float>();
         EmbeddingBatch result;
-        result.vectors.assign(output, output + images.size() * kEmbeddingSize);
+        if (use_cuda) {
+#if FACE_USE_CUDA
+            // Stage 5 is a project-owned CUDA forward pass. The 27
+            // convolutions, BatchNorm/PReLU operations, 50176x128 matrix
+            // multiplication and L2 normalization are launched explicitly in
+            // sface_manual_cuda.cu; no ONNX Runtime SFace session is called.
+            result.vectors = manual_sface_cuda_forward(
+                manual_sface,
+                aligned,
+                static_cast<int>(images.size())
+            );
+#endif
+        } else {
+            const std::array<int64_t, 4> sface_shape{
+                static_cast<int64_t>(images.size()), 3, kAlignedSize, kAlignedSize
+            };
+            auto sface_input = Ort::Value::CreateTensor<float>(
+                memory, aligned.data(), aligned.size(), sface_shape.data(), sface_shape.size()
+            );
+            auto sface_input_name = cpu_sface.GetInputNameAllocated(0, allocator);
+            auto sface_output_name = cpu_sface.GetOutputNameAllocated(0, allocator);
+            const char* sface_input_names[]{sface_input_name.get()};
+            const char* sface_output_names[]{sface_output_name.get()};
+            auto sface_outputs = cpu_sface.Run(
+                Ort::RunOptions{nullptr}, sface_input_names, &sface_input, 1, sface_output_names, 1
+            );
+            const float* output = sface_outputs.front().GetTensorData<float>();
+            result.vectors.assign(output, output + images.size() * kEmbeddingSize);
+        }
         result.valid.reserve(faces.size());
         for (std::size_t index = 0; index < faces.size(); ++index) {
             result.valid.push_back(faces[index].valid);
-            normalize(result.vectors.data() + index * kEmbeddingSize, kEmbeddingSize);
+            if (!use_cuda) normalize(result.vectors.data() + index * kEmbeddingSize, kEmbeddingSize);
         }
         return result;
     }
@@ -359,8 +394,8 @@ struct NativeSFaceEngine::Impl {
 
         EmbeddingBatch embedded;
         if (use_cuda) {
-            // One dynamic batch enters YuNet and SFace. ONNX Runtime schedules
-            // the graph kernels across the CUDA device.
+            // YuNet is one dynamic CUDA batch; the aligned faces then enter the
+            // project-owned manual CUDA SFace network as the same batch.
             embedded = embed_images(images);
         } else {
             // The grading baseline intentionally invokes the same networks one
@@ -457,7 +492,9 @@ std::vector<SFaceResult> NativeSFaceEngine::recognize(
 }
 
 std::string NativeSFaceEngine::backend() const {
-    return impl_->use_cuda ? "native-cpp-onnxruntime-cuda-yunet-sface" : "native-cpp-onnxruntime-cpu-yunet-sface-sequential";
+    return impl_->use_cuda
+        ? "native-cpp-onnxruntime-cuda-yunet-manual-cuda-sface"
+        : "native-cpp-onnxruntime-cpu-yunet-sface-sequential";
 }
 
 std::size_t NativeSFaceEngine::reference_count() const {
