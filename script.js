@@ -2496,7 +2496,7 @@ print(result["label"], result["score"], payload["gpu_total_ms"])`
 const nativeCudaStages = [
   {
     level: "01",
-    title: { en: "Native C++ CUDA worker initialization", ru: "Инициализация native C++ CUDA worker", he: "אתחול native C++ CUDA worker" },
+    title: { en: "Prepare the program and known faces", ru: "Подготовка программы и известных лиц", he: "הכנת התוכנית והפנים המוכרות" },
     summary: {
       en: "The compiled identity_cuda.exe process attaches ONNX Runtime CUDAExecutionProvider, loads YuNet and SFace once, and prepares the three-person reference bank before serving requests.",
       ru: "Скомпилированный процесс identity_cuda.exe подключает CUDAExecutionProvider ONNX Runtime, один раз загружает YuNet и SFace и готовит базу эталонов трёх людей до обработки запросов.",
@@ -2521,7 +2521,7 @@ sface = Ort::Session(env, sface_model, options);`
   },
   {
     level: "02",
-    title: { en: "Host image preparation for the CUDA batch", ru: "Host-подготовка изображения для CUDA-пакета", he: "הכנת תמונה במארח עבור אצוות CUDA" },
+    title: { en: "Prepare the photo", ru: "Подготовка фотографии", he: "הכנת התמונה" },
     summary: {
       en: "Native C++ decodes the screenshot, resizes it, pads it to YuNet dimensions, converts pixels to float NCHW BGR, and creates the input tensor used by the CUDA session.",
       ru: "Native C++ декодирует снимок, изменяет размер, дополняет его до размеров YuNet, преобразует пиксели в float NCHW BGR и создаёт входной тензор CUDA-сессии.",
@@ -2545,7 +2545,7 @@ auto input = Ort::Value::CreateTensor<float>(
   },
   {
     level: "03",
-    title: { en: "YuNet and SFace inference through CUDA", ru: "Инференс YuNet и SFace через CUDA", he: "הסקת YuNet ו-SFace דרך CUDA" },
+    title: { en: "Find and describe the face", ru: "Поиск и описание лица", he: "איתור ותיאור הפנים" },
     summary: {
       en: "ONNX Runtime executes the YuNet detector and SFace embedding graphs with CUDAExecutionProvider; native C++ decodes YuNet outputs and feeds the aligned 112x112 face into SFace.",
       ru: "ONNX Runtime выполняет графы детектора YuNet и SFace через CUDAExecutionProvider; native C++ декодирует выходы YuNet и передаёт выровненное лицо 112x112 в SFace.",
@@ -2569,7 +2569,7 @@ auto sface_outputs = sface.Run(...);`
   },
   {
     level: "04",
-    title: { en: "Five-landmark alignment in native C++", ru: "Выравнивание по пяти точкам в native C++", he: "יישור לפי חמש נקודות ב-native C++" },
+    title: { en: "Align the face", ru: "Выравнивание лица", he: "יישור הפנים" },
     summary: {
       en: "The host computes a similarity transform from YuNet landmarks to the canonical SFace template and bilinearly samples one aligned 112x112 face.",
       ru: "Host вычисляет similarity transform от ориентиров YuNet к каноническому шаблону SFace и билинейно формирует выровненное лицо 112x112.",
@@ -2592,7 +2592,7 @@ auto sface_outputs = sface.Run(...);`
   },
   {
     level: "05",
-    title: { en: "Explicit CUDA cosine-score kernel", ru: "Явный CUDA kernel косинусных оценок", he: "CUDA kernel מפורש לציוני cosine" },
+    title: { en: "Compare with known faces", ru: "Сравнение с известными лицами", he: "השוואה לפנים מוכרות" },
     summary: {
       en: "The complete sface_cuda.cu path is shown as thirteen concrete operations: validation, device allocation, H2D copies, launch geometry, thread indexing, the 128D dot product, error checking, D2H readback, and cleanup.",
       ru: "Полный путь sface_cuda.cu показан как тринадцать конкретных операций: проверка, выделение device-памяти, H2D-копирование, геометрия запуска, индексация thread, скалярное произведение 128D, проверка ошибок, D2H-чтение и очистка.",
@@ -2621,7 +2621,7 @@ cosine_scores_kernel<<<grid, block>>>(
   },
   {
     level: "06",
-    title: { en: "Native batch dispatch and identity decision", ru: "Native dispatch пакета и решение о личности", he: "שיגור אצווה native והחלטת זהות" },
+    title: { en: "Show the recognition result", ru: "Показ результата распознавания", he: "הצגת תוצאת הזיהוי" },
     summary: {
       en: "For CUDA, all requested images enter one dynamic YuNet/SFace batch; the complete score matrix is reduced per identity, and score plus margin thresholds produce the final result.",
       ru: "В CUDA все запрошенные изображения входят в один динамический пакет YuNet/SFace; полная матрица оценок сводится по людям, а пороги score и margin формируют итоговый результат.",
