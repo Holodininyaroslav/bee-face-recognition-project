@@ -3154,7 +3154,29 @@ function attentionSourceAnnotation(line) {
   const source = line.trim();
   const lang = document.documentElement.lang || "en";
   const say = (en, ru, he) => ({ en, ru, he }[lang] || en);
-  if (!source) return say("Visual separator between logical parts of the CUDA implementation.", "Визуальный разделитель между логическими частями CUDA-реализации.", "מפריד חזותי בין חלקים לוגיים במימוש CUDA.");
+  if (!source || source === "{" || source === "}") return "";
+  if (source === "int main(int argc, char** argv) {") return say("Program entry point: it reads options, prepares data, runs CPU and CUDA variants, then reports the comparison.", "Точка входа программы: здесь читаются параметры, готовятся данные, запускаются CPU- и CUDA-варианты и выводится сравнение.", "נקודת הכניסה: קוראת אפשרויות, מכינה נתונים, מריצה גרסאות CPU ו-CUDA ומדפיסה השוואה.");
+  if (source === "int n = 512;") return say("Sets the required sequence length N to 512 by default.", "Задаёт обязательную длину последовательности N = 512 по умолчанию.", "מגדירה את אורך הרצף הנדרש N = 512 כברירת מחדל.");
+  if (source === "int d = 64;") return say("Sets the required vector dimension d to 64 by default.", "Задаёт обязательную размерность вектора d = 64 по умолчанию.", "מגדירה את ממד הווקטור הנדרש d = 64 כברירת מחדל.");
+  if (/int warmup_iterations = 3/.test(source)) return say("Runs three warm-up passes that are not included in the timing result.", "Задаёт три прогревочных запуска, которые не входят в замер времени.", "מגדירה שלוש הרצות חימום שאינן נכללות במדידת הזמן.");
+  if (/int iterations = 30/.test(source)) return say("Measures thirty runs and averages their time to reduce random variation.", "Задаёт 30 измеряемых запусков и усредняет их время, чтобы уменьшить случайные колебания.", "מגדירה 30 הרצות נמדדות וממוצע לזמן כדי לצמצם תנודות אקראיות.");
+  if (/unsigned seed = 2026/.test(source)) return say("Fixes the random seed so the input data and benchmark can be reproduced.", "Фиксирует seed случайных чисел, чтобы входные данные и замер можно было повторить.", "מקבעת seed אקראי כדי שניתן יהיה לשחזר את נתוני הקלט ואת המדידה.");
+  if (/float tolerance = 2\.0e-4f/.test(source)) return say("Sets the maximum allowed CPU/GPU output difference for a passing validation.", "Задаёт максимальное допустимое расхождение выходов CPU и GPU для успешной проверки.", "מגדירה את ההפרש המרבי המותר בין פלטי CPU ו-GPU לאימות מוצלח.");
+  if (/std::string variant = "all"/.test(source)) return say("Selects both the basic and optimized CUDA implementations unless the user chooses one.", "По умолчанию выбирает и basic-, и optimized-вариант CUDA, если пользователь не указал один из них.", "בוחרת כברירת מחדל גם את גרסת CUDA הבסיסית וגם הממוטבת, אלא אם המשתמש בחר אחת מהן.");
+  if (/std::filesystem::path csv_path/.test(source)) return say("Reserves an optional path for exporting reproducible benchmark results to CSV.", "Резервирует необязательный путь для выгрузки воспроизводимых результатов замера в CSV.", "שומרת נתיב אופציונלי לייצוא תוצאות benchmark שחזוריות ל-CSV.");
+  if (/for \(int i = 1; i < argc; \+\+i\)/.test(source)) return say("Walks through the command-line options supplied to the executable.", "Перебирает параметры командной строки, переданные программе.", "עוברת על אפשרויות שורת הפקודה שנמסרו לתוכנית.");
+  if (/const std::string argument = argv\[i\]/.test(source)) return say("Reads the current command-line option as text.", "Считывает текущий параметр командной строки как текст.", "קוראת את האפשרות הנוכחית משורת הפקודה כטקסט.");
+  if (/auto value = \[&\]\(\)/.test(source)) return say("Creates a helper that safely obtains the value following an option such as --n.", "Создаёт помощник, который безопасно получает значение после параметра, например --n.", "יוצרת עזר שמקבל בבטחה את הערך שאחרי אפשרות כמו --n.");
+  if (/\+\+i >= argc/.test(source)) return say("Stops with a clear error when an option is missing its required value.", "Останавливает программу с понятной ошибкой, если после параметра нет обязательного значения.", "עוצרת עם שגיאה ברורה כאשר לאפשרות חסר הערך הנדרש.");
+  if (/return argv\[i\]/.test(source)) return say("Returns the value belonging to the current command-line option.", "Возвращает значение, принадлежащее текущему параметру командной строки.", "מחזירה את הערך ששייך לאפשרות הנוכחית.");
+  if (/argument == "--n"/.test(source)) return say("Lets the user override the sequence length N for another test size.", "Позволяет пользователю изменить длину последовательности N для другого размера теста.", "מאפשרת למשתמש לשנות את אורך הרצף N לגודל בדיקה אחר.");
+  if (/argument == "--d"/.test(source)) return say("Lets the user override the vector dimension d.", "Позволяет пользователю изменить размерность вектора d.", "מאפשרת למשתמש לשנות את ממד הווקטור d.");
+  if (/argument == "--warmup"/.test(source)) return say("Lets the user choose how many unmeasured warm-up runs to perform.", "Позволяет пользователю выбрать число прогревочных запусков без замера.", "מאפשרת למשתמש לבחור את מספר הרצות החימום שאינן נמדדות.");
+  if (/argument == "--iterations"/.test(source)) return say("Lets the user choose the number of timed repetitions.", "Позволяет пользователю выбрать число измеряемых повторов.", "מאפשרת למשתמש לבחור את מספר החזרות הנמדדות.");
+  if (/argument == "--seed"/.test(source)) return say("Lets the user choose a different reproducible random input.", "Позволяет пользователю задать другой воспроизводимый случайный вход.", "מאפשרת למשתמש לבחור קלט אקראי אחר שניתן לשחזור.");
+  if (/argument == "--tolerance"/.test(source)) return say("Lets the user adjust the validation tolerance.", "Позволяет пользователю изменить допуск проверки.", "מאפשרת למשתמש לשנות את טולרנס האימות.");
+  if (/argument == "--variant"/.test(source)) return say("Lets the user run only the basic or only the optimized CUDA path.", "Позволяет запустить только basic- или только optimized-путь CUDA.", "מאפשרת להריץ רק את מסלול ה-CUDA הבסיסי או רק את הממוטב.");
+  if (/argument == "--csv"/.test(source)) return say("Lets the user save the measured results in a CSV file.", "Позволяет сохранить результаты замера в CSV-файл.", "מאפשרת לשמור את תוצאות המדידה בקובץ CSV.");
   if (source.startsWith("__global__")) return say("Declares a CUDA kernel executed by many GPU threads.", "Объявляет CUDA kernel, выполняемый множеством потоков GPU.", "מכריזה על CUDA kernel שמבוצע על ידי threads רבים של GPU.");
   if (/blockIdx|threadIdx/.test(source)) return say("Maps this thread to one logical output coordinate.", "Сопоставляет текущий поток с координатой логического выходного элемента.", "ממפה את ה-thread הנוכחי לקואורדינטטה לוגית של פלט.");
   if (/row >= n|column >= n|feature >= d|index < count/.test(source)) return say("Boundary check: extra threads leave without accessing invalid memory.", "Boundary check: лишние потоки завершаются без доступа к недопустимой памяти.", "בדיקת גבול: threads עודפים מסיימים ללא גישה לזיכרון לא תקין.");
@@ -3171,8 +3193,20 @@ function attentionSourceAnnotation(line) {
   if (/cudaMemcpy/.test(source)) return say("Copies data between host RAM and GPU device memory.", "Копирует данные между host RAM и device-памятью GPU.", "מעתיקה נתונים בין RAM של המארח לזיכרון ההתקן של GPU.");
   if (/cudaEvent/.test(source)) return say("Uses CUDA events to measure completed GPU kernel time.", "Использует CUDA events для измерения завершённого времени GPU kernels.", "משתמשת באירועי CUDA למדידת זמן kernels שהושלמו ב-GPU.");
   if (/compare_outputs|maximum_absolute|verification/.test(source)) return say("Compares the CUDA output with the CPU reference within the allowed tolerance.", "Сравнивает CUDA-выход с CPU-эталоном в пределах заданного допуска.", "משווה את פלט ה-CUDA לייחוס ה-CPU בתוך הטולרנס המותר.");
-  if (/int n = 512|int d = 64/.test(source)) return say("Sets the required default problem dimension.", "Задаёт обязательный размер задачи по умолчанию.", "מגדירה את ממד המשימה הנדרש כברירת מחדל.");
-  return say("Exact line from the final CUDA Attention source used by this requirement.", "Точная строка финального CUDA Attention исходника для этого требования.", "שורה מדויקת ממקור CUDA Attention הסופי עבור דרישה זו.");
+  if (/run_cpu_average\(/.test(source)) return say("Runs the CPU implementation used as the correctness reference for CUDA.", "Запускает CPU-реализацию, которая служит эталоном корректности для CUDA.", "מריצה את מימוש ה-CPU שמשמש כייחוס נכונות ל-CUDA.");
+  if (/scaled_dot_product_attention_cpu_into/.test(source)) return say("Calls the sequential CPU Attention calculation for the same Q, K and V values.", "Вызывает последовательный расчёт Attention на CPU для тех же Q, K и V.", "קוראת לחישוב Attention סדרתי ב-CPU עבור אותם Q, K ו-V.");
+  if (/total_milliseconds \+= timing\.milliseconds/.test(source)) return say("Adds this CPU run to the total time used for the average.", "Добавляет время текущего запуска CPU к сумме для среднего значения.", "מוסיפה את זמן הרצת ה-CPU הנוכחית לסכום עבור הממוצע.");
+  if (/average_milliseconds =/.test(source)) return say("Computes the average CPU reference time across the measured runs.", "Вычисляет среднее время CPU-эталона по измеренным запускам.", "מחשבת את זמן ייחוס ה-CPU הממוצע על פני ההרצות הנמדדות.");
+  if (/void launch_pipeline/.test(source)) return say("Coordinates the four Attention operations in their execution order.", "Координирует четыре операции Attention в порядке их выполнения.", "מתאמת את ארבע פעולות Attention בסדר הביצוע שלהן.");
+  if (/const dim3 block/.test(source)) return say("Defines a 16 by 16 CUDA thread block for the matrix operations.", "Задаёт CUDA-блок 16 на 16 потоков для матричных операций.", "מגדירה בלוק CUDA של 16 על 16 threads עבור פעולות מטריצה.");
+  if (/score_grid|output_grid/.test(source)) return say("Calculates enough CUDA blocks to cover every output element, including partial edges.", "Вычисляет число CUDA-блоков, достаточное для покрытия каждого элемента выхода, включая неполные края.", "מחשבת מספיק בלוקי CUDA לכיסוי כל איבר פלט, כולל קצוות חלקיים.");
+  if (/qk_matmul_tiled_scaled/.test(source)) return say("Launches the optimized tiled QK kernel, which applies scaling in the same pass.", "Запускает оптимизированный tiled QK-kernel, который применяет масштабирование за тот же проход.", "מפעילה kernel QK ממוטב ומרוצף שמחיל קנה מידה באותו מעבר.");
+  if (/qk_matmul_basic/.test(source)) return say("Launches the basic QK kernel before the separate scaling kernel.", "Запускает базовый QK-kernel перед отдельным kernel масштабирования.", "מפעילה kernel QK בסיסי לפני kernel קנה המידה הנפרד.");
+  if (/row_softmax<</.test(source)) return say("Launches one CUDA block per score row to compute stable Softmax.", "Запускает один CUDA-блок на строку оценок для стабильного Softmax.", "מפעילה בלוק CUDA אחד לכל שורת ציונים לחישוב Softmax יציב.");
+  if (/attention_v_tiled/.test(source)) return say("Launches the optimized tiled multiplication of probabilities by V.", "Запускает оптимизированное tiled-умножение вероятностей на V.", "מפעילה כפל ממוטב ומרוצף של ההסתברויות ב-V.");
+  if (/attention_v_basic/.test(source)) return say("Launches the basic multiplication of probabilities by V.", "Запускает базовое умножение вероятностей на V.", "מפעילה את הכפל הבסיסי של ההסתברויות ב-V.");
+  if (/cudaGetLastError/.test(source)) return say("Checks immediately whether a CUDA kernel launch failed.", "Сразу проверяет, не завершился ли запуск CUDA-kernel ошибкой.", "בודקת מיד אם שיגור kernel CUDA נכשל.");
+  return "";
 }
 
 function renderCourseRequirements() {
@@ -3250,6 +3284,7 @@ async function renderCourseProof(requirement) {
   }
   requirementCode.innerHTML = "";
   let firstFocused = null;
+  const usedAnnotations = new Set();
   lines.forEach((line, index) => {
     const row = document.createElement("div");
     row.className = `code-line-note${line.trim() ? "" : " blank"}`;
@@ -3257,9 +3292,12 @@ async function renderCourseProof(requirement) {
     code.textContent = `${String(index + 1).padStart(3, " ")}  ${line || " "}`;
     const note = document.createElement("span");
     note.className = "code-note";
-    note.textContent = attentionSourceAnnotation(line);
+    const selected = index >= range.start && index <= range.end;
+    const annotation = selected ? attentionSourceAnnotation(line) : "";
+    note.textContent = annotation && !usedAnnotations.has(annotation) ? annotation : "";
+    if (note.textContent) usedAnnotations.add(note.textContent);
     row.append(code, note);
-    if (index >= range.start && index <= range.end) {
+    if (selected) {
       row.classList.add("code-focus");
       if (!firstFocused) firstFocused = row;
     }
