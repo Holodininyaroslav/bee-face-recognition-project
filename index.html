@@ -190,8 +190,8 @@
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="2">
             <strong>03</strong>
-              <h4 data-i18n="step3Title">YuNet and SFace inference through CUDA</h4>
-              <p data-i18n="step3Text">ONNX Runtime executes both neural graphs through CUDAExecutionProvider.</p>
+              <h4 data-i18n="step3Title">Find the face and landmarks</h4>
+              <p data-i18n="step3Text">YuNet runs on CUDA and returns one face candidate with five landmarks.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="3">
@@ -202,14 +202,20 @@
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="4">
             <strong>05</strong>
-              <h4 data-i18n="step5Title">Explicit CUDA cosine-score kernel</h4>
-              <p data-i18n="step5Text">Runs the project-owned sface_cuda.cu kernel for every query/reference pair.</p>
+              <h4 data-i18n="step5Title">Create the face vector with SFace</h4>
+              <p data-i18n="step5Text">SFace runs its neural layers on CUDA and returns a 128D face vector.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
           <article class="pipeline-step" role="button" tabindex="0" data-stage="5">
             <strong>06</strong>
-              <h4 data-i18n="step6Title">Native batch dispatch and identity decision</h4>
-              <p data-i18n="step6Text">Uses the CUDA batch path with B=1, ranks identities, and applies score and margin thresholds.</p>
+              <h4 data-i18n="step6Title">Compare with known faces</h4>
+              <p data-i18n="step6Text">The project CUDA kernel compares the 128D vector with every reference vector.</p>
+            <span data-i18n="openStage">Open scheme</span>
+          </article>
+          <article class="pipeline-step" role="button" tabindex="0" data-stage="6">
+            <strong>07</strong>
+              <h4 data-i18n="step7Title">Show the recognition result</h4>
+              <p data-i18n="step7Text">Ranks the scores, applies thresholds, and returns the selected name.</p>
             <span data-i18n="openStage">Open scheme</span>
           </article>
         </div>
@@ -322,6 +328,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=attention-detailed-notes-20260822a"></script>
+  <script src="script.js?v=seven-face-stages-20260822a"></script>
 </body>
 </html>
