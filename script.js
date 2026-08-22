@@ -5935,22 +5935,36 @@ function renderStageCode(stage) {
   }
   const fullMode = requestedFullMode && Boolean(stage.exactCode);
   const source = fullMode ? stage.exactCode : stage.code;
+  const diagramLabels = localized(stage.diagram);
+  const selectedStep = Array.isArray(diagramLabels) && activeStageFiveCodeStep >= 0
+    ? Math.max(0, Math.min(diagramLabels.length - 1, activeStageFiveCodeStep))
+    : -1;
   stageCode.setAttribute("dir", lang === "he" ? "rtl" : "ltr");
   stageCode.classList.toggle("full-code", Boolean(fullMode));
   if (stageCodeModeButton) {
     stageCodeModeButton.textContent = uiText(requestedFullMode ? "showShortCode" : stage.level === "05" && usesLegacyStageInspector(stage) ? "stageFiveOpenFull" : "openFullCode");
   }
   if (stageCodeSource) {
+    const selectedLabel = selectedStep >= 0 ? ` · ${selectedStep + 1}. ${diagramLabels[selectedStep]}` : "";
     stageCodeSource.textContent = fullMode
-      ? `${uiText("fullStageExact")} · ${uiText("lineCount").replace("{count}", String(stage.exactLineCount || codeLineCount(stage.exactCode)))}`
+      ? `${uiText("fullStageExact")} · ${uiText("lineCount").replace("{count}", String(stage.exactLineCount || codeLineCount(stage.exactCode)))}${selectedLabel}`
       : requestedFullMode
         ? uiText(exactStageCodeState === "error" ? "fullStageError" : "fullStageLoading")
-        : uiText("codeSourceShort");
+        : `${uiText("codeSourceShort")}${selectedLabel}`;
   }
   const sourceLines = source.split("\n");
+  const focusStart = selectedStep >= 0 && diagramLabels.length
+    ? Math.min(sourceLines.length - 1, Math.floor((selectedStep * sourceLines.length) / diagramLabels.length))
+    : -1;
+  const focusEnd = selectedStep >= 0 && diagramLabels.length
+    ? Math.max(focusStart, Math.min(sourceLines.length - 1, Math.floor(((selectedStep + 1) * sourceLines.length) / diagramLabels.length) - 1))
+    : -1;
   sourceLines.forEach((line, index) => {
     const row = document.createElement("div");
     row.className = `code-line-note${line.trim() ? "" : " blank"}`;
+    if (index >= focusStart && index <= focusEnd) row.classList.add("code-focus");
+    if (index === focusStart) row.classList.add("code-focus-start");
+    if (index === focusEnd) row.classList.add("code-focus-end");
     const code = document.createElement("code");
     code.textContent = line || " ";
     const note = document.createElement("span");
@@ -6491,12 +6505,8 @@ async function focusStageFiveOnnx(stepIndex, shouldScroll = true, exactLayer = n
 function buildStageDiagram(labels, notes, data) {
   stageDiagram.innerHTML = "";
   labels.forEach((label, index) => {
-    const nativeStageFive = data?.level === "05"
-      && activeDetectorVariant === "single"
-      && !usesLegacyStageInspector(data);
-    const codeLinked = nativeStageFive || (["01", "02", "03", "04", "05", "06"].includes(data?.level)
-      && activeDetectorVariant === "single"
-      && usesLegacyStageInspector(data));
+    const codeLinked = ["01", "02", "03", "04", "05", "06"].includes(data?.level)
+      && activeDetectorVariant === "single";
     const node = document.createElement(codeLinked ? "button" : "div");
     node.className = "diagram-node";
     if (codeLinked) {
@@ -6509,15 +6519,28 @@ function buildStageDiagram(labels, notes, data) {
         : uiText("focusCodeAction");
       node.setAttribute("aria-label", `${label}. ${action}`);
       node.title = action;
-      node.addEventListener("click", () => data.level === "05"
-        ? usesLegacyStageInspector(data)
-          ? focusStageFiveOnnx(index)
-          : focusNativeStageFiveCode(index)
-        : data.level === "06"
-          ? focusStageSixCode(index)
-          : data.level === "01"
-            ? focusStageOneCode(index)
-            : focusGenericStageCode(index));
+      node.addEventListener("click", () => {
+        activeStageFiveCodeStep = index;
+        renderStageCode(data);
+        document.querySelectorAll(".diagram-node.code-linked").forEach((item) => {
+          const selected = Number(item.dataset.codeStep) === index;
+          item.classList.toggle("code-active", selected);
+          item.setAttribute("aria-pressed", selected ? "true" : "false");
+        });
+        if (data.level === "05") {
+          if (usesLegacyStageInspector(data)) {
+            focusStageFiveOnnx(index);
+          } else {
+            focusNativeStageFiveCode(index);
+          }
+        } else if (data.level === "06") {
+          focusStageSixCode(index);
+        } else if (data.level === "01") {
+          focusStageOneCode(index);
+        } else {
+          focusGenericStageCode(index);
+        }
+      });
     }
     const title = document.createElement("strong");
     title.textContent = label;
@@ -6594,11 +6617,12 @@ function hideStageDetail() {
 }
 
 function selectedMode() {
-  return document.querySelector("input[name='computeMode']:checked")?.value || "GPU";
+  return document.querySelector("input[name='computeMode']:checked")?.value || "CUDA";
 }
 
 function renderPreviews(files) {
   previewGrid.innerHTML = "";
+  files = Array.from(files || []).slice(0, 1);
   if (!files.length) {
     const empty = document.createElement("div");
     empty.className = "empty-preview";
