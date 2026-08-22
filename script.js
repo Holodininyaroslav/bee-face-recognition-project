@@ -628,6 +628,7 @@ const courseRequirements = [
 ];
 let activeCourseRequirement = "";
 let attentionCourseSource = "";
+const finalAttentionSourceUrl = "https://raw.githubusercontent.com/Holodininyaroslav/bee-face-recognition-project/77c0dc8/source/attention/attention_cuda.cu";
 
 const stageDetails = [
   {
@@ -3077,7 +3078,7 @@ function courseRequirementsText() {
       kicker: "CUDA COURSE REQUIREMENTS",
       title: "Verify a requirement in the exact CUDA source",
       intro: "Choose a requirement to inspect its exact implementation in the final Scaled Dot-Product Attention CUDA source.",
-      source: "Open attention_cuda.cu",
+      source: "Open final attention_cuda.cu",
       proof: "REQUIREMENT PROOF",
       stage: "Final course source",
       loading: "Loading the exact CUDA Attention source...",
@@ -3088,7 +3089,7 @@ function courseRequirementsText() {
       kicker: "ТРЕБОВАНИЯ CUDA-КУРСА",
       title: "Проверка требования по точному CUDA-исходнику",
       intro: "Выберите требование, чтобы посмотреть его точную реализацию в финальном CUDA-исходнике Scaled Dot-Product Attention.",
-      source: "Открыть attention_cuda.cu",
+      source: "Открыть финальный attention_cuda.cu",
       proof: "ДОКАЗАТЕЛЬСТВО В КОДЕ",
       stage: "Финальный исходник курса",
       loading: "Загружается точный CUDA Attention исходник...",
@@ -3099,7 +3100,7 @@ function courseRequirementsText() {
       kicker: "דרישות קורס CUDA",
       title: "אימות דרישה בקוד CUDA המדויק",
       intro: "בחרו דרישה כדי לבדוק את המימוש המדויק שלה בקוד ה-CUDA הסופי של Scaled Dot-Product Attention.",
-      source: "פתיחת attention_cuda.cu",
+      source: "פתיחת attention_cuda.cu הסופי",
       proof: "הוכחה בקוד",
       stage: "קוד מקור סופי של הקורס",
       loading: "טוען את מקור CUDA Attention המדויק...",
@@ -3187,7 +3188,7 @@ async function renderCourseProof(requirement) {
   if (!attentionCourseSource) {
     requirementCode.textContent = text.loading;
     try {
-      const response = await fetch("source/attention/attention_cuda.cu", { cache: "no-store" });
+      const response = await fetch(finalAttentionSourceUrl, { cache: "no-store" });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       attentionCourseSource = await response.text();
     } catch (error) {
