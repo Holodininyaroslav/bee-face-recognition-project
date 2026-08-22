@@ -6242,6 +6242,16 @@ function renderStageCode(stage) {
   });
 }
 
+function scrollStageCodeToFocused(shouldScroll = true) {
+  const firstFocused = stageCode.querySelector(".code-focus");
+  if (!firstFocused) return false;
+  requestAnimationFrame(() => {
+    stageCode.scrollTop = Math.max(0, firstFocused.offsetTop - stageCode.offsetTop - 18);
+    if (shouldScroll) stageCode.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+  return true;
+}
+
 function notebookCodeCells(rawNotebook) {
   const notebook = JSON.parse(rawNotebook);
   return (notebook.cells || [])
@@ -6792,6 +6802,8 @@ function buildStageDiagram(labels, notes, data) {
         });
         if (data.level === "05" && !usesLegacyStageInspector(data)) {
           focusNativeStageFiveCode(index);
+        } else {
+          scrollStageCodeToFocused();
         }
       });
     }
@@ -6835,7 +6847,10 @@ function renderStageDetail(index, shouldScroll = true) {
   renderStageCode(data);
   if (stageCodeMode === "full" && exactStageCodeState === "idle") {
     ensureExactStageCode().then(() => {
-      if (currentStageIndex === index && stageCodeMode === "full") renderStageDetail(index, false);
+      if (currentStageIndex === index && stageCodeMode === "full") {
+        renderStageDetail(index, false);
+        if (data.level !== "05" && activeStageFiveCodeStep >= 0) scrollStageCodeToFocused(false);
+      }
     });
   }
   const diagramLabels = localized(data.diagram);
