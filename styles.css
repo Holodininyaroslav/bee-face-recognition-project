@@ -743,6 +743,10 @@ html[dir="rtl"] .stage-onnx-layer { direction: rtl; }
   font-weight: 800;
 }
 
+#stageCodeMode {
+  display: none;
+}
+
 .cuda-panel pre {
   margin-top: 12px;
   border: 1px solid var(--line);

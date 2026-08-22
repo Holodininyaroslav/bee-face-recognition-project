@@ -477,7 +477,7 @@ Object.assign(translations.en, {
   fullStageExact: "Exact blocks for this stage, extracted automatically from the source",
   fullStageNotebook: "Exact block from the Colab notebook — the same file can be opened below",
   fullStageDetector: "Exact block from the detector module — the same file can be opened below",
-  fullStageError: "Could not load exact stage blocks; only the short sketch is shown."
+  fullStageError: "Could not load the exact stage source."
 });
 
 Object.assign(translations.ru, {
@@ -1289,7 +1289,7 @@ stageDiagramNotes.forEach((stage, index) => {
 });
 
 let currentStageIndex = -1;
-let stageCodeMode = "short";
+let stageCodeMode = "full";
 let detectorSourceLoaded = false;
 let detectorSourceVisible = false;
 let detectorSourceText = "";
@@ -1384,7 +1384,7 @@ const cleanRuTranslations = {
   fullStageExact: "Точные блоки этого этапа, автоматически извлечённые из исходника",
   fullStageNotebook: "Точный блок из ноутбука Colab — этот же файл можно открыть ниже",
   fullStageDetector: "Точный блок из модуля детектора — этот же файл можно открыть ниже",
-  fullStageError: "Не удалось загрузить точные блоки этапа; показана только краткая схема.",
+  fullStageError: "Не удалось загрузить точный исходник этапа.",
   stageLabel: "ЭТАП",
   unknown: "Неизвестно",
   processedImages: "изображений обработано",
@@ -1480,7 +1480,7 @@ const cleanHeTranslations = {
   fullStageExact: "בלוקים מדויקים של שלב זה, שחולצו אוטומטית מקוד המקור",
   fullStageNotebook: "בלוק מדויק ממחברת Colab — אפשר לפתוח את אותו קובץ למטה",
   fullStageDetector: "בלוק מדויק ממודול הגלאי — אפשר לפתוח את אותו קובץ למטה",
-  fullStageError: "לא ניתן לטעון את בלוקי השלב המדויקים; מוצגת רק הסקיצה הקצרה."
+  fullStageError: "לא ניתן לטעון את קוד המקור המדויק של השלב."
 };
 
 const cleanDetailUi = {
@@ -2964,7 +2964,7 @@ function selectDetectorVariant(name) {
   if (!detectorVariantCatalog[name]) return;
   activeDetectorVariant = name;
   hideStageDetail();
-  stageCodeMode = "short";
+  stageCodeMode = "full";
   exactStageCodeState = detectorSourceLoaded ? "idle" : "idle";
   combinedRecognitionCode = "";
   combinedRecognitionLineCount = 0;
@@ -6115,6 +6115,23 @@ function renderStageCode(stage) {
     return;
   }
   const fullMode = requestedFullMode && Boolean(stage.exactCode);
+  if (requestedFullMode && !stage.exactCode) {
+    stageCode.setAttribute("dir", lang === "he" ? "rtl" : "ltr");
+    stageCode.classList.add("full-code");
+    if (stageCodeSource) {
+      stageCodeSource.textContent = uiText(exactStageCodeState === "error" ? "fullStageError" : "fullStageLoading");
+    }
+    const row = document.createElement("div");
+    row.className = "code-line-note";
+    const code = document.createElement("code");
+    code.textContent = uiText(exactStageCodeState === "error" ? "fullStageError" : "fullStageLoading");
+    const note = document.createElement("span");
+    note.className = "code-note";
+    note.textContent = "";
+    row.append(code, note);
+    stageCode.appendChild(row);
+    return;
+  }
   const source = fullMode ? stage.exactCode : stage.code;
   const diagramLabels = localized(stage.diagram);
   const selectedStep = Array.isArray(diagramLabels) && activeStageFiveCodeStep >= 0
@@ -6710,18 +6727,8 @@ function buildStageDiagram(labels, notes, data) {
           item.classList.toggle("code-active", selected);
           item.setAttribute("aria-pressed", selected ? "true" : "false");
         });
-        if (data.level === "05") {
-          if (usesLegacyStageInspector(data)) {
-            focusStageFiveOnnx(index);
-          } else {
-            focusNativeStageFiveCode(index);
-          }
-        } else if (data.level === "06") {
-          focusStageSixCode(index);
-        } else if (data.level === "01") {
-          focusStageOneCode(index);
-        } else {
-          focusGenericStageCode(index);
+        if (data.level === "05" && !usesLegacyStageInspector(data)) {
+          focusNativeStageFiveCode(index);
         }
       });
     }
@@ -6774,18 +6781,8 @@ function renderStageDetail(index, shouldScroll = true) {
   document.querySelectorAll(".pipeline-step").forEach((step) => {
     step.classList.toggle("active", Number(step.dataset.stage) === currentStageIndex);
   });
-  if (data.level === "05" && activeStageFiveCodeStep >= 0) {
-    if (usesLegacyStageInspector(data)) {
-      focusStageFiveOnnx(activeStageFiveCodeStep, false);
-    } else {
-      focusNativeStageFiveCode(activeStageFiveCodeStep, false);
-    }
-  } else if (data.level === "01" && activeStageFiveCodeStep >= 0) {
-    focusStageOneCode(activeStageFiveCodeStep, false);
-  } else if (data.level === "06" && activeStageFiveCodeStep >= 0) {
-    focusStageSixCode(activeStageFiveCodeStep, false);
-  } else if (["02", "03", "04"].includes(data.level) && activeStageFiveCodeStep >= 0) {
-    focusGenericStageCode(activeStageFiveCodeStep, false);
+  if (data.level === "05" && activeStageFiveCodeStep >= 0 && !usesLegacyStageInspector(data)) {
+    focusNativeStageFiveCode(activeStageFiveCodeStep, false);
   }
   if (shouldScroll) stageDetail.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -6933,8 +6930,7 @@ document.querySelectorAll(".pipeline-step").forEach((step) => {
 stagePrev.addEventListener("click", () => renderStageDetail(currentStageIndex - 1));
 stageNext.addEventListener("click", () => renderStageDetail(currentStageIndex + 1));
 stageCodeModeButton?.addEventListener("click", () => {
-  activeStageFiveCodeStep = -1;
-  stageCodeMode = stageCodeMode === "full" ? "short" : "full";
+  stageCodeMode = "full";
   if (currentStageIndex >= 0) renderStageDetail(currentStageIndex, false);
 });
 loadFullDetectorSource?.addEventListener("click", toggleCombinedRecognitionSource);
@@ -6973,7 +6969,7 @@ function applyDeepLink() {
   if (stage !== null) {
     const index = Math.max(0, Math.min(stageDetails.length - 1, Number(stage) || 0));
     showView("simple");
-    stageCodeMode = params.get("code") === "full" ? "full" : "short";
+    stageCodeMode = "full";
     renderStageDetail(index, false);
   }
   if (params.get("source") === "detector") {
