@@ -2231,7 +2231,7 @@ const currentRuntimeStageSources = [
   { path: "source/native_face_cuda/src/sface_engine.cpp", fromMatch: "^PreparedBatch prepare_detection_batch", toMatch: "^std::vector<float> align_faces" },
   { path: "source/native_face_cuda/src/sface_engine.cpp", fromMatch: "^    EmbeddingBatch embed_images", toMatch: "^        auto aligned = align_faces" },
   { path: "source/native_face_cuda/src/sface_engine.cpp", fromMatch: "^std::vector<float> align_faces", toMatch: "^struct NativeSFaceEngine::Impl" },
-  { path: "source/native_face_cuda/src/sface_manual_cuda.cu", fromMatch: "^__global__ void pointwise_gemm_kernel", toMatch: "^struct ManualSFaceCudaContext" },
+  { path: "source/native_face_cuda/src/sface_manual_cuda.cu", fromMatch: "^#include \"sface_manual_cuda\\.hpp\"", to: null },
   { path: "source/native_face_cuda/src/sface_cuda.cu", fromMatch: "^#include <cuda_runtime.h>", to: null },
   { path: "source/native_face_cuda/src/sface_engine.cpp", fromMatch: "^    std::vector<SFaceResult> recognize", toMatch: "^NativeSFaceEngine::NativeSFaceEngine" }
 ];
@@ -2598,14 +2598,14 @@ auto faces = decode_yunet_outputs(yunet_outputs);`
       he: "הפרויקט מריץ את רשת SFace המאומנת באמצעות CUDA kernels עצמאיים שנבנים ב-NVCC. הקוד מבצע במפורש קדם-עיבוד, 27 קונבולוציות, BatchNorm/PReLU מאוחדים, כפל מטריצות מרוצף עבור 1x1, כפל מלא Bx50176 ב-50176x128, ‏BatchNorm סופי ונרמול L2. מסלול CUDA אינו קורא ל-sface.Run(...)."
     },
     diagram: {
-      en: ["01 Load trained weights", "02 Copy B aligned faces to GPU", "03 Normalize input values", "04 Standard 3x3 convolution", "05 Fused BatchNorm + PReLU", "06 Depthwise 3x3 convolution", "07 Tiled pointwise 1x1 GEMM", "08 Repeat 13 depthwise/pointwise blocks", "09 Final feature BatchNorm", "10 Tiled Bx50176 x 50176x128 GEMM", "11 Final 128D BatchNorm", "12 Parallel L2 normalization", "13 Copy Bx128 embeddings to host"],
-      ru: ["01 Загрузка обученных весов", "02 Копирование B лиц на GPU", "03 Нормализация входных значений", "04 Обычная свёртка 3x3", "05 Объединённые BatchNorm + PReLU", "06 Depthwise-свёртка 3x3", "07 Плиточный pointwise 1x1 GEMM", "08 Повтор 13 depthwise/pointwise-блоков", "09 Финальный BatchNorm признаков", "10 Плиточный GEMM Bx50176 x 50176x128", "11 Финальный 128D BatchNorm", "12 Параллельная L2-нормализация", "13 Копирование Bx128 embeddings в RAM"],
-      he: ["01 טעינת המשקלים המאומנים", "02 העתקת B פנים ל-GPU", "03 נרמול ערכי הקלט", "04 קונבולוציה רגילה 3x3", "05 BatchNorm ו-PReLU מאוחדים", "06 קונבולוציית depthwise בגודל 3x3", "07 GEMM מרוצף pointwise בגודל 1x1", "08 חזרה על 13 בלוקי depthwise/pointwise", "09 BatchNorm סופי של המאפיינים", "10 GEMM מרוצף Bx50176 x 50176x128", "11 BatchNorm סופי בגודל 128D", "12 נרמול L2 מקבילי", "13 העתקת embeddings בגודל Bx128 לזיכרון המארח"]
+      en: ["01 Load trained weights", "02 Copy aligned faces to GPU", "03 Normalize input pixels", "04 First 3x3 convolution", "05 Repeat 13 depthwise + pointwise blocks", "06 Final feature BatchNorm", "07 Fully connected 50176 -> 128 + BatchNorm", "08 L2 normalize the 128D embedding", "09 Copy embeddings back to RAM"],
+      ru: ["01 Загрузка обученных весов", "02 Копирование выровненных лиц на GPU", "03 Нормализация входных пикселей", "04 Первая свёртка 3x3", "05 Повтор 13 блоков depthwise + pointwise", "06 Финальный BatchNorm карты признаков", "07 Полносвязный слой 50176 -> 128 + BatchNorm", "08 L2-нормализация embedding 128D", "09 Копирование embeddings обратно в RAM"],
+      he: ["01 טעינת משקלי SFace", "02 העתקת פנים מיושרות ל-GPU", "03 נרמול פיקסלי הקלט", "04 קונבולוציית 3x3 ראשונה", "05 חזרה על 13 בלוקי depthwise + pointwise", "06 BatchNorm סופי של מפת המאפיינים", "07 שכבה מלאה 50176 -> 128 + BatchNorm", "08 נרמול L2 של embedding בגודל 128D", "09 העתקת embeddings חזרה ל-RAM"]
     },
     diagramNotes: {
-      en: ["The exporter writes every learned SFace tensor to sface_manual_weights.bin; the CUDA runtime uploads these immutable weights once when the worker starts.", "cudaMemcpy places the complete Bx3x112x112 batch in device memory, so B can be 1, 50 or 500.", "preprocess_kernel applies (pixel - 127.5) / 128 independently to every tensor element.", "standard_conv3x3_kernel computes the first learned convolution across all input channels; every output element is assigned to a CUDA thread.", "BatchNorm scale/shift are fused with PReLU inside activate(), avoiding a library call and an extra intermediate tensor.", "depthwise_conv3x3_kernel applies one learned 3x3 filter per channel and performs the stride-2 reductions used by SFace.", "pointwise_gemm_kernel interprets every spatial position as a matrix row. A 16x16 thread block loads activation and weight tiles into shared memory and executes the learned 1x1 channel mixing.", "The native layer table launches one initial convolution followed by 13 depthwise and 13 pointwise operations, preserving the trained SFace graph and tensor dimensions.", "affine_in_place_kernel applies the trained BatchNorm parameters to the final 1024x7x7 feature map.", "fully_connected_kernel manually multiplies every flattened 50176-value face feature row by the learned 50176x128 weight matrix. A batch is therefore one Bx50176 by 50176x128 CUDA matrix multiplication.", "The same fully connected kernel adds the trained bias and applies the final 128-channel BatchNorm scale and shift.", "normalize_embeddings_kernel uses a 256-thread reduction per face to calculate the norm and divide all 128 values, producing cosine-ready vectors.", "Only the finished Bx128 embeddings return to host memory. No intermediate neural tensor returns to CPU."],
-      ru: ["Экспортёр записывает каждый обученный тензор SFace в sface_manual_weights.bin; CUDA runtime один раз загружает эти неизменяемые веса при старте worker.", "cudaMemcpy помещает полный batch Bx3x112x112 в device-память, поэтому B может быть равен 1, 50 или 500.", "preprocess_kernel независимо применяет (pixel - 127.5) / 128 к каждому элементу тензора.", "standard_conv3x3_kernel вычисляет первую обученную свёртку по всем входным каналам; каждый выходной элемент назначается CUDA thread.", "Масштаб и смещение BatchNorm объединены с PReLU внутри activate(), поэтому не вызывается библиотека и не создаётся лишний промежуточный тензор.", "depthwise_conv3x3_kernel применяет отдельный обученный фильтр 3x3 к каждому каналу и выполняет stride-2 уменьшения, используемые SFace.", "pointwise_gemm_kernel рассматривает каждую пространственную позицию как строку матрицы. Block 16x16 threads загружает плитки признаков и весов в shared memory и вручную выполняет обученное смешивание каналов 1x1.", "Таблица native-слоёв запускает одну начальную свёртку, затем 13 depthwise и 13 pointwise операций, сохраняя обученный граф SFace и его размеры тензоров.", "affine_in_place_kernel применяет обученные параметры BatchNorm к финальной карте признаков 1024x7x7.", "fully_connected_kernel вручную умножает каждую развёрнутую строку из 50176 признаков лица на обученную матрицу весов 50176x128. Поэтому batch является одним CUDA-умножением Bx50176 на 50176x128.", "Тот же fully connected kernel добавляет обученный bias и применяет финальные scale и shift BatchNorm для 128 каналов.", "normalize_embeddings_kernel использует reduction из 256 threads для каждого лица, вычисляет норму и делит все 128 значений, получая векторы для cosine similarity.", "В RAM возвращаются только готовые embeddings Bx128. Ни один промежуточный нейросетевой тензор не возвращается на CPU."],
-      he: ["כל טנזור מאומן של SFace נכתב על ידי כלי הייצוא לקובץ sface_manual_weights.bin; בזמן הפעלת ה-worker, ‏CUDA runtime מעלה את המשקלים הקבועים האלה פעם אחת בלבד.", "cudaMemcpy מעתיק לזיכרון ההתקן את כל האצווה Bx3x112x112, ולכן B יכול להיות 1, 50 או 500.", "preprocess_kernel מחיל באופן עצמאי את החישוב (pixel - 127.5) / 128 על כל איבר בטנזור.", "standard_conv3x3_kernel מחשב את הקונבולוציה המאומנת הראשונה על פני כל ערוצי הקלט; כל איבר פלט מוקצה ל-CUDA thread.", "ה-scale וה-shift של BatchNorm מאוחדים עם PReLU בתוך activate(), ללא קריאת ספרייה וללא טנזור ביניים נוסף.", "depthwise_conv3x3_kernel מחיל מסנן 3x3 מאומן נפרד לכל ערוץ ומבצע את הקטנות stride-2 של SFace.", "pointwise_gemm_kernel מתייחס לכל מיקום מרחבי כשורת מטריצה. בלוק של 16x16 threads טוען אריחי הפעלה ומשקל ל-shared memory ומבצע ידנית ערבוב ערוצים מאומן בגודל 1x1.", "טבלת השכבות ב-native משגרת קונבולוציה התחלתית אחת, אחריה 13 פעולות depthwise ו-13 פעולות pointwise, תוך שמירה על גרף SFace המאומן ועל ממדי הטנזורים שלו.", "affine_in_place_kernel מחיל את פרמטרי BatchNorm המאומנים על מפת המאפיינים הסופית בגודל 1024x7x7.", "fully_connected_kernel מכפיל ידנית כל שורת מאפיינים שטוחה בגודל 50176 במטריצת משקלים מאומנת בגודל 50176x128. לכן אצווה היא כפל CUDA יחיד של Bx50176 ב-50176x128.", "אותו fully connected kernel מוסיף bias מאומן ומחיל scale ו-shift סופיים של BatchNorm על 128 הערוצים.", "normalize_embeddings_kernel משתמש ב-reduction של 256 threads לכל פנים, מחשב את הנורמה ומחלק את כל 128 הערכים כדי ליצור וקטורים המתאימים ל-cosine similarity.", "רק ה-embeddings המוגמרים בגודל Bx128 חוזרים לזיכרון המארח. אף טנזור ביניים של הרשת אינו חוזר ל-CPU."]
+      en: ["Reads sface_manual_weights.bin, creates device buffers with cudaMalloc, and uploads immutable learned weights once with cudaMemcpy HostToDevice.", "Copies the complete Bx3x112x112 aligned NCHW RGB tensor to the first device buffer with cudaMemcpy HostToDevice.", "The complete preprocess_kernel is selected together with its launch: every thread applies (pixel - 127.5) / 128 to one tensor element.", "The complete standard_conv3x3_kernel is selected together with its launch. Each thread accumulates a 3x3 window over all input channels, then applies fused BatchNorm/PReLU.", "The selected code shows the native loop that creates 13 pairs, plus the complete depthwise_conv3x3_kernel and pointwise_gemm_kernel. Pointwise includes fused BatchNorm/PReLU in activate().", "The complete affine_in_place_kernel and its launch apply the trained BatchNorm scale and shift to the final 1024x7x7 feature map.", "The complete fully_connected_kernel and its launch manually perform Bx50176 by 50176x128 tiled GEMM, add bias, and immediately apply the final BatchNorm.", "The complete normalize_embeddings_kernel and its launch use one 256-thread block per face to reduce the norm and turn 128 values into a unit vector.", "The selected cudaMemcpy DeviceToHost copies only the completed Bx128 embedding matrix to CPU RAM."],
+      ru: ["Читает sface_manual_weights.bin, создаёт device-буферы через cudaMalloc и один раз загружает неизменяемые обученные веса через cudaMemcpy HostToDevice.", "Копирует полный выровненный NCHW RGB-тензор Bx3x112x112 в первый device-буфер через cudaMemcpy HostToDevice.", "Выделяется весь preprocess_kernel вместе с запуском: каждый thread применяет (pixel - 127.5) / 128 к одному элементу тензора.", "Выделяется весь standard_conv3x3_kernel вместе с запуском. Каждый thread суммирует окно 3x3 по всем входным каналам, затем применяется объединённый BatchNorm/PReLU.", "Выделяется native-цикл, создающий 13 пар, а также весь depthwise_conv3x3_kernel и pointwise_gemm_kernel. В pointwise BatchNorm/PReLU уже объединены внутри activate().", "Выделяются весь affine_in_place_kernel и его запуск: они применяют обученные scale и shift BatchNorm к финальной карте признаков 1024x7x7.", "Выделяются весь fully_connected_kernel и его запуск: они вручную выполняют плиточный GEMM Bx50176 на 50176x128, добавляют bias и сразу применяют финальный BatchNorm.", "Выделяются весь normalize_embeddings_kernel и его запуск: один block из 256 threads на лицо вычисляет норму и превращает 128 значений в единичный вектор.", "Выделяется cudaMemcpy DeviceToHost, копирующий в RAM только готовую матрицу embeddings Bx128."],
+      he: ["קורא את sface_manual_weights.bin, יוצר מאגרי התקן בעזרת cudaMalloc ומעלה פעם אחת את המשקלים המאומנים הקבועים בעזרת cudaMemcpy HostToDevice.", "מעתיק את טנזור ה-RGB המיושר בפורמט NCHW בגודל Bx3x112x112 למאגר ההתקן הראשון בעזרת cudaMemcpy HostToDevice.", "נבחר ה-preprocess_kernel המלא יחד עם השיגור שלו: כל thread מחיל (pixel - 127.5) / 128 על איבר טנזור אחד.", "נבחר ה-standard_conv3x3_kernel המלא יחד עם השיגור שלו. כל thread צובר חלון 3x3 על פני כל ערוצי הקלט ואז מפעיל BatchNorm/PReLU מאוחדים.", "נבחרים לולאת ה-native שיוצרת 13 זוגות, וכן ה-depthwise_conv3x3_kernel וה-pointwise_gemm_kernel המלאים. ב-pointwise ה-BatchNorm/PReLU כבר מאוחדים בתוך activate().", "נבחרים ה-affine_in_place_kernel המלא והשיגור שלו, שמחילים את scale ו-shift המאומנים של BatchNorm על מפת המאפיינים הסופית 1024x7x7.", "נבחרים ה-fully_connected_kernel המלא והשיגור שלו: הם מבצעים ידנית GEMM מרוצף של Bx50176 כפול 50176x128, מוסיפים bias ומחילים מיד BatchNorm סופי.", "נבחרים ה-normalize_embeddings_kernel המלא והשיגור שלו: בלוק אחד של 256 threads לכל פנים מחשב את הנורמה והופך 128 ערכים לווקטור יחידה.", "נבחרת פעולת cudaMemcpy DeviceToHost שמעתיקה ל-RAM רק את מטריצת ה-embeddings המוגמרת בגודל Bx128."]
     },
     layers: { en: "1 standard conv + 13 depthwise conv + 13 tiled pointwise GEMM + tiled FC + CUDA L2 reduction", ru: "1 обычная conv + 13 depthwise conv + 13 плиточных pointwise GEMM + плиточный FC + CUDA L2 reduction", he: "קונבולוציה רגילה אחת + 13 depthwise + 13 פעולות pointwise GEMM מרוצפות + FC מרוצף + CUDA L2 reduction" },
     connections: { en: "Trained SFace weights are preserved; only the inference executor changed from a library call to explicit project kernels", ru: "Обученные веса SFace сохранены; заменён только исполнитель inference: библиотечный вызов заменён явными kernels проекта", he: "המשקלים המאומנים של SFace נשמרו; רק מנגנון ההרצה הוחלף מקריאת ספרייה ל-kernels מפורשים של הפרויקט" },
@@ -6379,6 +6379,73 @@ function nativeStageFiveCodeRange(lines, stepIndex) {
   return ranges[stepIndex] || { start: -1, end: -1 };
 }
 
+function manualSfaceStageCodeRanges(lines, stepIndex) {
+  const find = (pattern, from = 0) => lines.findIndex((line, index) => index >= from && pattern.test(line.trim()));
+  const before = (pattern, from = 0) => {
+    const index = find(pattern, from);
+    return index < 0 ? -1 : index - 1;
+  };
+  const span = (startPattern, endPattern) => {
+    const start = find(startPattern);
+    const end = before(endPattern, Math.max(0, start + 1));
+    return { start, end };
+  };
+  const inclusive = (startPattern, endPattern) => {
+    const start = find(startPattern);
+    const end = find(endPattern, Math.max(0, start));
+    return { start, end };
+  };
+  const ranges = [
+    () => [
+      span(/^std::unordered_map<std::string, HostTensor> load_weight_file/, /^const HostTensor& tensor/),
+      span(/^float\* upload\(/, /^std::vector<float> transpose_weights/),
+      span(/^DeviceLayer make_layer\(/, /^ManualSFaceCudaContext\* create_manual_sface_cuda/),
+      span(/^ManualSFaceCudaContext\* create_manual_sface_cuda/, /^void destroy_manual_sface_cuda/)
+    ],
+    () => [span(/^std::vector<float> manual_sface_cuda_forward\(/, /^constexpr int threads/)],
+    () => [
+      span(/^__global__ void preprocess_kernel/, /^__global__ void standard_conv3x3_kernel/),
+      inclusive(/^preprocess_kernel<</, /^check_cuda\(cudaGetLastError\(\), "manual SFace preprocess kernel"\);/)
+    ],
+    () => [
+      span(/^__global__ void standard_conv3x3_kernel/, /^__global__ void depthwise_conv3x3_kernel/),
+      span(/^standard_conv3x3_kernel<</, /^\} else if \(layer\.kind == DeviceLayer::Kind::Depthwise3x3\)/)
+    ],
+    () => [
+      span(/^for \(int block = 2; block <= 14; \+\+block\)/, /^auto \[feature_scale, feature_shift\]/),
+      span(/^__global__ void depthwise_conv3x3_kernel/, /^__global__ void pointwise_gemm_kernel/),
+      span(/^__global__ void pointwise_gemm_kernel/, /^__global__ void affine_in_place_kernel/),
+      inclusive(/^\} else if \(layer\.kind == DeviceLayer::Kind::Depthwise3x3\)/, /^check_cuda\(cudaGetLastError\(\), "manual SFace layer kernel"\);/)
+    ],
+    () => [
+      span(/^__global__ void affine_in_place_kernel/, /^__global__ void fully_connected_kernel/),
+      inclusive(/^affine_in_place_kernel<</, /^check_cuda\(cudaGetLastError\(\), "manual SFace final feature BatchNorm kernel"\);/)
+    ],
+    () => [
+      span(/^__global__ void fully_connected_kernel/, /^__global__ void normalize_embeddings_kernel/),
+      inclusive(/^fully_connected_kernel<</, /^check_cuda\(cudaGetLastError\(\), "manual SFace fully connected kernel"\);/)
+    ],
+    () => [
+      span(/^__global__ void normalize_embeddings_kernel/, /^struct ManualSFaceCudaContext/),
+      inclusive(/^normalize_embeddings_kernel<</, /^check_cuda\(cudaGetLastError\(\), "manual SFace normalization kernel"\);/)
+    ],
+    () => [span(/^std::vector<float> result\(/, /^cudaFree\(embeddings\);/)]
+  ];
+  const selected = ranges[stepIndex]?.() || [];
+  return selected.filter((range) => range.start >= 0 && range.end >= range.start);
+}
+
+async function focusManualSfaceStageCode(stepIndex, shouldScroll = true) {
+  const ready = await ensureExactStageCode();
+  const stage = stageDetails[currentStageIndex];
+  if (!ready || stage?.level !== "05" || usesLegacyStageInspector(stage)) return;
+  const ranges = manualSfaceStageCodeRanges(stage.exactCode.split("\n"), stepIndex);
+  if (!renderFocusedStageSource(stage, ranges, stepIndex, shouldScroll)) {
+    console.error(`Could not resolve manual SFace stage 05 code ranges for step ${stepIndex + 1}`);
+    stageCodeSource.textContent = uiText("fullStageError");
+  }
+}
+
 async function focusNativeStageFiveCode(stepIndex, shouldScroll = true) {
   const ready = await ensureExactStageCode();
   const stage = stageDetails[currentStageIndex];
@@ -6542,6 +6609,7 @@ function renderStageCode(stage) {
   const focusEnd = selectedStep >= 0 && diagramLabels.length
     ? Math.max(focusStart, Math.min(sourceLines.length - 1, Math.floor(((selectedStep + 1) * sourceLines.length) / diagramLabels.length) - 1))
     : -1;
+  const usedManualSfaceAnnotations = new Set();
   sourceLines.forEach((line, index) => {
     const row = document.createElement("div");
     row.className = `code-line-note${line.trim() ? "" : " blank"}`;
@@ -6554,13 +6622,17 @@ function renderStageCode(stage) {
     note.className = "code-note";
     const annotationLines = fullMode && combinedRecognitionCode ? combinedRecognitionCode.split("\n") : sourceLines;
     const annotationIndex = fullMode ? (stage.exactStartLine || 0) + index : index;
-    note.textContent = stage?.level === "05" && !usesLegacyStageInspector(stage)
-      ? uniqueManualSfaceSourceAnnotation(sourceLines, index)
+    const manualAnnotation = stage?.level === "05" && !usesLegacyStageInspector(stage)
+      ? manualSfaceSourceAnnotation(sourceLines, index)
+      : "";
+    note.textContent = manualAnnotation
+      ? (usedManualSfaceAnnotations.has(manualAnnotation) ? "" : manualAnnotation)
       : fullMode
         ? stage?.variantKey === "single"
           ? contextualNativeSourceAnnotation(annotationLines, annotationIndex)
           : contextualSingleSourceAnnotation(annotationLines, annotationIndex)
         : codeAnnotation(stage, line);
+    if (manualAnnotation) usedManualSfaceAnnotations.add(manualAnnotation);
     row.append(code, note);
     stageCode.appendChild(row);
   });
@@ -6931,17 +7003,24 @@ function genericStageCodeRange(stageLevel, lines, stepIndex) {
 }
 
 function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true) {
-  if (!stage?.exactCode || range.start < 0 || range.end < range.start) return false;
+  const ranges = (Array.isArray(range) ? range : [range]).filter((item) => item && item.start >= 0 && item.end >= item.start);
+  if (!stage?.exactCode || ranges.length === 0) return false;
   const sourceLines = stage.exactCode.split("\n");
+  const firstFocusedIndex = Math.min(...ranges.map((item) => item.start));
+  const lastFocusedIndex = Math.max(...ranges.map((item) => item.end));
+  const isFocused = (index) => ranges.some((item) => index >= item.start && index <= item.end);
+  const isFocusStart = (index) => ranges.some((item) => index === item.start);
+  const isFocusEnd = (index) => ranges.some((item) => index === item.end);
   stageCodeMode = "full";
   stageCode.innerHTML = "";
   stageCode.setAttribute("dir", (document.documentElement.lang || "en") === "he" ? "rtl" : "ltr");
   stageCode.classList.add("full-code", "focused-source");
   stageCodeModeButton.textContent = uiText("showShortCode");
   stageCodeSource.textContent = uiText("focusedCodeSource")
-    .replace("{start}", String(range.start + 1))
-    .replace("{end}", String(range.end + 1));
+    .replace("{start}", String(firstFocusedIndex + 1))
+    .replace("{end}", String(lastFocusedIndex + 1));
   const rows = [];
+  const usedManualSfaceAnnotations = new Set();
   sourceLines.forEach((line, index) => {
     const row = document.createElement("div");
     row.className = `code-line-note${line.trim() ? "" : " blank"}`;
@@ -6952,13 +7031,19 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true) 
     note.className = "code-note";
     const annotationLines = combinedRecognitionCode ? combinedRecognitionCode.split("\n") : sourceLines;
     const annotationIndex = combinedRecognitionCode ? (stage.exactStartLine || 0) + index : index;
-    note.textContent = stage?.variantKey === "single"
-      ? contextualNativeSourceAnnotation(annotationLines, annotationIndex)
-      : contextualSingleSourceAnnotation(annotationLines, annotationIndex);
+    const manualAnnotation = stage?.level === "05" && !usesLegacyStageInspector(stage)
+      ? manualSfaceSourceAnnotation(sourceLines, index)
+      : "";
+    note.textContent = manualAnnotation
+      ? (usedManualSfaceAnnotations.has(manualAnnotation) ? "" : manualAnnotation)
+      : stage?.variantKey === "single"
+        ? contextualNativeSourceAnnotation(annotationLines, annotationIndex)
+        : contextualSingleSourceAnnotation(annotationLines, annotationIndex);
+    if (manualAnnotation) usedManualSfaceAnnotations.add(manualAnnotation);
     row.append(code, note);
-    if (index >= range.start && index <= range.end) row.classList.add("code-focus");
-    if (index === range.start) row.classList.add("code-focus-start");
-    if (index === range.end) row.classList.add("code-focus-end");
+    if (isFocused(index)) row.classList.add("code-focus");
+    if (isFocusStart(index)) row.classList.add("code-focus-start");
+    if (isFocusEnd(index)) row.classList.add("code-focus-end");
     rows.push(row);
     stageCode.appendChild(row);
   });
@@ -6968,7 +7053,7 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true) 
     node.classList.toggle("code-active", selected);
     node.setAttribute("aria-pressed", selected ? "true" : "false");
   });
-  const firstRow = rows[range.start];
+  const firstRow = rows[firstFocusedIndex];
   if (firstRow) requestAnimationFrame(() => {
     stageCode.scrollTop = Math.max(0, firstRow.offsetTop - stageCode.offsetTop - 18);
     if (shouldScroll) stageCode.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -7124,7 +7209,9 @@ function buildStageDiagram(labels, notes, data) {
           item.classList.toggle("code-active", selected);
           item.setAttribute("aria-pressed", selected ? "true" : "false");
         });
-        if (data.level === "06" && !usesLegacyStageInspector(data)) {
+        if (data.level === "05" && !usesLegacyStageInspector(data)) {
+          focusManualSfaceStageCode(index);
+        } else if (data.level === "06" && !usesLegacyStageInspector(data)) {
           focusNativeStageFiveCode(index);
         } else {
           scrollStageCodeToFocused();
@@ -7173,7 +7260,7 @@ function renderStageDetail(index, shouldScroll = true) {
     ensureExactStageCode().then(() => {
       if (currentStageIndex === index && stageCodeMode === "full") {
         renderStageDetail(index, false);
-        if (data.level !== "06" && activeStageFiveCodeStep >= 0) scrollStageCodeToFocused(false);
+        if (!(["05", "06"].includes(data.level)) && activeStageFiveCodeStep >= 0) scrollStageCodeToFocused(false);
       }
     });
   }
@@ -7183,7 +7270,9 @@ function renderStageDetail(index, shouldScroll = true) {
   document.querySelectorAll(".pipeline-step").forEach((step) => {
     step.classList.toggle("active", Number(step.dataset.stage) === currentStageIndex);
   });
-  if (data.level === "06" && activeStageFiveCodeStep >= 0 && !usesLegacyStageInspector(data)) {
+  if (data.level === "05" && activeStageFiveCodeStep >= 0 && !usesLegacyStageInspector(data)) {
+    focusManualSfaceStageCode(activeStageFiveCodeStep, false);
+  } else if (data.level === "06" && activeStageFiveCodeStep >= 0 && !usesLegacyStageInspector(data)) {
     focusNativeStageFiveCode(activeStageFiveCodeStep, false);
   }
   if (shouldScroll) stageDetail.scrollIntoView({ behavior: "smooth", block: "start" });
