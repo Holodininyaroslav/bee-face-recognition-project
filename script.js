@@ -6253,6 +6253,7 @@ function manualSfaceSourceAnnotation(lines, index) {
   const say = (en, ru, he) => repairLocalizedText(lang === "ru" ? ru : lang === "he" ? he : en);
   const kernelLine = [...lines.slice(0, index + 1)].reverse().find((line) => line.trim().startsWith("__global__ void ")) || "";
   const kernel = kernelLine.match(/void\s+(\w+)/)?.[1] || "manual SFace CUDA kernel";
+  const previous = [...lines.slice(0, index)].reverse().find((line) => line.trim())?.trim() || "kernel start";
   if (!text) return say("Blank separator; no instruction is executed.", "Пустой разделитель; инструкция не выполняется.", "מפריד ריק; לא מתבצעת הוראה.");
   const rules = [
     [/^__global__ void pointwise_gemm_kernel/, "Declares the project kernel that evaluates every learned 1x1 convolution as tiled matrix multiplication.", "Объявляет kernel проекта, вычисляющий каждую обученную свёртку 1x1 как плиточное матричное умножение.", "מגדירה kernel של הפרויקט שמחשב כל קונבולוציה מאומנת 1x1 ככפל מטריצות מרוצף."],
@@ -6261,27 +6262,39 @@ function manualSfaceSourceAnnotation(lines, index) {
     [/^__global__ void normalize_embeddings_kernel/, "Declares one CUDA reduction per face for 128D L2 normalization.", "Объявляет CUDA reduction для каждого лица при L2-нормализации 128D.", "מגדירה CUDA reduction אחד לכל פנים עבור נרמול L2 של 128D."],
     [/^const float\* input,?$/, "Receives the device pointer to the input activation matrix.", "Получает device-указатель на входную матрицу признаков.", "מקבלת מצביע התקן למטריצת ההפעלות בקלט."],
     [/^const float\* transposed_weights,?$/, "Receives trained weights in contiguous KxN order for tiled reads.", "Получает обученные веса в непрерывном порядке KxN для плиточного чтения.", "מקבלת משקלים מאומנים בסדר KxN רציף לקריאה מרוצפת."],
-    [/^const float\* (scale|shift),?$/, "Receives a trained BatchNorm coefficient for every output channel.", "Получает обученный коэффициент BatchNorm для каждого выходного канала.", "מקבלת מקדם BatchNorm מאומן לכל ערוץ פלט."],
+    [/^const float\* scale,?$/, "Receives the learned BatchNorm scale for each output channel.", "Получает обученный коэффициент масштаба BatchNorm для каждого выходного канала.", "מקבלת את מקדם ה-scale המאומן של BatchNorm לכל ערוץ פלט."],
+    [/^const float\* shift,?$/, "Receives the learned BatchNorm shift for each output channel.", "Получает обученное смещение BatchNorm для каждого выходного канала.", "מקבלת את מקדם ה-shift המאומן של BatchNorm לכל ערוץ פלט."],
     [/^const float\* slope,?$/, "Receives the trained PReLU slope fused into the pointwise output.", "Получает обученный slope PReLU, объединённый с pointwise-результатом.", "מקבלת שיפוע PReLU מאומן המאוחד בפלט pointwise."],
     [/^const float\* bias,?$/, "Receives the trained 128-value fully connected bias.", "Получает обученный bias полносвязного слоя из 128 значений.", "מקבלת bias מאומן בן 128 ערכים של השכבה המלאה."],
-    [/^float\* (output|values),?$/, "Receives the device destination; no intermediate tensor returns to CPU.", "Получает device-буфер результата; промежуточный тензор не возвращается на CPU.", "מקבלת יעד בזיכרון ההתקן; אף טנזור ביניים אינו חוזר ל-CPU."],
+    [/^float\* output,?$/, "Receives the device buffer for the next SFace tensor or the final embedding matrix.", "Получает device-буфер следующего тензора SFace или итоговой матрицы embeddings.", "מקבלת את מאגר ההתקן לטנזור SFace הבא או למטריצת ה-embeddings הסופית."],
+    [/^float\* values,?$/, "Receives the feature tensor that the final BatchNorm updates in place on the GPU.", "Получает тензор признаков, который финальный BatchNorm изменяет на GPU на месте.", "מקבלת את טנזור המאפיינים שה-BatchNorm הסופי מעדכן במקום על ה-GPU."],
     [/^int rows,?$/, "Receives M, the number of matrix rows across the complete batch.", "Получает M — число строк матрицы во всём batch.", "מקבלת את M, מספר שורות המטריצה בכל האצווה."],
     [/^int input_channels,?$/, "Receives K, the channel dimension reduced by each pointwise result.", "Получает K — размер каналов, суммируемый в каждом pointwise-результате.", "מקבלת את K, ממד הערוצים המצטבר בכל תוצאת pointwise."],
     [/^int output_channels,?$/, "Receives N, the learned output-channel count.", "Получает N — число обученных выходных каналов.", "מקבלת את N, מספר ערוצי הפלט המאומנים."],
     [/^int input_dimensions$/, "Receives K=50176, the flattened 1024x7x7 feature count.", "Получает K=50176 — число развёрнутых признаков 1024x7x7.", "מקבלת K=50176, מספר המאפיינים השטוחים 1024x7x7."],
     [/^int spatial$/, "Receives HxW for mapping a flat row to its image position.", "Получает HxW для преобразования плоской строки в позицию изображения.", "מקבלת HxW למיפוי שורה שטוחה למיקום בתמונה."],
-    [/^std::size_t total,?$|^int channels,?$/, "Supplies the tensor bound or channel count required by the affine kernel.", "Передаёт границу тензора или число каналов для affine-kernel.", "מספקת את גבול הטנזור או מספר הערוצים הדרוש ל-affine kernel."],
+    [/^std::size_t total,?$/, "Receives the total element count used to stop threads outside the final feature tensor.", "Получает общее число элементов, чтобы остановить threads за границей финального тензора признаков.", "מקבלת את מספר האיברים הכולל כדי לעצור threads מחוץ לטנזור המאפיינים הסופי."],
+    [/^int channels,?$/, "Receives the channel count needed to recover a BatchNorm channel from a flat tensor index.", "Получает число каналов для восстановления канала BatchNorm по плоскому индексу тензора.", "מקבלת את מספר הערוצים הדרוש לשחזור ערוץ BatchNorm מאינדקס טנזור שטוח."],
     [/^\) \{$/, `Completes the arguments and opens ${kernel}.`, `Завершает аргументы и открывает тело ${kernel}.`, `משלימה את הארגומנטים ופותחת את ${kernel}.`],
     [/^__shared__ float input_tile/, "Allocates a 16x16 shared-memory activation tile reused by 256 threads.", "Выделяет плитку признаков shared memory 16x16 для совместного использования 256 threads.", "מקצה אריח הפעלות ב-shared memory בגודל 16x16 לשימוש 256 threads."],
     [/^__shared__ float weight_tile/, "Allocates a 16x16 shared-memory weight tile to reduce global-memory reads.", "Выделяет плитку весов shared memory 16x16 для сокращения чтений global memory.", "מקצה אריח משקלים ב-shared memory בגודל 16x16 להפחתת קריאות מהזיכרון הגלובלי."],
     [/^const int output_tiles =/, "Rounds the output dimension to 16-column tiles with a guarded final partial tile.", "Разбивает выходную размерность на плитки по 16 столбцов с проверкой неполной последней плитки.", "מחלקת את ממד הפלט לאריחים בני 16 עמודות עם הגנה על האריח האחרון החלקי."],
-    [/^const int (row_tile|output_tile|local_row|local_output|row|output_channel|output_dimension) =/, "Maps blockIdx/threadIdx coordinates to one global matrix row and output column.", "Преобразует координаты blockIdx/threadIdx в глобальные строку и выходной столбец матрицы.", "ממפה קואורדינטות blockIdx/threadIdx לשורת מטריצה ולעמודת פלט גלובליות."],
+    [/^const int row_tile =/, "Uses blockIdx.x to choose which 16-row tile of the matrix this CUDA block computes.", "Использует blockIdx.x, чтобы выбрать 16-строчную плитку матрицы, которую считает этот CUDA block.", "משתמשת ב-blockIdx.x כדי לבחור את אריח 16 השורות של המטריצה שבלוק CUDA זה מחשב."],
+    [/^const int output_tile =/, "Uses the remainder of blockIdx.x to choose this block's 16-column output tile.", "Использует остаток blockIdx.x, чтобы выбрать 16-столбцовую выходную плитку данного block.", "משתמשת בשארית של blockIdx.x כדי לבחור את אריח הפלט בן 16 העמודות של הבלוק."],
+    [/^const int local_row =/, "Takes threadIdx.x as this thread's row position inside the 16-row tile.", "Берёт threadIdx.x как позицию текущего thread внутри 16-строчной плитки.", "לוקחת את threadIdx.x כמיקום השורה של ה-thread בתוך אריח בן 16 שורות."],
+    [/^const int local_output =/, "Takes threadIdx.y as this thread's output-column position inside the 16-column tile.", "Берёт threadIdx.y как позицию выходного столбца текущего thread внутри 16-столбцовой плитки.", "לוקחת את threadIdx.y כמיקום עמודת הפלט של ה-thread בתוך אריח בן 16 עמודות."],
+    [/^const int row = row_tile/, "Combines the selected tile and local thread row into one global matrix row.", "Объединяет выбранную плитку и локальную строку thread в одну глобальную строку матрицы.", "מאחדת את האריח שנבחר ואת השורה המקומית של ה-thread לשורת מטריצה גלובלית אחת."],
+    [/^const int output_channel =/, "Converts the output tile and local column into the global SFace output-channel index.", "Преобразует выходную плитку и локальный столбец в глобальный индекс выходного канала SFace.", "ממירה את אריח הפלט ואת העמודה המקומית לאינדקס ערוץ הפלט הגלובלי של SFace."],
+    [/^const int output_dimension =/, "Converts the output tile and local column into one of the 128 embedding dimensions.", "Преобразует выходную плитку и локальный столбец в одно из 128 измерений embedding.", "ממירה את אריח הפלט ואת העמודה המקומית לאחד מ-128 ממדי ה-embedding."],
     [/^float sum = 0\.0f/, "Initializes this thread's dot-product accumulator.", "Обнуляет аккумулятор dot product текущего thread.", "מאתחלת את צובר המכפלה הפנימית של ה-thread."],
     [/^for \(int start = 0;/, "Traverses the full K dimension in 16-value tiles; no trained weight is skipped.", "Проходит полную размерность K плитками по 16 значений; обученные веса не пропускаются.", "עוברת על כל ממד K באריחים בני 16 ערכים; אף משקל מאומן אינו מדולג."],
-    [/^const int (input_channel_for_[ab]|input_for_[ab]) =/, "Selects the K element this thread loads into the activation or weight tile.", "Выбирает элемент K, загружаемый thread в плитку признаков или весов.", "בוחרת את איבר K שה-thread טוען לאריח ההפעלות או המשקלים."],
+    [/^const int input_channel_for_a =|^const int input_for_a =/, "Selects the activation component loaded by this thread into the shared input tile.", "Выбирает компоненту признаков, которую этот thread загрузит в shared-плитку входа.", "בוחרת את רכיב ההפעלה שה-thread הזה יטען לאריח הקלט המשותף."],
+    [/^const int input_channel_for_b =|^const int input_for_b =/, "Selects the learned-weight row loaded by this thread into the shared weight tile.", "Выбирает строку обученных весов, которую этот thread загрузит в shared-плитку весов.", "בוחרת את שורת המשקלים המאומנים שה-thread הזה יטען לאריח המשקלים המשותף."],
     [/^if \(row < rows|^if \(input_channel_for_b|^row < rows &&|^input_for_b </, "Guards a partial boundary tile before reading or writing device memory.", "Проверяет границу неполной плитки до чтения или записи device memory.", "בודקת את גבול האריח החלקי לפני קריאה או כתיבה בזיכרון ההתקן."],
-    [/^const int image = row \/ spatial|^const int position = row % spatial/, "Maps the flattened row to its batch image and HxW position.", "Преобразует плоскую строку в image внутри batch и позицию HxW.", "ממפה את השורה השטוחה לתמונה באצווה ולמיקום HxW."],
-    [/^input_tile\[|^weight_tile\[/, "Writes one guarded activation or trained weight into shared memory.", "Записывает проверенный признак или обученный вес в shared memory.", "כותבת הפעלה מוגנת או משקל מאומן ל-shared memory."],
+    [/^const int image = row \/ spatial/, "Finds which image in the batch owns this flattened matrix row.", "Определяет, какому изображению batch принадлежит эта плоская строка матрицы.", "מוצאת לאיזו תמונה באצווה שייכת שורת המטריצה השטוחה הזאת."],
+    [/^const int position = row % spatial/, "Finds the HxW position inside that image for this flattened matrix row.", "Определяет позицию HxW внутри этого изображения для плоской строки матрицы.", "מוצאת את מיקום HxW בתוך אותה תמונה עבור שורת המטריצה השטוחה."],
+    [/^input_tile\[/, "Stores one guarded activation value in shared memory for reuse by the whole 16x16 block.", "Сохраняет одно проверенное значение признака в shared memory для повторного использования всем block 16x16.", "שומרת ערך הפעלה מוגן אחד ב-shared memory לשימוש חוזר של כל בלוק 16x16."],
+    [/^weight_tile\[/, "Stores one guarded trained weight in shared memory for the tiled multiply-add loop.", "Сохраняет один проверенный обученный вес в shared memory для плиточного цикла multiply-add.", "שומרת משקל מאומן מוגן אחד ב-shared memory עבור לולאת ה-multiply-add המרוצפת."],
     [/^input\[|^transposed_weights\[/, "Reads the exact indexed activation or trained coefficient from device memory.", "Читает точно индексированный признак или обученный коэффициент из device memory.", "קוראת את ההפעלה או המקדם המאומן לפי האינדקס המדויק מזיכרון ההתקן."],
     [/^: 0\.0f|^.*= 0\.0f;$/, "Writes zero for an out-of-range element of the final partial tile.", "Записывает 0 для элемента за границей последней неполной плитки.", "כותבת אפס עבור איבר מחוץ לגבולות באריח האחרון החלקי."],
     [/^__syncthreads/, "Synchronizes all 256 threads before shared memory is consumed or reused.", "Синхронизирует 256 threads перед использованием или повторной записью shared memory.", "מסנכרנת את כל 256 ה-threads לפני שימוש או כתיבה מחדש ב-shared memory."],
@@ -6290,15 +6303,20 @@ function manualSfaceSourceAnnotation(lines, index) {
     [/^sum \+= input_tile/, "Performs the actual matrix multiply-add for one K element.", "Выполняет реальную операцию matrix multiply-add для одного элемента K.", "מבצעת בפועל פעולת matrix multiply-add עבור איבר K אחד."],
     [/^const std::size_t output_index|^\(static_cast<std::size_t>\(image\)/, "Calculates the contiguous NCHW address of this output element.", "Вычисляет непрерывный NCHW-адрес текущего элемента результата.", "מחשבת את כתובת NCHW הרציפה של איבר הפלט הנוכחי."],
     [/^output\[output_index\] = activate/, "Writes the dot product after fused trained BatchNorm and PReLU.", "Записывает dot product после объединённых обученных BatchNorm и PReLU.", "כותבת את המכפלה הפנימית לאחר BatchNorm ו-PReLU מאומנים ומאוחדים."],
-    [/^const std::size_t index =|^if \(index >= total\)|^const int channel =|^values\[index\] =/, "Indexes, guards and applies the trained in-place BatchNorm affine transform.", "Индексирует, проверяет границу и применяет обученное affine-преобразование BatchNorm на месте.", "מאנדקסת, בודקת גבולות ומחילה במקום את התמרת BatchNorm המאומנת."],
+    [/^const std::size_t index =/, "Builds the flat feature-tensor index assigned to this CUDA thread.", "Строит плоский индекс тензора признаков, назначенный этому CUDA thread.", "בונה את אינדקס טנזור המאפיינים השטוח שהוקצה ל-thread CUDA זה."],
+    [/^if \(index >= total\) return/, "Stops threads whose flat index lies outside the final feature tensor.", "Останавливает threads, чей плоский индекс лежит за границей финального тензора признаков.", "עוצרת threads שהאינדקס השטוח שלהם נמצא מחוץ לטנזור המאפיינים הסופי."],
+    [/^const int channel =/, "Recovers the feature channel that selects the matching BatchNorm scale and shift.", "Восстанавливает канал признаков, который выбирает соответствующие scale и shift BatchNorm.", "משחזרת את ערוץ המאפיינים שבוחר את ה-scale וה-shift המתאימים של BatchNorm."],
+    [/^values\[index\] =/, "Applies the learned BatchNorm affine transform directly to this feature value.", "Применяет обученное affine-преобразование BatchNorm прямо к этому значению признака.", "מחילה את התמרת ה-affine המאומנת של BatchNorm ישירות על ערך המאפיין הזה."],
     [/^const float value = sum \+ bias|^output\[static_cast<std::size_t>\(row\)|^value \* scale\[output_dimension\]/, "Adds the trained bias and final BatchNorm, then writes one value of the Bx128 embedding matrix.", "Добавляет обученный bias и финальный BatchNorm, затем записывает одно значение матрицы embeddings Bx128.", "מוסיפה bias מאומן ו-BatchNorm סופי ואז כותבת ערך אחד במטריצת embeddings בגודל Bx128."],
-    [/^__shared__ float sums|^const int row = blockIdx.x|^const int lane = threadIdx.x/, "Assigns one block to one face and prepares shared memory for its norm reduction.", "Назначает один block одному лицу и готовит shared memory для reduction его нормы.", "מקצה בלוק אחד לפנים אחד ומכינה shared memory ל-reduction של הנורמה שלו."],
+    [/^__shared__ float sums/, "Allocates 256 shared partial sums for the L2-norm reduction of one face embedding.", "Выделяет 256 частичных сумм в shared memory для reduction L2-нормы одного embedding лица.", "מקצה 256 סכומים חלקיים ב-shared memory עבור reduction של נורמת L2 ל-embedding של פנים אחת."],
+    [/^const int row = blockIdx.x/, "Assigns this CUDA block to one embedding row, therefore to one face in the batch.", "Назначает этот CUDA block одной строке embeddings, то есть одному лицу batch.", "מקצה את בלוק CUDA הזה לשורת embedding אחת, כלומר לפנים אחת באצווה."],
+    [/^const int lane = threadIdx.x/, "Uses the thread lane as the worker index within this face's 256-thread norm reduction.", "Использует thread lane как индекс worker внутри 256-thread reduction нормы этого лица.", "משתמשת ב-thread lane כאינדקס worker בתוך reduction הנורמה בן 256 ה-threads של פנים אלה."],
     [/^for \(int dimension = lane|^const float value = embeddings|^sum \+= value \* value|^sums\[lane\] = sum/, "Distributes all 128 components across threads and accumulates their squared values.", "Распределяет 128 компонент между threads и накапливает их квадраты.", "מחלקת את 128 הרכיבים בין threads וצוברת את הערכים הריבועיים שלהם."],
     [/^for \(int width = blockDim.x \/ 2|^if \(lane < width\)/, "Reduces the shared partial sums until lane 0 contains the complete squared norm.", "Выполняет reduction частичных сумм, пока lane 0 не получит полную сумму квадратов.", "מבצעת reduction של הסכומים החלקיים עד ש-lane 0 מחזיק את סכום הריבועים המלא."],
     [/^const float inverse_norm =/, "Calculates 1/sqrt(sum of squares) on the GPU with zero protection.", "Вычисляет на GPU 1/sqrt(sum of squares) с защитой от нуля.", "מחשבת ב-GPU את 1/sqrt(sum of squares) עם הגנה מאפס."],
     [/^embeddings\[/, "Multiplies one component by the shared inverse norm, producing a unit-length vector.", "Умножает компоненту на общую обратную норму и получает единичный вектор.", "כופלת רכיב אחד בנורמה ההפוכה המשותפת ויוצרת וקטור באורך יחידה."],
     [/^\} else \{$/, "Selects the boundary branch that substitutes zero instead of reading outside the matrix.", "Выбирает граничную ветку, подставляющую 0 вместо чтения за пределами матрицы.", "בוחרת בענף הגבול שמציב אפס במקום לקרוא מחוץ למטריצה."],
-    [/^\}$/, `Closes the current loop, branch or ${kernel} scope.`, `Закрывает текущий цикл, ветку или область ${kernel}.`, `סוגרת את הלולאה, הענף או התחום הנוכחי של ${kernel}.`]
+    [/^\}$/, `Closes the scope that follows \`${previous}\` in ${kernel}.`, `Закрывает область после \`${previous}\` в ${kernel}.`, `סוגרת את התחום שאחרי \`${previous}\` בתוך ${kernel}.`]
   ];
   const match = rules.find(([pattern]) => pattern.test(text));
   if (match) return say(match[1], match[2], match[3]);
@@ -6307,6 +6325,15 @@ function manualSfaceSourceAnnotation(lines, index) {
     `Завершает соседнее индексированное CUDA-выражение в ${kernel}; видимые операнды задают точный адрес памяти или арифметический член, библиотечный inference здесь не скрыт.`,
     `משלימה את ביטוי CUDA המאונדקס הסמוך ב-${kernel}; האופרנדים הגלויים מגדירים כתובת זיכרון או איבר אריתמטי מדויק ואין כאן inference מוסתר של ספרייה.`
   );
+}
+
+function uniqueManualSfaceSourceAnnotation(lines, index) {
+  const annotation = manualSfaceSourceAnnotation(lines, index);
+  if (!annotation) return "";
+  for (let previousIndex = 0; previousIndex < index; previousIndex += 1) {
+    if (manualSfaceSourceAnnotation(lines, previousIndex) === annotation) return "";
+  }
+  return annotation;
 }
 
 function codeAnnotation(stage, line) {
@@ -6528,7 +6555,7 @@ function renderStageCode(stage) {
     const annotationLines = fullMode && combinedRecognitionCode ? combinedRecognitionCode.split("\n") : sourceLines;
     const annotationIndex = fullMode ? (stage.exactStartLine || 0) + index : index;
     note.textContent = stage?.level === "05" && !usesLegacyStageInspector(stage)
-      ? manualSfaceSourceAnnotation(sourceLines, index)
+      ? uniqueManualSfaceSourceAnnotation(sourceLines, index)
       : fullMode
         ? stage?.variantKey === "single"
           ? contextualNativeSourceAnnotation(annotationLines, annotationIndex)
