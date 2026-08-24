@@ -968,6 +968,26 @@ html[dir="rtl"] .stage-onnx-layer { direction: rtl; }
   font-weight: 800;
 }
 
+.code-line-note.code-focus-kernel-link {
+  cursor: pointer;
+}
+
+.code-line-note.code-focus-kernel-link:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: -2px;
+}
+
+.code-line-note.code-focus-kernel-target {
+  border-left-color: #c38cff;
+  background: rgba(159, 89, 255, .3);
+  box-shadow: inset 0 1px 0 rgba(217, 188, 255, .5), inset 0 -1px 0 rgba(217, 188, 255, .3);
+}
+
+.code-line-note.code-focus-kernel-target code {
+  color: #f6edff;
+  font-weight: 800;
+}
+
 html[dir="rtl"] .code-line-note.code-focus.code-focus-primary {
   border-right-color: var(--cyan);
 }
@@ -977,6 +997,10 @@ html[dir="rtl"] .code-line-note.code-focus.code-focus-activation-link {
 }
 
 html[dir="rtl"] .code-line-note.code-focus.code-focus-activation-target {
+  border-right-color: #c38cff;
+}
+
+html[dir="rtl"] .code-line-note.code-focus.code-focus-kernel-target {
   border-right-color: #c38cff;
 }
 

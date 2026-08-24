@@ -6516,36 +6516,19 @@ function manualSfaceStageCodeRanges(lines, stepIndex) {
       span(/^ManualSFaceCudaContext\* create_manual_sface_cuda/, /^void destroy_manual_sface_cuda/)
     ],
     () => [span(/^std::vector<float> manual_sface_cuda_forward\(/, /^constexpr int threads/)],
-    () => [
-      span(/^__global__ void preprocess_kernel/, /^__global__ void standard_conv3x3_kernel/),
-      inclusive(/^preprocess_kernel<</, /^check_cuda\(cudaGetLastError\(\), "manual SFace preprocess kernel"\);/)
-    ],
-    () => [
-      span(/^__global__ void standard_conv3x3_kernel/, /^__global__ void depthwise_conv3x3_kernel/),
-      span(/^standard_conv3x3_kernel<</, /^\} else if \(layer\.kind == DeviceLayer::Kind::Depthwise3x3\)/)
-    ],
+    () => [inclusive(/^preprocess_kernel<</, /^check_cuda\(cudaGetLastError\(\), "manual SFace preprocess kernel"\);/)],
+    () => [span(/^standard_conv3x3_kernel<</, /^\} else if \(layer\.kind == DeviceLayer::Kind::Depthwise3x3\)/)],
     () => [
       single(/^constexpr int threads = 256;/),
       (() => {
         const start = find(/^for \(const auto& layer : context->layers\)/, find(/^float\* output = second;/) + 1);
         const end = find(/^check_cuda\(cudaGetLastError\(\), "manual SFace layer kernel"\);/, Math.max(0, start));
         return { start, end };
-      })(),
-      span(/^__global__ void depthwise_conv3x3_kernel/, /^__global__ void pointwise_gemm_kernel/),
-      span(/^__global__ void pointwise_gemm_kernel/, /^__global__ void affine_in_place_kernel/)
+      })()
     ],
-    () => [
-      span(/^__global__ void affine_in_place_kernel/, /^__global__ void fully_connected_kernel/),
-      inclusive(/^affine_in_place_kernel<</, /^check_cuda\(cudaGetLastError\(\), "manual SFace final feature BatchNorm kernel"\);/)
-    ],
-    () => [
-      span(/^__global__ void fully_connected_kernel/, /^__global__ void normalize_embeddings_kernel/),
-      inclusive(/^fully_connected_kernel<</, /^check_cuda\(cudaGetLastError\(\), "manual SFace fully connected kernel"\);/)
-    ],
-    () => [
-      span(/^__global__ void normalize_embeddings_kernel/, /^struct ManualSFaceCudaContext/),
-      inclusive(/^normalize_embeddings_kernel<</, /^check_cuda\(cudaGetLastError\(\), "manual SFace normalization kernel"\);/)
-    ],
+    () => [inclusive(/^affine_in_place_kernel<</, /^check_cuda\(cudaGetLastError\(\), "manual SFace final feature BatchNorm kernel"\);/)],
+    () => [inclusive(/^fully_connected_kernel<</, /^check_cuda\(cudaGetLastError\(\), "manual SFace fully connected kernel"\);/)],
+    () => [inclusive(/^normalize_embeddings_kernel<</, /^check_cuda\(cudaGetLastError\(\), "manual SFace normalization kernel"\);/)],
     () => [span(/^std::vector<float> result\(/, /^cudaFree\(embeddings\);/)]
   ];
   const selected = ranges[stepIndex]?.() || [];
@@ -6559,6 +6542,38 @@ function manualSfaceActivateCodeRange(lines) {
     start,
     end: nextKernel > start ? nextKernel - 1 : start
   };
+}
+
+const manualSfaceKernelSteps = {
+  preprocess_kernel: 2,
+  standard_conv3x3_kernel: 3,
+  depthwise_conv3x3_kernel: 4,
+  pointwise_gemm_kernel: 4,
+  affine_in_place_kernel: 5,
+  fully_connected_kernel: 6,
+  normalize_embeddings_kernel: 7
+};
+
+function manualSfaceKernelCodeRange(lines, kernelName) {
+  const start = lines.findIndex((line) => new RegExp(`^__global__ void ${kernelName}\\b`).test(line.trim()));
+  const nextDefinition = lines.findIndex((line, index) => index > start
+    && (/^__global__ void /.test(line.trim()) || /^struct ManualSFaceCudaContext/.test(line.trim())));
+  return {
+    start,
+    end: nextDefinition > start ? nextDefinition - 1 : start
+  };
+}
+
+async function focusManualSfaceKernel(kernelName) {
+  const ready = await ensureExactStageCode();
+  const stage = stageDetails[currentStageIndex];
+  if (!ready || stage?.level !== "05" || usesLegacyStageInspector(stage)) return;
+  const range = manualSfaceKernelCodeRange(stage.exactCode.split("\n"), kernelName);
+  const stepIndex = manualSfaceKernelSteps[kernelName] ?? activeStageFiveCodeStep;
+  if (!renderFocusedStageSource(stage, range, stepIndex, true)) {
+    console.error(`Could not resolve manual SFace kernel ${kernelName}`);
+    stageCodeSource.textContent = uiText("fullStageError");
+  }
 }
 
 async function focusManualSfaceActivation() {
@@ -7150,6 +7165,7 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
   const lastFocusedIndex = Math.max(...ranges.map((item) => item.end));
   const isActivationHelperFocus = stage?.level === "05"
     && /^__device__ float activate\(/.test(sourceLines[firstFocusedIndex]?.trim() || "");
+  const kernelNameAtFocus = sourceLines[firstFocusedIndex]?.trim().match(/^__global__ void (\w+_kernel)\b/)?.[1] || "";
   const isFocused = (index) => ranges.some((item) => index >= item.start && index <= item.end);
   const isFocusStart = (index) => ranges.some((item) => index === item.start);
   const isFocusEnd = (index) => ranges.some((item) => index === item.end);
@@ -7171,21 +7187,20 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
   const kernelMarkersByStep = [
     [],
     [],
-    [/^__global__ void preprocess_kernel/, /^preprocess_kernel<<</],
-    [/^__global__ void standard_conv3x3_kernel/, /^standard_conv3x3_kernel<<</],
-    [/^__global__ void depthwise_conv3x3_kernel/, /^__global__ void pointwise_gemm_kernel/, /^depthwise_conv3x3_kernel<<</, /^pointwise_gemm_kernel<<</],
-    [/^__global__ void affine_in_place_kernel/, /^affine_in_place_kernel<<</],
-    [/^__global__ void fully_connected_kernel/, /^fully_connected_kernel<<</],
-    [/^__global__ void normalize_embeddings_kernel/, /^normalize_embeddings_kernel<<</],
+    [/^preprocess_kernel<<</],
+    [/^standard_conv3x3_kernel<<</],
+    [/^depthwise_conv3x3_kernel<<</, /^pointwise_gemm_kernel<<</],
+    [/^affine_in_place_kernel<<</],
+    [/^fully_connected_kernel<<</],
+    [/^normalize_embeddings_kernel<<</],
     []
   ];
   const isManualSfaceKernelMarker = (line) => stage.level === "05"
     && (kernelMarkersByStep[stepIndex] || []).some((pattern) => pattern.test(line.trim()));
+  const kernelNameForLaunchLine = (line) => line.trim().match(/^(\w+_kernel)<<</)?.[1] || "";
   const isFirstConvExecutionLine = (line, index) => {
     if (stage.level !== "05" || stepIndex !== 3) return false;
-    if (index >= firstConvLaunchStart && index < firstConvLaunchEnd) return true;
-    if (index <= firstConvStart || index >= firstConvEnd) return false;
-    return /^for \(int input_channel = 0;|^for \(int ky = 0;|^for \(int kx = 0;|^sum \+= input\[input_index\] \* weights\[weight_index\];$/.test(line.trim());
+    return index === firstConvLaunchStart;
   };
   const isRepeatedBlockLaunchLine = (index) => {
     if (stage.level !== "05" || stepIndex !== 4) return false;
@@ -7226,9 +7241,25 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
     row.append(code, note);
     if (isFocused(index)) row.classList.add("code-focus");
     if (isActivationHelperFocus && isFocused(index)) row.classList.add("code-focus-activation-target");
+    if (kernelNameAtFocus && isFocused(index)) row.classList.add("code-focus-kernel-target");
     if (isFirstConvExecutionLine(line, index)) row.classList.add("code-focus-primary");
     if (isRepeatedBlockLaunchLine(index)) row.classList.add("code-focus-primary");
-    if (isManualSfaceKernelMarker(line)) row.classList.add("code-focus-primary");
+    if (isManualSfaceKernelMarker(line)) {
+      row.classList.add("code-focus-primary", "code-focus-kernel-link");
+      const kernelName = kernelNameForLaunchLine(line);
+      if (kernelName) {
+        row.tabIndex = 0;
+        row.setAttribute("role", "button");
+        row.setAttribute("aria-label", `Open the ${kernelName} CUDA kernel body`);
+        row.title = `Open ${kernelName}()`;
+        row.addEventListener("click", () => focusManualSfaceKernel(kernelName));
+        row.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          focusManualSfaceKernel(kernelName);
+        });
+      }
+    }
     if (isActivationCallLine(line)) {
       row.classList.add("code-focus-activation-link");
       row.tabIndex = 0;
