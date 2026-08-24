@@ -6561,38 +6561,6 @@ function manualSfaceActivateCodeRange(lines) {
   };
 }
 
-const manualSfaceKernelSteps = {
-  preprocess_kernel: 2,
-  standard_conv3x3_kernel: 3,
-  depthwise_conv3x3_kernel: 4,
-  pointwise_gemm_kernel: 4,
-  affine_in_place_kernel: 5,
-  fully_connected_kernel: 6,
-  normalize_embeddings_kernel: 7
-};
-
-function manualSfaceKernelCodeRange(lines, kernelName) {
-  const start = lines.findIndex((line) => new RegExp(`^__global__ void ${kernelName}\\b`).test(line.trim()));
-  const nextDefinition = lines.findIndex((line, index) => index > start
-    && (/^__global__ void /.test(line.trim()) || /^struct ManualSFaceCudaContext/.test(line.trim())));
-  return {
-    start,
-    end: nextDefinition > start ? nextDefinition - 1 : start
-  };
-}
-
-async function focusManualSfaceKernel(kernelName) {
-  const ready = await ensureExactStageCode();
-  const stage = stageDetails[currentStageIndex];
-  if (!ready || stage?.level !== "05" || usesLegacyStageInspector(stage)) return;
-  const range = manualSfaceKernelCodeRange(stage.exactCode.split("\n"), kernelName);
-  const stepIndex = manualSfaceKernelSteps[kernelName] ?? activeStageFiveCodeStep;
-  if (!renderFocusedStageSource(stage, range, stepIndex, true)) {
-    console.error(`Could not resolve manual SFace kernel ${kernelName}`);
-    stageCodeSource.textContent = uiText("fullStageError");
-  }
-}
-
 async function focusManualSfaceActivation() {
   const ready = await ensureExactStageCode();
   const stage = stageDetails[currentStageIndex];
@@ -7182,7 +7150,6 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
   const lastFocusedIndex = Math.max(...ranges.map((item) => item.end));
   const isActivationHelperFocus = stage?.level === "05"
     && /^__device__ float activate\(/.test(sourceLines[firstFocusedIndex]?.trim() || "");
-  const kernelNameAtFocus = sourceLines[firstFocusedIndex]?.trim().match(/^__global__ void (\w+_kernel)\b/)?.[1] || "";
   const isFocused = (index) => ranges.some((item) => index >= item.start && index <= item.end);
   const isFocusStart = (index) => ranges.some((item) => index === item.start);
   const isFocusEnd = (index) => ranges.some((item) => index === item.end);
@@ -7214,7 +7181,6 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
   ];
   const isManualSfaceKernelMarker = (line) => stage.level === "05"
     && (kernelMarkersByStep[stepIndex] || []).some((pattern) => pattern.test(line.trim()));
-  const kernelNameForLine = (line) => line.trim().match(/^(?:__global__ void )?(\w+_kernel)(?:\b|<<<)/)?.[1] || "";
   const isFirstConvExecutionLine = (line, index) => {
     if (stage.level !== "05" || stepIndex !== 3) return false;
     if (index >= firstConvLaunchStart && index < firstConvLaunchEnd) return true;
@@ -7260,26 +7226,9 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
     row.append(code, note);
     if (isFocused(index)) row.classList.add("code-focus");
     if (isActivationHelperFocus && isFocused(index)) row.classList.add("code-focus-activation-target");
-    if (kernelNameAtFocus && isFocused(index)) row.classList.add("code-focus-kernel-target");
     if (isFirstConvExecutionLine(line, index)) row.classList.add("code-focus-primary");
     if (isRepeatedBlockLaunchLine(index)) row.classList.add("code-focus-primary");
-    if (isManualSfaceKernelMarker(line)) {
-      row.classList.add("code-focus-primary");
-      const kernelName = kernelNameForLine(line);
-      if (kernelName) {
-        row.classList.add("code-focus-kernel-link");
-        row.tabIndex = 0;
-        row.setAttribute("role", "button");
-        row.setAttribute("aria-label", `Open the ${kernelName} CUDA kernel body`);
-        row.title = `Open ${kernelName}()`;
-        row.addEventListener("click", () => focusManualSfaceKernel(kernelName));
-        row.addEventListener("keydown", (event) => {
-          if (event.key !== "Enter" && event.key !== " ") return;
-          event.preventDefault();
-          focusManualSfaceKernel(kernelName);
-        });
-      }
-    }
+    if (isManualSfaceKernelMarker(line)) row.classList.add("code-focus-primary");
     if (isActivationCallLine(line)) {
       row.classList.add("code-focus-activation-link");
       row.tabIndex = 0;
