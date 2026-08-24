@@ -7184,19 +7184,8 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
   const pointwiseLaunchStart = sourceLines.findIndex((line) => /^pointwise_gemm_kernel<<</.test(line.trim()));
   const pointwiseLaunchEnd = sourceLines.findIndex((line, index) => index > pointwiseLaunchStart && /^\);$/.test(line.trim()));
   const isActivationCallLine = (line) => /^output\[index\] = activate\(sum, scale, shift, slope, channel\);$/.test(line.trim());
-  const kernelMarkersByStep = [
-    [],
-    [],
-    [/^preprocess_kernel<<</],
-    [/^standard_conv3x3_kernel<<</],
-    [/^depthwise_conv3x3_kernel<<</, /^pointwise_gemm_kernel<<</],
-    [/^affine_in_place_kernel<<</],
-    [/^fully_connected_kernel<<</],
-    [/^normalize_embeddings_kernel<<</],
-    []
-  ];
   const isManualSfaceKernelMarker = (line) => stage.level === "05"
-    && (kernelMarkersByStep[stepIndex] || []).some((pattern) => pattern.test(line.trim()));
+    && /^(preprocess|standard_conv3x3|depthwise_conv3x3|pointwise_gemm|affine_in_place|fully_connected|normalize_embeddings)_kernel<<</.test(line.trim());
   const kernelNameForLaunchLine = (line) => line.trim().match(/^(\w+_kernel)<<</)?.[1] || "";
   const isFirstConvExecutionLine = (line, index) => {
     if (stage.level !== "05" || stepIndex !== 3) return false;
