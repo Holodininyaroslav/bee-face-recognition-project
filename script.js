@@ -1315,6 +1315,7 @@ let stageRecognitionLineCount = 0;
 let exactStageCodeState = "idle";
 let activeDetectorVariant = "single";
 let activeStageFiveCodeStep = -1;
+let manualSfaceKernelReturn = null;
 
 const cleanRuTranslations = {
   kicker: "COLAB GPU / РАСПОЗНАВАНИЕ ЛИЦ / ИНТЕРФЕЙС ПРОЕКТА",
@@ -6564,16 +6565,24 @@ function manualSfaceKernelCodeRange(lines, kernelName) {
   };
 }
 
-async function focusManualSfaceKernel(kernelName) {
+async function focusManualSfaceKernel(kernelName, origin = null) {
   const ready = await ensureExactStageCode();
   const stage = stageDetails[currentStageIndex];
   if (!ready || stage?.level !== "05" || usesLegacyStageInspector(stage)) return;
+  if (origin) manualSfaceKernelReturn = origin;
   const range = manualSfaceKernelCodeRange(stage.exactCode.split("\n"), kernelName);
   const stepIndex = manualSfaceKernelSteps[kernelName] ?? activeStageFiveCodeStep;
   if (!renderFocusedStageSource(stage, range, stepIndex, true)) {
     console.error(`Could not resolve manual SFace kernel ${kernelName}`);
     stageCodeSource.textContent = uiText("fullStageError");
   }
+}
+
+async function returnToManualSfaceKernelLaunch() {
+  const origin = manualSfaceKernelReturn;
+  manualSfaceKernelReturn = null;
+  if (!origin) return;
+  await focusManualSfaceStageCode(origin.stepIndex, true, origin.sourceIndex);
 }
 
 async function focusManualSfaceActivation() {
@@ -6587,14 +6596,16 @@ async function focusManualSfaceActivation() {
   }
 }
 
-async function focusManualSfaceStageCode(stepIndex, shouldScroll = true) {
+async function focusManualSfaceStageCode(stepIndex, shouldScroll = true, scrollTargetIndex = null) {
   const ready = await ensureExactStageCode();
   const stage = stageDetails[currentStageIndex];
   if (!ready || stage?.level !== "05" || usesLegacyStageInspector(stage)) return;
+  if (!Number.isInteger(scrollTargetIndex)) manualSfaceKernelReturn = null;
   const lines = stage.exactCode.split("\n");
   const ranges = manualSfaceStageCodeRanges(lines, stepIndex);
   const executionRange = ranges.find((range) => /^for \(const auto& layer : context->layers\)/.test(lines[range.start]?.trim() || ""));
-  if (!renderFocusedStageSource(stage, ranges, stepIndex, shouldScroll, executionRange?.start)) {
+  const target = Number.isInteger(scrollTargetIndex) ? scrollTargetIndex : executionRange?.start;
+  if (!renderFocusedStageSource(stage, ranges, stepIndex, shouldScroll, target)) {
     console.error(`Could not resolve manual SFace stage 05 code ranges for step ${stepIndex + 1}`);
     stageCodeSource.textContent = uiText("fullStageError");
   }
@@ -7231,6 +7242,19 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
     if (isFocused(index)) row.classList.add("code-focus");
     if (isActivationHelperFocus && isFocused(index)) row.classList.add("code-focus-activation-target");
     if (kernelNameAtFocus && isFocused(index)) row.classList.add("code-focus-kernel-target");
+    if (kernelNameAtFocus && index === firstFocusedIndex) {
+      row.classList.add("code-focus-kernel-return");
+      row.tabIndex = 0;
+      row.setAttribute("role", "button");
+      row.setAttribute("aria-label", "Return to the CUDA kernel launch");
+      row.title = "Return to kernel launch";
+      row.addEventListener("click", () => returnToManualSfaceKernelLaunch());
+      row.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        returnToManualSfaceKernelLaunch();
+      });
+    }
     if (isFirstConvExecutionLine(line, index)) row.classList.add("code-focus-primary");
     if (isRepeatedBlockLaunchLine(index)) row.classList.add("code-focus-primary");
     if (isManualSfaceKernelMarker(line)) {
@@ -7241,11 +7265,11 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
         row.setAttribute("role", "button");
         row.setAttribute("aria-label", `Open the ${kernelName} CUDA kernel body`);
         row.title = `Open ${kernelName}()`;
-        row.addEventListener("click", () => focusManualSfaceKernel(kernelName));
+        row.addEventListener("click", () => focusManualSfaceKernel(kernelName, { stepIndex, sourceIndex: index }));
         row.addEventListener("keydown", (event) => {
           if (event.key !== "Enter" && event.key !== " ") return;
           event.preventDefault();
-          focusManualSfaceKernel(kernelName);
+          focusManualSfaceKernel(kernelName, { stepIndex, sourceIndex: index });
         });
       }
     }

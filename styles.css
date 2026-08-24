@@ -988,6 +988,17 @@ html[dir="rtl"] .stage-onnx-layer { direction: rtl; }
   font-weight: 800;
 }
 
+.code-line-note.code-focus-kernel-return {
+  cursor: pointer;
+}
+
+.code-line-note.code-focus-kernel-return:hover,
+.code-line-note.code-focus-kernel-return:focus-visible {
+  background: rgba(174, 109, 255, .46);
+  outline: 2px solid #d7b3ff;
+  outline-offset: -2px;
+}
+
 html[dir="rtl"] .code-line-note.code-focus.code-focus-primary {
   border-right-color: var(--cyan);
 }
