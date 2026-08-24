@@ -7168,6 +7168,19 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
   const pointwiseLaunchStart = sourceLines.findIndex((line) => /^pointwise_gemm_kernel<<</.test(line.trim()));
   const pointwiseLaunchEnd = sourceLines.findIndex((line, index) => index > pointwiseLaunchStart && /^\);$/.test(line.trim()));
   const isActivationCallLine = (line) => /^output\[index\] = activate\(sum, scale, shift, slope, channel\);$/.test(line.trim());
+  const kernelMarkersByStep = [
+    [],
+    [],
+    [/^__global__ void preprocess_kernel/, /^preprocess_kernel<<</],
+    [/^__global__ void standard_conv3x3_kernel/, /^standard_conv3x3_kernel<<</],
+    [/^__global__ void depthwise_conv3x3_kernel/, /^__global__ void pointwise_gemm_kernel/, /^depthwise_conv3x3_kernel<<</, /^pointwise_gemm_kernel<<</],
+    [/^__global__ void affine_in_place_kernel/, /^affine_in_place_kernel<<</],
+    [/^__global__ void fully_connected_kernel/, /^fully_connected_kernel<<</],
+    [/^__global__ void normalize_embeddings_kernel/, /^normalize_embeddings_kernel<<</],
+    []
+  ];
+  const isManualSfaceKernelMarker = (line) => stage.level === "05"
+    && (kernelMarkersByStep[stepIndex] || []).some((pattern) => pattern.test(line.trim()));
   const isFirstConvExecutionLine = (line, index) => {
     if (stage.level !== "05" || stepIndex !== 3) return false;
     if (index >= firstConvLaunchStart && index < firstConvLaunchEnd) return true;
@@ -7215,6 +7228,7 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
     if (isActivationHelperFocus && isFocused(index)) row.classList.add("code-focus-activation-target");
     if (isFirstConvExecutionLine(line, index)) row.classList.add("code-focus-primary");
     if (isRepeatedBlockLaunchLine(index)) row.classList.add("code-focus-primary");
+    if (isManualSfaceKernelMarker(line)) row.classList.add("code-focus-primary");
     if (isActivationCallLine(line)) {
       row.classList.add("code-focus-activation-link");
       row.tabIndex = 0;
