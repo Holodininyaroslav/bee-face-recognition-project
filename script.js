@@ -6258,15 +6258,40 @@ function manualSfaceSourceAnnotation(lines, index) {
   const launchLine = [...lines.slice(0, index + 1)].reverse().find((line) => line.includes("<<<")) || "";
   const launchKernel = launchLine.match(/(\w+_kernel)<<</)?.[1] || kernel;
   if (!text) return say("Blank separator; no instruction is executed.", "Пустой разделитель; инструкция не выполняется.", "מפריד ריק; לא מתבצעת הוראה.");
+  if (text.startsWith("preprocess_kernel<<<")) return say(
+    "Launches input preprocessing: one CUDA thread normalizes one value of the Bx3x112x112 face tensor before the first convolution.",
+    "Запускает подготовку входа: один CUDA thread нормализует одно значение тензора лица Bx3x112x112 перед первой свёрткой.",
+    "משגרת עיבוד מקדים לקלט: כל CUDA thread מנרמל ערך אחד בטנזור הפנים Bx3x112x112 לפני הקונבולוציה הראשונה."
+  );
+  if (text.startsWith("standard_conv3x3_kernel<<<")) return say(
+    "Launches the first learned 3x3 convolution: each thread writes one output feature value after combining its 3x3 neighbourhood across all input channels.",
+    "Запускает первую обученную свёртку 3x3: каждый thread записывает одно выходное значение признака, суммируя окно 3x3 по всем входным каналам.",
+    "משגרת את הקונבולוציה המאומנת הראשונה 3x3: כל thread כותב ערך מאפיין אחד בפלט לאחר צבירת חלון 3x3 על פני כל ערוצי הקלט."
+  );
   if (text.startsWith("depthwise_conv3x3_kernel<<<")) return say(
-    "Launches the depthwise 3x3 CUDA kernel for the current layer; the following values define its grid and 256-thread block.",
-    "Запускает CUDA-kernel depthwise 3x3 для текущего слоя; следующие значения задают его grid и block из 256 threads.",
-    "משגרת את CUDA kernel מסוג depthwise 3x3 עבור השכבה הנוכחית; הערכים הבאים מגדירים את ה-grid ואת ה-block בן 256 ה-threads שלה."
+    "Launches the depthwise 3x3 kernel: each thread writes one output pixel using the learned 3x3 filter of its own channel; the next values define its grid and 256-thread block.",
+    "Запускает depthwise-kernel 3x3: каждый thread записывает один выходной пиксель, используя обученный фильтр 3x3 своего канала; далее заданы его grid и block из 256 threads.",
+    "משגרת kernel מסוג depthwise 3x3: כל thread כותב פיקסל פלט אחד בעזרת מסנן 3x3 המאומן של הערוץ שלו; הערכים הבאים מגדירים את ה-grid ואת ה-block בן 256 ה-threads."
   );
   if (text.startsWith("pointwise_gemm_kernel<<<")) return say(
-    "Launches the tiled 1x1 pointwise GEMM kernel with its complete grid and 16x16 thread-block geometry.",
-    "Запускает плиточный pointwise GEMM-kernel 1x1 с полной геометрией grid и блока threads 16x16.",
-    "משגרת את pointwise GEMM kernel המרוצף בגודל 1x1 עם גאומטריית grid מלאה ובלוק threads בגודל 16x16."
+    "Launches the tiled 1x1 pointwise GEMM kernel: it mixes all input channels into learned output channels and writes the next feature tensor with fused BatchNorm/PReLU.",
+    "Запускает плиточный pointwise GEMM-kernel 1x1: он смешивает все входные каналы в обученные выходные каналы и записывает следующий тензор признаков с объединёнными BatchNorm/PReLU.",
+    "משגרת את pointwise GEMM kernel המרוצף בגודל 1x1: הוא מערבב את כל ערוצי הקלט לערוצי פלט מאומנים וכותב את טנזור המאפיינים הבא עם BatchNorm/PReLU מאוחדים."
+  );
+  if (text.startsWith("affine_in_place_kernel<<<")) return say(
+    "Launches the final feature-map BatchNorm kernel: every thread applies the learned scale and shift to one 1024x7x7 feature value in place.",
+    "Запускает kernel финального BatchNorm карты признаков: каждый thread применяет обученные scale и shift к одному значению признаков 1024x7x7 на месте.",
+    "משגרת kernel של BatchNorm סופי למפת המאפיינים: כל thread מחיל scale ו-shift מאומנים על ערך מאפיין אחד בגודל 1024x7x7 במקום."
+  );
+  if (text.startsWith("fully_connected_kernel<<<")) return say(
+    "Launches the learned tiled projection from the flattened 50176 feature values of each face to its 128-value SFace embedding.",
+    "Запускает обученную плиточную проекцию 50176 развёрнутых признаков каждого лица в его SFace embedding из 128 значений.",
+    "משגרת את ההטלה המרוצפת המאומנת מ־50176 מאפיינים שטוחים של כל פנים ל־embedding SFace בן 128 ערכים."
+  );
+  if (text.startsWith("normalize_embeddings_kernel<<<")) return say(
+    "Launches one 256-thread reduction block per face to compute the L2 norm and write its final unit-length 128D embedding.",
+    "Запускает по одному reduction-block из 256 threads на лицо, чтобы вычислить L2-норму и записать итоговый единичный embedding 128D.",
+    "משגרת בלוק reduction אחד בן 256 threads לכל פנים כדי לחשב את נורמת L2 ולכתוב את ה-embedding הסופי בן 128 הממדים באורך יחידה."
   );
   if (text === ">>>(") return say(
     `Finishes the launch geometry of ${launchKernel}; the following lines are its device-memory arguments.`,
