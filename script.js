@@ -6258,6 +6258,51 @@ function manualSfaceSourceAnnotation(lines, index) {
   const launchLine = [...lines.slice(0, index + 1)].reverse().find((line) => line.includes("<<<")) || "";
   const launchKernel = launchLine.match(/(\w+_kernel)<<</)?.[1] || kernel;
   if (!text) return say("Blank separator; no instruction is executed.", "Пустой разделитель; инструкция не выполняется.", "מפריד ריק; לא מתבצעת הוראה.");
+  if (text.startsWith("check_cuda(cudaMalloc(&first,")) return say(
+    "Allocates GPU buffer A, first: it is large enough for the biggest intermediate tensor and initially holds the aligned face batch.",
+    "Выделяет GPU-буфер A, first: он достаточно велик для самого большого промежуточного тензора и сначала хранит пакет выровненных лиц.",
+    "מקצה את מאגר GPU A, ‏first: הוא גדול מספיק לטנזור הביניים הגדול ביותר ומחזיק תחילה את אצוות הפנים המיושרות."
+  );
+  if (text.startsWith("check_cuda(cudaMalloc(&second,")) return say(
+    "Allocates GPU buffer B, second: layers write their next tensor here, then the program swaps it with first instead of allocating again.",
+    "Выделяет GPU-буфер B, second: слои записывают сюда следующий тензор, затем программа меняет его с first без нового выделения памяти.",
+    "מקצה את מאגר GPU B, ‏second: שכבות כותבות לכאן את הטנזור הבא, ולאחר מכן התוכנית מחליפה אותו עם first בלי הקצאת זיכרון חדשה."
+  );
+  if (text.startsWith("cudaMalloc(&embeddings,")) return say(
+    "Allocates a separate GPU output matrix for the final Bx128 face embeddings.",
+    "Выделяет отдельную выходную матрицу GPU для финальных face embeddings размера Bx128.",
+    "מקצה מטריצת פלט נפרדת ב-GPU עבור ה-embeddings הסופיים של הפנים בגודל Bx128."
+  );
+  if (/^static_cast<std::size_t>\(batch_size\) \* kEmbeddingSize \* sizeof\(float\)\),$/.test(text)) return say(
+    "Calculates the exact byte count of B embeddings with 128 float values each.",
+    "Вычисляет точное число байтов для B embeddings по 128 float-значений каждый.",
+    "מחשבת את מספר הבתים המדויק עבור B embeddings, שכל אחד מהם כולל 128 ערכי float."
+  );
+  if (text === "cudaMemcpy(" && lines[index + 1]?.trim() === "first,") return say(
+    "Begins the Host-to-Device transfer that places the aligned CPU face tensor into GPU buffer first.",
+    "Начинает передачу Host-to-Device, помещающую выровненный тензор лица из CPU в GPU-буфер first.",
+    "מתחילה העברת Host-to-Device שמכניסה את טנזור הפנים המיושר מה-CPU למאגר ה-GPU first."
+  );
+  if (text === "first,") return say(
+    "Uses buffer first as the destination address in GPU memory.",
+    "Использует буфер first как адрес назначения в памяти GPU.",
+    "משתמשת במאגר first ככתובת היעד בזיכרון ה-GPU."
+  );
+  if (text === "aligned_nchw_rgb.data(),") return say(
+    "Supplies the first CPU address of the aligned Bx3x112x112 NCHW RGB face batch.",
+    "Передаёт первый адрес CPU выровненного NCHW RGB-пакета лиц размера Bx3x112x112.",
+    "מעבירה את כתובת ה-CPU הראשונה של אצוות הפנים המיושרת בפורמט NCHW RGB בגודל Bx3x112x112."
+  );
+  if (text === "input_elements * sizeof(float),") return say(
+    "Specifies the byte count of the complete aligned face batch being copied to the GPU.",
+    "Задаёт число байтов полного пакета выровненных лиц, копируемого в GPU.",
+    "מגדירה את מספר הבתים של אצוות הפנים המיושרות המלאה שמועתקת ל-GPU."
+  );
+  if (text === "cudaMemcpyHostToDevice") return say(
+    "Selects the copy direction: CPU RAM to NVIDIA GPU memory.",
+    "Задаёт направление копирования: из RAM CPU в память NVIDIA GPU.",
+    "בוחרת את כיוון ההעתקה: מזיכרון RAM של ה-CPU לזיכרון NVIDIA GPU."
+  );
   if (text.startsWith("preprocess_kernel<<<")) return say(
     "Launches input preprocessing: one CUDA thread normalizes one value of the Bx3x112x112 face tensor before the first convolution.",
     "Запускает подготовку входа: один CUDA thread нормализует одно значение тензора лица Bx3x112x112 перед первой свёрткой.",
