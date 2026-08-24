@@ -962,6 +962,17 @@ html[dir="rtl"] .code-line-note.code-focus {
   line-height: 1.45;
 }
 
+/* Keep C++/CUDA syntax left-to-right while Hebrew explanations stay on the right. */
+html[dir="rtl"] .code-line-note {
+  direction: ltr;
+}
+
+html[dir="rtl"] .code-line-note code {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: plaintext;
+}
+
 .code-note {
   display: block;
   color: var(--muted);
@@ -973,6 +984,9 @@ html[dir="rtl"] .code-line-note.code-focus {
 }
 
 html[dir="rtl"] .code-note {
+  direction: rtl;
+  text-align: right;
+  unicode-bidi: plaintext;
   border-left: 0;
   border-right: 3px solid var(--cyan);
   padding-left: 0;
