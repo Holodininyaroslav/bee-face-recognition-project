@@ -927,6 +927,21 @@ html[dir="rtl"] .stage-onnx-layer { direction: rtl; }
   color: #fff5cf;
 }
 
+.code-line-note.code-focus-primary {
+  border-left-color: var(--cyan);
+  background: rgba(0, 213, 255, .24);
+  box-shadow: inset 0 1px 0 rgba(98, 239, 255, .45), inset 0 -1px 0 rgba(98, 239, 255, .28);
+}
+
+.code-line-note.code-focus-primary code {
+  color: #ecfcff;
+  font-weight: 800;
+}
+
+html[dir="rtl"] .code-line-note.code-focus.code-focus-primary {
+  border-right-color: var(--cyan);
+}
+
 html[dir="rtl"] .code-line-note.code-focus {
   border-left: 0;
   border-right: 5px solid var(--gold-2);

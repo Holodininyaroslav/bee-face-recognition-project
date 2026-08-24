@@ -7050,6 +7050,16 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
   const scrollIndex = Number.isInteger(scrollTargetIndex) && isFocused(scrollTargetIndex)
     ? scrollTargetIndex
     : firstFocusedIndex;
+  const firstConvStart = sourceLines.findIndex((line) => /^__global__ void standard_conv3x3_kernel/.test(line.trim()));
+  const firstConvEnd = sourceLines.findIndex((line, index) => index > firstConvStart && /^__global__ void depthwise_conv3x3_kernel/.test(line.trim()));
+  const firstConvLaunchStart = sourceLines.findIndex((line) => /^standard_conv3x3_kernel<</.test(line.trim()));
+  const firstConvLaunchEnd = sourceLines.findIndex((line, index) => index >= firstConvLaunchStart && /^\} else if \(layer\.kind == DeviceLayer::Kind::Depthwise3x3\)/.test(line.trim()));
+  const isFirstConvExecutionLine = (line, index) => {
+    if (stage.level !== "05" || stepIndex !== 3) return false;
+    if (index >= firstConvLaunchStart && index < firstConvLaunchEnd) return true;
+    if (index <= firstConvStart || index >= firstConvEnd) return false;
+    return /^for \(int input_channel = 0;|^for \(int ky = 0;|^for \(int kx = 0;|^sum \+= input\[input_index\] \* weights\[weight_index\];$/.test(line.trim());
+  };
   stageCodeMode = "full";
   stageCode.innerHTML = "";
   stageCode.setAttribute("dir", (document.documentElement.lang || "en") === "he" ? "rtl" : "ltr");
@@ -7079,6 +7089,7 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
         : contextualSingleSourceAnnotation(annotationLines, annotationIndex);
     row.append(code, note);
     if (isFocused(index)) row.classList.add("code-focus");
+    if (isFirstConvExecutionLine(line, index)) row.classList.add("code-focus-primary");
     if (isFocusStart(index)) row.classList.add("code-focus-start");
     if (isFocusEnd(index)) row.classList.add("code-focus-end");
     rows.push(row);
