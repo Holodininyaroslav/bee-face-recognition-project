@@ -7148,6 +7148,8 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
   const sourceLines = stage.exactCode.split("\n");
   const firstFocusedIndex = Math.min(...ranges.map((item) => item.start));
   const lastFocusedIndex = Math.max(...ranges.map((item) => item.end));
+  const isActivationHelperFocus = stage?.level === "05"
+    && /^__device__ float activate\(/.test(sourceLines[firstFocusedIndex]?.trim() || "");
   const isFocused = (index) => ranges.some((item) => index >= item.start && index <= item.end);
   const isFocusStart = (index) => ranges.some((item) => index === item.start);
   const isFocusEnd = (index) => ranges.some((item) => index === item.end);
@@ -7210,6 +7212,7 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
     if (manualAnnotation) usedManualSfaceAnnotations.add(manualAnnotation);
     row.append(code, note);
     if (isFocused(index)) row.classList.add("code-focus");
+    if (isActivationHelperFocus && isFocused(index)) row.classList.add("code-focus-activation-target");
     if (isFirstConvExecutionLine(line, index)) row.classList.add("code-focus-primary");
     if (isRepeatedBlockLaunchLine(index)) row.classList.add("code-focus-primary");
     if (isActivationCallLine(line)) {
