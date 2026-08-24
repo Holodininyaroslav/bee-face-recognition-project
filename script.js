@@ -6338,6 +6338,9 @@ function manualSfaceSourceAnnotation(lines, index) {
     "מעבירה את ה-stride של depthwise למיפוי פיקסל הפלט של thread בחזרה למפת הקלט."
   );
   const rules = [
+    [/^__device__ float activate\(/, "Declares the device helper shared by convolution layers: it fuses BatchNorm and the learned PReLU activation for one output value.", "Объявляет device-функцию, общую для слоёв свёртки: она объединяет BatchNorm и обученную PReLU-активацию для одного значения выхода.", "מגדירה פונקציית device שמשותפת לשכבות הקונבולוציה: היא מאחדת BatchNorm ואת אקטיבציית PReLU המאומנת עבור ערך פלט אחד."],
+    [/^value = value \* scale\[channel\] \+ shift\[channel\];$/, "Applies the learned BatchNorm affine transform for this output channel.", "Применяет обученное affine-преобразование BatchNorm для этого выходного канала.", "מחילה את התמרת ה-affine המאומנת של BatchNorm עבור ערוץ הפלט הזה."],
+    [/^return value >= 0\.0f \? value : value \* slope\[channel\];$/, "Applies PReLU: positive values pass through, while negative values use this channel's learned slope.", "Применяет PReLU: положительные значения проходят без изменений, а отрицательные умножаются на обученный slope этого канала.", "מחילה PReLU: ערכים חיוביים עוברים ללא שינוי, וערכים שליליים מוכפלים בשיפוע המאומן של הערוץ הזה."],
     [/^__global__ void pointwise_gemm_kernel/, "Declares the project kernel that evaluates every learned 1x1 convolution as tiled matrix multiplication.", "Объявляет kernel проекта, вычисляющий каждую обученную свёртку 1x1 как плиточное матричное умножение.", "מגדירה kernel של הפרויקט שמחשב כל קונבולוציה מאומנת 1x1 ככפל מטריצות מרוצף."],
     [/^__global__ void affine_in_place_kernel/, "Declares the in-place kernel for the trained final feature BatchNorm.", "Объявляет in-place kernel обученного финального BatchNorm признаков.", "מגדירה kernel במקום עבור BatchNorm המאומן הסופי של המאפיינים."],
     [/^__global__ void fully_connected_kernel/, "Declares the tiled Bx50176 by 50176x128 learned projection kernel.", "Объявляет плиточный kernel обученной проекции Bx50176 на 50176x128.", "מגדירה kernel מרוצף להטלה המאומנת Bx50176 כפול 50176x128."],
@@ -6547,6 +6550,26 @@ function manualSfaceStageCodeRanges(lines, stepIndex) {
   ];
   const selected = ranges[stepIndex]?.() || [];
   return selected.filter((range) => range.start >= 0 && range.end >= range.start);
+}
+
+function manualSfaceActivateCodeRange(lines) {
+  const start = lines.findIndex((line) => /^__device__ float activate\(/.test(line.trim()));
+  const nextKernel = lines.findIndex((line, index) => index > start && /^__global__ void /.test(line.trim()));
+  return {
+    start,
+    end: nextKernel > start ? nextKernel - 1 : start
+  };
+}
+
+async function focusManualSfaceActivation() {
+  const ready = await ensureExactStageCode();
+  const stage = stageDetails[currentStageIndex];
+  if (!ready || stage?.level !== "05" || usesLegacyStageInspector(stage)) return;
+  const range = manualSfaceActivateCodeRange(stage.exactCode.split("\n"));
+  if (!renderFocusedStageSource(stage, range, activeStageFiveCodeStep >= 0 ? activeStageFiveCodeStep : 3, true)) {
+    console.error("Could not resolve manual SFace activate() helper");
+    stageCodeSource.textContent = uiText("fullStageError");
+  }
 }
 
 async function focusManualSfaceStageCode(stepIndex, shouldScroll = true) {
@@ -7137,9 +7160,12 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
   const firstConvLaunchEnd = sourceLines.findIndex((line, index) => index >= firstConvLaunchStart && /^\} else if \(layer\.kind == DeviceLayer::Kind::Depthwise3x3\)/.test(line.trim()));
   const threadsDeclaration = sourceLines.findIndex((line) => /^constexpr int threads = 256;/.test(line.trim()));
   const layerLoopStart = sourceLines.findIndex((line, index) => index > threadsDeclaration && /^for \(const auto& layer : context->layers\)/.test(line.trim()));
+  const depthwiseBranchStart = sourceLines.findIndex((line) => /^\} else if \(layer\.kind == DeviceLayer::Kind::Depthwise3x3\) \{/.test(line.trim()));
   const depthwiseLaunchStart = sourceLines.findIndex((line) => /^depthwise_conv3x3_kernel<<</.test(line.trim()));
+  const pointwiseBranchStart = sourceLines.findIndex((line, index) => index > depthwiseLaunchStart && /^\} else \{$/.test(line.trim()));
   const pointwiseLaunchStart = sourceLines.findIndex((line) => /^pointwise_gemm_kernel<<</.test(line.trim()));
   const pointwiseLaunchEnd = sourceLines.findIndex((line, index) => index > pointwiseLaunchStart && /^\);$/.test(line.trim()));
+  const isActivationCallLine = (line) => /^output\[index\] = activate\(sum, scale, shift, slope, channel\);$/.test(line.trim());
   const isFirstConvExecutionLine = (line, index) => {
     if (stage.level !== "05" || stepIndex !== 3) return false;
     if (index >= firstConvLaunchStart && index < firstConvLaunchEnd) return true;
@@ -7148,6 +7174,7 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
   };
   const isRepeatedBlockLaunchLine = (index) => {
     if (stage.level !== "05" || stepIndex !== 4) return false;
+    if (index === depthwiseBranchStart || index === pointwiseBranchStart) return true;
     if (index >= depthwiseLaunchStart && index <= depthwiseLaunchStart + 3) return true;
     return index === pointwiseLaunchStart;
   };
@@ -7185,6 +7212,19 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
     if (isFocused(index)) row.classList.add("code-focus");
     if (isFirstConvExecutionLine(line, index)) row.classList.add("code-focus-primary");
     if (isRepeatedBlockLaunchLine(index)) row.classList.add("code-focus-primary");
+    if (isActivationCallLine(line)) {
+      row.classList.add("code-focus-activation-link");
+      row.tabIndex = 0;
+      row.setAttribute("role", "button");
+      row.setAttribute("aria-label", "Open the CUDA activate function");
+      row.title = "Open activate()";
+      row.addEventListener("click", () => focusManualSfaceActivation());
+      row.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        focusManualSfaceActivation();
+      });
+    }
     if (isFocusStart(index)) row.classList.add("code-focus-start");
     if (isFocusEnd(index)) row.classList.add("code-focus-end");
     rows.push(row);
