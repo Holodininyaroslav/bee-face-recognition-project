@@ -6287,6 +6287,21 @@ function manualSfaceSourceAnnotation(lines, index) {
     [/^const int output_channel =/, "Converts the output tile and local column into the global SFace output-channel index.", "Преобразует выходную плитку и локальный столбец в глобальный индекс выходного канала SFace.", "ממירה את אריח הפלט ואת העמודה המקומית לאינדקס ערוץ הפלט הגלובלי של SFace."],
     [/^const int output_dimension =/, "Converts the output tile and local column into one of the 128 embedding dimensions.", "Преобразует выходную плитку и локальный столбец в одно из 128 измерений embedding.", "ממירה את אריח הפלט ואת העמודה המקומית לאחד מ-128 ממדי ה-embedding."],
     [/^float sum = 0\.0f/, "Initializes this thread's dot-product accumulator.", "Обнуляет аккумулятор dot product текущего thread.", "מאתחלת את צובר המכפלה הפנימית של ה-thread."],
+    [/^for \(int input_channel = 0;/, "Iterates over every input channel, so this output value combines all channels of the incoming feature map.", "Перебирает все входные каналы, поэтому это значение выхода объединяет все каналы входной карты признаков.", "עוברת על כל ערוצי הקלט, כך שערך הפלט הזה מאחד את כל ערוצי מפת המאפיינים הנכנסת."],
+    [/^for \(int ky = 0; ky < 3;/, "Moves through the three rows of the 3x3 convolution window centered on this output pixel.", "Проходит по трём строкам окна свёртки 3x3, центрированного на этом выходном пикселе.", "עוברת על שלוש השורות של חלון הקונבולוציה 3x3 שממורכז בפיקסל הפלט הזה."],
+    [/^const int source_y = y \+ ky - 1;/, "Converts the local kernel row into the matching input-image Y coordinate, including one-pixel padding.", "Преобразует локальную строку ядра в соответствующую координату Y входного изображения с отступом в один пиксель.", "ממירה את שורת הגרעין המקומית לקואורדינטת Y המתאימה בתמונת הקלט, כולל ריפוד של פיקסל אחד."],
+    [/^const int source_y = y \* stride \+ ky - 1;/, "Calculates the depthwise input Y coordinate; stride selects the sampled position before the 3x3 offset is added.", "Вычисляет координату Y входа depthwise-свёртки: stride выбирает выборку, затем добавляется смещение окна 3x3.", "מחשבת את קואורדינטת Y של קלט depthwise: ה-stride בוחר את המיקום הנדגם ואז מתווסף היסט חלון 3x3."],
+    [/^if \(source_y < 0 \|\| source_y >= (height|input_height)\) continue;/, "Skips this kernel row when it would read above or below the image instead of accessing invalid GPU memory.", "Пропускает строку ядра, если она вышла бы выше или ниже изображения, чтобы не читать недопустимую память GPU.", "מדלגת על שורת הגרעין כאשר היא הייתה קוראת מעל או מתחת לתמונה, במקום לגשת לזיכרון GPU לא תקין."],
+    [/^for \(int kx = 0; kx < 3;/, "Moves through the three columns of the same 3x3 convolution window.", "Проходит по трём столбцам того же окна свёртки 3x3.", "עוברת על שלוש העמודות של אותו חלון קונבולוציה 3x3."],
+    [/^const int source_x = x \+ kx - 1;/, "Converts the local kernel column into the matching input-image X coordinate, including one-pixel padding.", "Преобразует локальный столбец ядра в соответствующую координату X входного изображения с отступом в один пиксель.", "ממירה את עמודת הגרעין המקומית לקואורדינטת X המתאימה בתמונת הקלט, כולל ריפוד של פיקסל אחד."],
+    [/^const int source_x = x \* stride \+ kx - 1;/, "Calculates the depthwise input X coordinate from the stride position and the 3x3 kernel offset.", "Вычисляет координату X входа depthwise-свёртки из позиции stride и смещения ядра 3x3.", "מחשבת את קואורדינטת X של קלט depthwise ממיקום ה-stride ומהיסט גרעין 3x3."],
+    [/^if \(source_x < 0 \|\| source_x >= (width|input_width)\) continue;/, "Skips this kernel column at the left or right image edge, keeping every device-memory read in bounds.", "Пропускает столбец ядра на левом или правом краю изображения, оставляя каждое чтение device memory в пределах границ.", "מדלגת על עמודת גרעין בקצה השמאלי או הימני של התמונה, כך שכל קריאה מזיכרון ההתקן נשארת בגבולות."],
+    [/^const std::size_t input_index =$/, "Begins building the flat NCHW address of the selected input activation.", "Начинает строить плоский NCHW-адрес выбранного входного признака.", "מתחילה לבנות את כתובת ה-NCHW השטוחה של ההפעלה שנבחרה בקלט."],
+    [/^\(\(static_cast<std::size_t>\(image\) \* (input_channels|channels)/, "Continues the NCHW address: selects the batch image and feature channel before choosing its Y and X coordinates.", "Продолжает NCHW-адрес: выбирает изображение batch и канал признаков перед выбором координат Y и X.", "ממשיכה את כתובת ה-NCHW: בוחרת את תמונת האצווה ואת ערוץ המאפיין לפני בחירת קואורדינטות Y ו-X."],
+    [/^const std::size_t weight_index =$/, "Begins building the address of the learned 3x3 filter weight for this output channel and input channel.", "Начинает строить адрес обученного веса фильтра 3x3 для этого выходного и входного канала.", "מתחילה לבנות את כתובת המשקל המאומן של מסנן 3x3 עבור ערוץ הפלט וערוץ הקלט האלה."],
+    [/^\(\(static_cast<std::size_t>\(channel\) \* input_channels/, "Completes the convolution-weight address by selecting the channel pair and the current 3x3 window coefficient.", "Завершает адрес веса свёртки, выбирая пару каналов и текущий коэффициент окна 3x3.", "משלימה את כתובת משקל הקונבולוציה בבחירת צמד הערוצים ומקדם חלון 3x3 הנוכחי."],
+    [/^sum \+= input\[input_index\] \* weights\[weight_index\];$/, "Multiplies one image value by its learned 3x3 weight and accumulates it into this output activation.", "Умножает одно значение изображения на соответствующий обученный вес 3x3 и добавляет результат в этот выходной признак.", "מכפילה ערך תמונה אחד במשקל 3x3 המאומן המתאים וצוברת את התוצאה בהפעלה הזאת בפלט."],
+    [/^output\[index\] = activate\(sum, scale, shift, slope, channel\);$/, "Writes the completed convolution result after its learned BatchNorm and PReLU activation are applied.", "Записывает готовый результат свёртки после применения обученных BatchNorm и PReLU.", "כותבת את תוצאת הקונבולוציה המלאה לאחר החלת BatchNorm ו-PReLU המאומנים."],
     [/^for \(int start = 0;/, "Traverses the full K dimension in 16-value tiles; no trained weight is skipped.", "Проходит полную размерность K плитками по 16 значений; обученные веса не пропускаются.", "עוברת על כל ממד K באריחים בני 16 ערכים; אף משקל מאומן אינו מדולג."],
     [/^const int input_channel_for_a =|^const int input_for_a =/, "Selects the activation component loaded by this thread into the shared input tile.", "Выбирает компоненту признаков, которую этот thread загрузит в shared-плитку входа.", "בוחרת את רכיב ההפעלה שה-thread הזה יטען לאריח הקלט המשותף."],
     [/^const int input_channel_for_b =|^const int input_for_b =/, "Selects the learned-weight row loaded by this thread into the shared weight tile.", "Выбирает строку обученных весов, которую этот thread загрузит в shared-плитку весов.", "בוחרת את שורת המשקלים המאומנים שה-thread הזה יטען לאריח המשקלים המשותף."],
@@ -6609,7 +6624,6 @@ function renderStageCode(stage) {
   const focusEnd = selectedStep >= 0 && diagramLabels.length
     ? Math.max(focusStart, Math.min(sourceLines.length - 1, Math.floor(((selectedStep + 1) * sourceLines.length) / diagramLabels.length) - 1))
     : -1;
-  const usedManualSfaceAnnotations = new Set();
   sourceLines.forEach((line, index) => {
     const row = document.createElement("div");
     row.className = `code-line-note${line.trim() ? "" : " blank"}`;
@@ -6626,13 +6640,12 @@ function renderStageCode(stage) {
       ? manualSfaceSourceAnnotation(sourceLines, index)
       : "";
     note.textContent = manualAnnotation
-      ? (usedManualSfaceAnnotations.has(manualAnnotation) ? "" : manualAnnotation)
+      ? manualAnnotation
       : fullMode
         ? stage?.variantKey === "single"
           ? contextualNativeSourceAnnotation(annotationLines, annotationIndex)
           : contextualSingleSourceAnnotation(annotationLines, annotationIndex)
         : codeAnnotation(stage, line);
-    if (manualAnnotation) usedManualSfaceAnnotations.add(manualAnnotation);
     row.append(code, note);
     stageCode.appendChild(row);
   });
@@ -7020,7 +7033,6 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true) 
     .replace("{start}", String(firstFocusedIndex + 1))
     .replace("{end}", String(lastFocusedIndex + 1));
   const rows = [];
-  const usedManualSfaceAnnotations = new Set();
   sourceLines.forEach((line, index) => {
     const row = document.createElement("div");
     row.className = `code-line-note${line.trim() ? "" : " blank"}`;
@@ -7035,11 +7047,10 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true) 
       ? manualSfaceSourceAnnotation(sourceLines, index)
       : "";
     note.textContent = manualAnnotation
-      ? (usedManualSfaceAnnotations.has(manualAnnotation) ? "" : manualAnnotation)
+      ? manualAnnotation
       : stage?.variantKey === "single"
         ? contextualNativeSourceAnnotation(annotationLines, annotationIndex)
         : contextualSingleSourceAnnotation(annotationLines, annotationIndex);
-    if (manualAnnotation) usedManualSfaceAnnotations.add(manualAnnotation);
     row.append(code, note);
     if (isFocused(index)) row.classList.add("code-focus");
     if (isFocusStart(index)) row.classList.add("code-focus-start");
