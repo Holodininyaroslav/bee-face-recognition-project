@@ -6409,6 +6409,10 @@ function nativeStageFiveCodeRange(lines, stepIndex) {
 
 function manualSfaceStageCodeRanges(lines, stepIndex) {
   const find = (pattern, from = 0) => lines.findIndex((line, index) => index >= from && pattern.test(line.trim()));
+  const single = (pattern, from = 0) => {
+    const index = find(pattern, from);
+    return { start: index, end: index };
+  };
   const before = (pattern, from = 0) => {
     const index = find(pattern, from);
     return index < 0 ? -1 : index - 1;
@@ -6440,6 +6444,7 @@ function manualSfaceStageCodeRanges(lines, stepIndex) {
       span(/^standard_conv3x3_kernel<</, /^\} else if \(layer\.kind == DeviceLayer::Kind::Depthwise3x3\)/)
     ],
     () => [
+      single(/^constexpr int threads = 256;/),
       (() => {
         const start = find(/^for \(const auto& layer : context->layers\)/, find(/^float\* output = second;/) + 1);
         const end = find(/^check_cuda\(cudaGetLastError\(\), "manual SFace layer kernel"\);/, Math.max(0, start));
