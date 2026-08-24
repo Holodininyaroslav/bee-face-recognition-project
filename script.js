@@ -6435,6 +6435,8 @@ function manualSfaceSourceAnnotation(lines, index) {
     [/^input_tile\[/, "Stores one guarded activation value in shared memory for reuse by the whole 16x16 block.", "Сохраняет одно проверенное значение признака в shared memory для повторного использования всем block 16x16.", "שומרת ערך הפעלה מוגן אחד ב-shared memory לשימוש חוזר של כל בלוק 16x16."],
     [/^weight_tile\[/, "Stores one guarded trained weight in shared memory for the tiled multiply-add loop.", "Сохраняет один проверенный обученный вес в shared memory для плиточного цикла multiply-add.", "שומרת משקל מאומן מוגן אחד ב-shared memory עבור לולאת ה-multiply-add המרוצפת."],
     [/^input\[|^transposed_weights\[/, "Reads the exact indexed activation or trained coefficient from device memory.", "Читает точно индексированный признак или обученный коэффициент из device memory.", "קוראת את ההפעלה או המקדם המאומן לפי האינדקס המדויק מזיכרון ההתקן."],
+    [/^\? input\[/, "Loads this thread's required input feature for the current tile; the guard above prevents an out-of-range read.", "Загружает нужный этому thread входной признак для текущей плитки; проверка выше не допускает чтение за границей.", "טוענת את מאפיין הקלט הדרוש ל-thread הזה עבור האריח הנוכחי; הבדיקה למעלה מונעת קריאה מחוץ לגבול."],
+    [/^\? transposed_weights\[/, "Loads the trained coefficient connecting this tile input dimension to this output embedding dimension.", "Загружает обученный коэффициент, соединяющий входную размерность плитки с данной выходной размерностью embedding.", "טוענת את המקדם המאומן שמחבר את ממד הקלט של האריח לממד ה-embedding הזה בפלט."],
     [/^: 0\.0f|^.*= 0\.0f;$/, "Writes zero for an out-of-range element of the final partial tile.", "Записывает 0 для элемента за границей последней неполной плитки.", "כותבת אפס עבור איבר מחוץ לגבולות באריח האחרון החלקי."],
     [/^__syncthreads/, "Synchronizes all 256 threads before shared memory is consumed or reused.", "Синхронизирует 256 threads перед использованием или повторной записью shared memory.", "מסנכרנת את כל 256 ה-threads לפני שימוש או כתיבה מחדש ב-shared memory."],
     [/^#pragma unroll/, "Asks NVCC to unroll the fixed 16-step inner loop.", "Просит NVCC развернуть фиксированный внутренний цикл из 16 шагов.", "מבקשת מ-NVCC לפרוס את הלולאה הפנימית הקבועה בת 16 הצעדים."],
@@ -6460,6 +6462,13 @@ function manualSfaceSourceAnnotation(lines, index) {
   const match = rules.find(([pattern]) => pattern.test(text));
   if (match) return say(match[1], match[2], match[3]);
   return "";
+}
+
+function manualSfaceAnnotationKey(lines, index, annotation) {
+  const scope = [...lines.slice(0, index + 1)].reverse()
+    .find((line) => line.trim().startsWith("__global__ void ") || line.trim().startsWith("__device__ float "))
+    ?.trim() || "host";
+  return `${scope}\n${annotation}`;
 }
 
 function uniqueManualSfaceSourceAnnotation(lines, index) {
@@ -6816,14 +6825,17 @@ function renderStageCode(stage) {
     const manualAnnotation = isManualSfaceStage
       ? manualSfaceSourceAnnotation(sourceLines, index)
       : "";
+    const manualAnnotationKey = manualAnnotation
+      ? manualSfaceAnnotationKey(sourceLines, index, manualAnnotation)
+      : "";
     note.textContent = isManualSfaceStage
-      ? (manualAnnotation && !usedManualSfaceAnnotations.has(manualAnnotation) ? manualAnnotation : "")
+      ? (manualAnnotation && !usedManualSfaceAnnotations.has(manualAnnotationKey) ? manualAnnotation : "")
       : fullMode
         ? stage?.variantKey === "single"
           ? contextualNativeSourceAnnotation(annotationLines, annotationIndex)
           : contextualSingleSourceAnnotation(annotationLines, annotationIndex)
         : codeAnnotation(stage, line);
-    if (manualAnnotation) usedManualSfaceAnnotations.add(manualAnnotation);
+    if (manualAnnotation) usedManualSfaceAnnotations.add(manualAnnotationKey);
     row.append(code, note);
     stageCode.appendChild(row);
   });
@@ -7257,12 +7269,15 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
     const manualAnnotation = isManualSfaceStage
       ? manualSfaceSourceAnnotation(sourceLines, index)
       : "";
+    const manualAnnotationKey = manualAnnotation
+      ? manualSfaceAnnotationKey(sourceLines, index, manualAnnotation)
+      : "";
     note.textContent = isManualSfaceStage
-      ? (manualAnnotation && !usedManualSfaceAnnotations.has(manualAnnotation) ? manualAnnotation : "")
+      ? (manualAnnotation && !usedManualSfaceAnnotations.has(manualAnnotationKey) ? manualAnnotation : "")
       : stage?.variantKey === "single"
         ? contextualNativeSourceAnnotation(annotationLines, annotationIndex)
         : contextualSingleSourceAnnotation(annotationLines, annotationIndex);
-    if (manualAnnotation) usedManualSfaceAnnotations.add(manualAnnotation);
+    if (manualAnnotation) usedManualSfaceAnnotations.add(manualAnnotationKey);
     row.append(code, note);
     if (isFocused(index)) row.classList.add("code-focus");
     if (isActivationHelperFocus && isFocused(index)) row.classList.add("code-focus-activation-target");
