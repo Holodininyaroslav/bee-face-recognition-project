@@ -6254,7 +6254,89 @@ function manualSfaceSourceAnnotation(lines, index) {
   const kernelLine = [...lines.slice(0, index + 1)].reverse().find((line) => line.trim().startsWith("__global__ void ")) || "";
   const kernel = kernelLine.match(/void\s+(\w+)/)?.[1] || "manual SFace CUDA kernel";
   const previous = [...lines.slice(0, index)].reverse().find((line) => line.trim())?.trim() || "kernel start";
+  const launchLine = [...lines.slice(0, index + 1)].reverse().find((line) => line.includes("<<<")) || "";
+  const launchKernel = launchLine.match(/(\w+_kernel)<<</)?.[1] || kernel;
   if (!text) return say("Blank separator; no instruction is executed.", "Пустой разделитель; инструкция не выполняется.", "מפריד ריק; לא מתבצעת הוראה.");
+  if (text.startsWith("depthwise_conv3x3_kernel<<<")) return say(
+    "Launches the depthwise 3x3 CUDA kernel for the current layer; the following values define its grid and 256-thread block.",
+    "Запускает CUDA-kernel depthwise 3x3 для текущего слоя; следующие значения задают его grid и block из 256 threads.",
+    "משגרת את CUDA kernel מסוג depthwise 3x3 עבור השכבה הנוכחית; הערכים הבאים מגדירים את ה-grid ואת ה-block בן 256 ה-threads שלה."
+  );
+  if (text.startsWith("pointwise_gemm_kernel<<<")) return say(
+    "Launches the tiled 1x1 pointwise GEMM kernel with its complete grid and 16x16 thread-block geometry.",
+    "Запускает плиточный pointwise GEMM-kernel 1x1 с полной геометрией grid и блока threads 16x16.",
+    "משגרת את pointwise GEMM kernel המרוצף בגודל 1x1 עם גאומטריית grid מלאה ובלוק threads בגודל 16x16."
+  );
+  if (text === ">>>(") return say(
+    `Finishes the launch geometry of ${launchKernel}; the following lines are its device-memory arguments.`,
+    `Завершает геометрию запуска ${launchKernel}; следующие строки являются его аргументами из device memory.`,
+    `משלימה את גאומטריית השיגור של ${launchKernel}; השורות הבאות הן ארגומנטים שלו מזיכרון ההתקן.`
+  );
+  if (/^static_cast<unsigned int>\(\(output_elements \+ threads - 1\) \/ threads\),$/.test(text)) return say(
+    `Sets the grid X size for ${launchKernel} to ceil(output elements / 256).`,
+    `Задаёт размер grid по X для ${launchKernel} как ceil(число выходных элементов / 256).`,
+    `מגדירה את גודל ה-grid בציר X עבור ${launchKernel} בתור ceil(מספר איברי הפלט / 256).`
+  );
+  if (text === "threads") return say(
+    `Uses the 256-thread CUDA block as the second launch parameter for ${launchKernel}.`,
+    `Использует CUDA-block из 256 threads как второй параметр запуска ${launchKernel}.`,
+    `משתמשת בבלוק CUDA בן 256 threads כפרמטר השיגור השני של ${launchKernel}.`
+  );
+  if (text === "input,") return say(
+    `Passes the current activation tensor in GPU memory to ${launchKernel}.`,
+    `Передаёт текущий тензор активаций в памяти GPU в ${launchKernel}.`,
+    `מעבירה את טנזור ההפעלות הנוכחי בזיכרון ה-GPU אל ${launchKernel}.`
+  );
+  if (text === "layer.weights,") return say(
+    "Passes the trained weights of this specific SFace layer from GPU memory.",
+    "Передаёт из памяти GPU обученные веса именно этого слоя SFace.",
+    "מעבירה מזיכרון ה-GPU את המשקלים המאומנים של שכבת SFace המסוימת הזאת."
+  );
+  if (text === "layer.scale,") return say(
+    "Passes the fused BatchNorm scale values for this layer's output channels.",
+    "Передаёт объединённые коэффициенты scale BatchNorm для выходных каналов этого слоя.",
+    "מעבירה את ערכי ה-scale המאוחדים של BatchNorm עבור ערוצי הפלט של שכבה זו."
+  );
+  if (text === "layer.shift,") return say(
+    "Passes the fused BatchNorm shift values for this layer's output channels.",
+    "Передаёт объединённые смещения shift BatchNorm для выходных каналов этого слоя.",
+    "מעבירה את ערכי ה-shift המאוחדים של BatchNorm עבור ערוצי הפלט של שכבה זו."
+  );
+  if (text === "layer.slope,") return say(
+    "Passes the learned PReLU slopes applied after this layer's BatchNorm.",
+    "Передаёт обученные PReLU slopes, применяемые после BatchNorm этого слоя.",
+    "מעבירה את שיפועי ה-PReLU המאומנים שמוחלים לאחר ה-BatchNorm של שכבה זו."
+  );
+  if (text === "output,") return say(
+    `Passes the destination GPU tensor where ${launchKernel} writes this layer's results.`,
+    `Передаёт целевой тензор GPU, куда ${launchKernel} записывает результат этого слоя.`,
+    `מעבירה את טנזור היעד ב-GPU שאליו ${launchKernel} כותב את תוצאות השכבה.`
+  );
+  if (text === "batch_size,") return say(
+    "Supplies B, the number of aligned faces handled by this layer launch.",
+    "Передаёт B — число выровненных лиц, обрабатываемых этим запуском слоя.",
+    "מעבירה את B, מספר הפנים המיושרות שמטופלות בשיגור שכבה זה."
+  );
+  if (text === "layer.input_channels,") return say(
+    "Supplies the input-channel count needed for indexing this layer's tensor and weights.",
+    "Передаёт число входных каналов для индексации тензора и весов этого слоя.",
+    "מעבירה את מספר ערוצי הקלט הדרוש לאינדוקס הטנזור והמשקלים של שכבה זו."
+  );
+  if (text === "layer.input_height," || text === "layer.input_width,") return say(
+    "Supplies the input spatial dimension used to map each thread to a valid source pixel.",
+    "Передаёт пространственный размер входа для отображения каждого thread на допустимый исходный пиксель.",
+    "מעבירה את הממד המרחבי של הקלט כדי למפות כל thread לפיקסל מקור תקין."
+  );
+  if (text === "layer.output_height," || text === "layer.output_width,") return say(
+    "Supplies the output spatial dimension that defines how many output pixels this layer writes.",
+    "Передаёт пространственный размер выхода, определяющий число записываемых пикселей слоя.",
+    "מעבירה את הממד המרחבי של הפלט שמגדיר כמה פיקסלי פלט שכבה זו כותבת."
+  );
+  if (text === "layer.stride") return say(
+    "Supplies the depthwise stride used when a thread maps its output pixel back to the input map.",
+    "Передаёт stride depthwise-свёртки для отображения выходного пикселя thread обратно на входную карту.",
+    "מעבירה את ה-stride של depthwise למיפוי פיקסל הפלט של thread בחזרה למפת הקלט."
+  );
   const rules = [
     [/^__global__ void pointwise_gemm_kernel/, "Declares the project kernel that evaluates every learned 1x1 convolution as tiled matrix multiplication.", "Объявляет kernel проекта, вычисляющий каждую обученную свёртку 1x1 как плиточное матричное умножение.", "מגדירה kernel של הפרויקט שמחשב כל קונבולוציה מאומנת 1x1 ככפל מטריצות מרוצף."],
     [/^__global__ void affine_in_place_kernel/, "Declares the in-place kernel for the trained final feature BatchNorm.", "Объявляет in-place kernel обученного финального BatchNorm признаков.", "מגדירה kernel במקום עבור BatchNorm המאומן הסופי של המאפיינים."],
@@ -6348,11 +6430,7 @@ function manualSfaceSourceAnnotation(lines, index) {
   ];
   const match = rules.find(([pattern]) => pattern.test(text));
   if (match) return say(match[1], match[2], match[3]);
-  return say(
-    `Completes the adjacent indexed CUDA expression in ${kernel}; the visible operands define the exact memory address or arithmetic term and no library inference is hidden here.`,
-    `Завершает соседнее индексированное CUDA-выражение в ${kernel}; видимые операнды задают точный адрес памяти или арифметический член, библиотечный inference здесь не скрыт.`,
-    `משלימה את ביטוי CUDA המאונדקס הסמוך ב-${kernel}; האופרנדים הגלויים מגדירים כתובת זיכרון או איבר אריתמטי מדויק ואין כאן inference מוסתר של ספרייה.`
-  );
+  return "";
 }
 
 function uniqueManualSfaceSourceAnnotation(lines, index) {
@@ -6647,6 +6725,7 @@ function renderStageCode(stage) {
   const focusEnd = selectedStep >= 0 && diagramLabels.length
     ? Math.max(focusStart, Math.min(sourceLines.length - 1, Math.floor(((selectedStep + 1) * sourceLines.length) / diagramLabels.length) - 1))
     : -1;
+  const usedManualSfaceAnnotations = new Set();
   sourceLines.forEach((line, index) => {
     const row = document.createElement("div");
     row.className = `code-line-note${line.trim() ? "" : " blank"}`;
@@ -6659,16 +6738,18 @@ function renderStageCode(stage) {
     note.className = "code-note";
     const annotationLines = fullMode && combinedRecognitionCode ? combinedRecognitionCode.split("\n") : sourceLines;
     const annotationIndex = fullMode ? (stage.exactStartLine || 0) + index : index;
-    const manualAnnotation = stage?.level === "05" && !usesLegacyStageInspector(stage)
+    const isManualSfaceStage = stage?.level === "05" && !usesLegacyStageInspector(stage);
+    const manualAnnotation = isManualSfaceStage
       ? manualSfaceSourceAnnotation(sourceLines, index)
       : "";
-    note.textContent = manualAnnotation
-      ? manualAnnotation
+    note.textContent = isManualSfaceStage
+      ? (manualAnnotation && !usedManualSfaceAnnotations.has(manualAnnotation) ? manualAnnotation : "")
       : fullMode
         ? stage?.variantKey === "single"
           ? contextualNativeSourceAnnotation(annotationLines, annotationIndex)
           : contextualSingleSourceAnnotation(annotationLines, annotationIndex)
         : codeAnnotation(stage, line);
+    if (manualAnnotation) usedManualSfaceAnnotations.add(manualAnnotation);
     row.append(code, note);
     stageCode.appendChild(row);
   });
@@ -7067,9 +7148,8 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
   };
   const isRepeatedBlockLaunchLine = (index) => {
     if (stage.level !== "05" || stepIndex !== 4) return false;
-    if (index === threadsDeclaration || index === layerLoopStart) return true;
-    if (index >= depthwiseLaunchStart && index < pointwiseLaunchStart) return true;
-    return index >= pointwiseLaunchStart && index <= pointwiseLaunchEnd;
+    if (index >= depthwiseLaunchStart && index <= depthwiseLaunchStart + 3) return true;
+    return index === pointwiseLaunchStart;
   };
   stageCodeMode = "full";
   stageCode.innerHTML = "";
@@ -7080,6 +7160,7 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
     .replace("{start}", String(firstFocusedIndex + 1))
     .replace("{end}", String(lastFocusedIndex + 1));
   const rows = [];
+  const usedManualSfaceAnnotations = new Set();
   sourceLines.forEach((line, index) => {
     const row = document.createElement("div");
     row.className = `code-line-note${line.trim() ? "" : " blank"}`;
@@ -7090,14 +7171,16 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
     note.className = "code-note";
     const annotationLines = combinedRecognitionCode ? combinedRecognitionCode.split("\n") : sourceLines;
     const annotationIndex = combinedRecognitionCode ? (stage.exactStartLine || 0) + index : index;
-    const manualAnnotation = stage?.level === "05" && !usesLegacyStageInspector(stage)
+    const isManualSfaceStage = stage?.level === "05" && !usesLegacyStageInspector(stage);
+    const manualAnnotation = isManualSfaceStage
       ? manualSfaceSourceAnnotation(sourceLines, index)
       : "";
-    note.textContent = manualAnnotation
-      ? manualAnnotation
+    note.textContent = isManualSfaceStage
+      ? (manualAnnotation && !usedManualSfaceAnnotations.has(manualAnnotation) ? manualAnnotation : "")
       : stage?.variantKey === "single"
         ? contextualNativeSourceAnnotation(annotationLines, annotationIndex)
         : contextualSingleSourceAnnotation(annotationLines, annotationIndex);
+    if (manualAnnotation) usedManualSfaceAnnotations.add(manualAnnotation);
     row.append(code, note);
     if (isFocused(index)) row.classList.add("code-focus");
     if (isFirstConvExecutionLine(line, index)) row.classList.add("code-focus-primary");
