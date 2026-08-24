@@ -6260,6 +6260,19 @@ function manualSfaceSourceAnnotation(lines, index) {
     [/^__global__ void affine_in_place_kernel/, "Declares the in-place kernel for the trained final feature BatchNorm.", "Объявляет in-place kernel обученного финального BatchNorm признаков.", "מגדירה kernel במקום עבור BatchNorm המאומן הסופי של המאפיינים."],
     [/^__global__ void fully_connected_kernel/, "Declares the tiled Bx50176 by 50176x128 learned projection kernel.", "Объявляет плиточный kernel обученной проекции Bx50176 на 50176x128.", "מגדירה kernel מרוצף להטלה המאומנת Bx50176 כפול 50176x128."],
     [/^__global__ void normalize_embeddings_kernel/, "Declares one CUDA reduction per face for 128D L2 normalization.", "Объявляет CUDA reduction для каждого лица при L2-нормализации 128D.", "מגדירה CUDA reduction אחד לכל פנים עבור נרמול L2 של 128D."],
+    [/^constexpr int threads = 256;/, "Sets the one-dimensional convolution block size: each launch uses 256 CUDA threads per block.", "Задаёт размер одномерного блока свёртки: каждый запуск использует 256 CUDA threads в block.", "מגדירה את גודל בלוק הקונבולוציה החד־ממדי: כל שיגור משתמש ב־256 CUDA threads בכל בלוק."],
+    [/^for \(const auto& layer : context->layers\) \{/, "Starts the native execution loop: it visits every trained SFace layer and chooses the matching CUDA kernel type.", "Начинает native-цикл выполнения: он проходит по каждому обученному слою SFace и выбирает соответствующий тип CUDA-kernel.", "מתחילה את לולאת הביצוע native: היא עוברת על כל שכבה מאומנת של SFace ובוחרת את סוג ה-CUDA kernel המתאים."],
+    [/^const std::size_t output_elements =/, "Calculates how many output tensor values this layer produces; this count determines the number of CUDA blocks needed.", "Вычисляет число выходных значений тензора данного слоя; по нему определяется необходимое число CUDA blocks.", "מחשבת כמה ערכי טנזור פלט השכבה יוצרת; מספר זה קובע כמה CUDA blocks נדרשים."],
+    [/^static_cast<std::size_t>\(batch_size\) \* layer\.output_channels/, "Completes the output-size calculation as B x C x H x W for the current layer.", "Завершает расчёт размера выхода как B x C x H x W для текущего слоя.", "משלימה את חישוב גודל הפלט כ־B x C x H x W עבור השכבה הנוכחית."],
+    [/^\} else if \(layer\.kind == DeviceLayer::Kind::Depthwise3x3\) \{/, "Selects the depthwise branch: one learned 3x3 filter is applied independently to each channel.", "Выбирает ветку depthwise: один обученный фильтр 3x3 применяется независимо к каждому каналу.", "בוחרת בענף depthwise: מסנן 3x3 מאומן אחד מוחל בנפרד על כל ערוץ."],
+    [/^depthwise_conv3x3_kernel<<</, "Begins the exact depthwise-kernel launch. The next two launch arguments are the grid size and block size.", "Начинает точный запуск depthwise-kernel. Следующие два аргумента запуска задают размер grid и block.", "מתחילה את השיגור המדויק של depthwise-kernel. שני ארגומנטי השיגור הבאים מגדירים את גודל ה-grid וה-block."],
+    [/^static_cast<unsigned int>\(\(output_elements \+ threads - 1\) \/ threads\),$/, "Defines the grid X dimension as ceil(output_elements / 256), so there is enough work for every output pixel.", "Задаёт размер grid по X как ceil(output_elements / 256), чтобы работы хватило для каждого выходного пикселя.", "מגדירה את ממד ה-grid בציר X בתור ceil(output_elements / 256), כך שיש עבודה לכל פיקסל פלט."],
+    [/^threads$/, "Uses the previously declared 256-thread CUDA block as the second launch parameter.", "Использует ранее объявленный CUDA-block из 256 threads как второй параметр запуска.", "משתמשת בבלוק CUDA בן 256 threads שהוגדר קודם כפרמטר השיגור השני."],
+    [/^const int spatial = layer\.output_height \* layer\.output_width;/, "Flattens H x W into the spatial length used to turn each pointwise convolution into a matrix multiplication.", "Объединяет H x W в spatial-длину, которая превращает pointwise-свёртку в матричное умножение.", "משטחת את H x W לאורך spatial שמשמש להפוך קונבולוציית pointwise לכפל מטריצות."],
+    [/^const int row_tiles = \(rows \+ kTile - 1\) \/ kTile;/, "Calculates the grid's row-tile count with 16 rows per CUDA block.", "Вычисляет число плиток строк grid: 16 строк на один CUDA block.", "מחשבת את מספר אריחי השורות של ה-grid: 16 שורות לכל CUDA block."],
+    [/^const int output_tiles = \(layer\.output_channels \+ kTile - 1\) \/ kTile;/, "Calculates the grid's output-tile count with 16 output channels per CUDA block.", "Вычисляет число выходных плиток grid: 16 выходных каналов на один CUDA block.", "מחשבת את מספר אריחי הפלט של ה-grid: 16 ערוצי פלט לכל CUDA block."],
+    [/^pointwise_gemm_kernel<<<row_tiles \* output_tiles, dim3\(kTile, kTile\)>>>\($/, "Launches pointwise GEMM directly: grid = row_tiles x output_tiles, block = dim3(16,16), or 256 parallel threads.", "Запускает pointwise GEMM напрямую: grid = row_tiles x output_tiles, block = dim3(16,16), то есть 256 параллельных threads.", "משגרת pointwise GEMM ישירות: grid = row_tiles x output_tiles, ‏block = dim3(16,16), כלומר 256 threads במקביל."],
+    [/^check_cuda\(cudaGetLastError\(\), "manual SFace layer kernel"\);/, "Checks immediately whether the just-launched CUDA layer kernel was accepted by the GPU runtime.", "Сразу проверяет, был ли только что запущенный CUDA-kernel слоя принят GPU runtime.", "בודקת מיד אם CUDA kernel של השכבה ששוגר זה עתה התקבל על ידי סביבת ה־GPU."],
     [/^const float\* input,?$/, "Receives the device pointer to the input activation matrix.", "Получает device-указатель на входную матрицу признаков.", "מקבלת מצביע התקן למטריצת ההפעלות בקלט."],
     [/^const float\* transposed_weights,?$/, "Receives trained weights in contiguous KxN order for tiled reads.", "Получает обученные веса в непрерывном порядке KxN для плиточного чтения.", "מקבלת משקלים מאומנים בסדר KxN רציף לקריאה מרוצפת."],
     [/^const float\* scale,?$/, "Receives the learned BatchNorm scale for each output channel.", "Получает обученный коэффициент масштаба BatchNorm для каждого выходного канала.", "מקבלת את מקדם ה-scale המאומן של BatchNorm לכל ערוץ פלט."],
@@ -6427,10 +6440,13 @@ function manualSfaceStageCodeRanges(lines, stepIndex) {
       span(/^standard_conv3x3_kernel<</, /^\} else if \(layer\.kind == DeviceLayer::Kind::Depthwise3x3\)/)
     ],
     () => [
-      span(/^for \(int block = 2; block <= 14; \+\+block\)/, /^auto \[feature_scale, feature_shift\]/),
+      (() => {
+        const start = find(/^for \(const auto& layer : context->layers\)/, find(/^float\* output = second;/) + 1);
+        const end = find(/^check_cuda\(cudaGetLastError\(\), "manual SFace layer kernel"\);/, Math.max(0, start));
+        return { start, end };
+      })(),
       span(/^__global__ void depthwise_conv3x3_kernel/, /^__global__ void pointwise_gemm_kernel/),
-      span(/^__global__ void pointwise_gemm_kernel/, /^__global__ void affine_in_place_kernel/),
-      inclusive(/^\} else if \(layer\.kind == DeviceLayer::Kind::Depthwise3x3\)/, /^check_cuda\(cudaGetLastError\(\), "manual SFace layer kernel"\);/)
+      span(/^__global__ void pointwise_gemm_kernel/, /^__global__ void affine_in_place_kernel/)
     ],
     () => [
       span(/^__global__ void affine_in_place_kernel/, /^__global__ void fully_connected_kernel/),
@@ -6454,8 +6470,10 @@ async function focusManualSfaceStageCode(stepIndex, shouldScroll = true) {
   const ready = await ensureExactStageCode();
   const stage = stageDetails[currentStageIndex];
   if (!ready || stage?.level !== "05" || usesLegacyStageInspector(stage)) return;
-  const ranges = manualSfaceStageCodeRanges(stage.exactCode.split("\n"), stepIndex);
-  if (!renderFocusedStageSource(stage, ranges, stepIndex, shouldScroll)) {
+  const lines = stage.exactCode.split("\n");
+  const ranges = manualSfaceStageCodeRanges(lines, stepIndex);
+  const executionRange = ranges.find((range) => /^for \(const auto& layer : context->layers\)/.test(lines[range.start]?.trim() || ""));
+  if (!renderFocusedStageSource(stage, ranges, stepIndex, shouldScroll, executionRange?.start)) {
     console.error(`Could not resolve manual SFace stage 05 code ranges for step ${stepIndex + 1}`);
     stageCodeSource.textContent = uiText("fullStageError");
   }
@@ -7015,7 +7033,7 @@ function genericStageCodeRange(stageLevel, lines, stepIndex) {
   return { start: -1, end: -1 };
 }
 
-function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true) {
+function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, scrollTargetIndex = null) {
   const ranges = (Array.isArray(range) ? range : [range]).filter((item) => item && item.start >= 0 && item.end >= item.start);
   if (!stage?.exactCode || ranges.length === 0) return false;
   const sourceLines = stage.exactCode.split("\n");
@@ -7024,6 +7042,9 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true) 
   const isFocused = (index) => ranges.some((item) => index >= item.start && index <= item.end);
   const isFocusStart = (index) => ranges.some((item) => index === item.start);
   const isFocusEnd = (index) => ranges.some((item) => index === item.end);
+  const scrollIndex = Number.isInteger(scrollTargetIndex) && isFocused(scrollTargetIndex)
+    ? scrollTargetIndex
+    : firstFocusedIndex;
   stageCodeMode = "full";
   stageCode.innerHTML = "";
   stageCode.setAttribute("dir", (document.documentElement.lang || "en") === "he" ? "rtl" : "ltr");
@@ -7064,7 +7085,7 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true) 
     node.classList.toggle("code-active", selected);
     node.setAttribute("aria-pressed", selected ? "true" : "false");
   });
-  const firstRow = rows[firstFocusedIndex];
+  const firstRow = rows[scrollIndex];
   if (firstRow) requestAnimationFrame(() => {
     stageCode.scrollTop = Math.max(0, firstRow.offsetTop - stageCode.offsetTop - 18);
     if (shouldScroll) stageCode.scrollIntoView({ behavior: "smooth", block: "center" });
