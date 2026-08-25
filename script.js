@@ -6568,6 +6568,32 @@ function nativeStageFiveCodeRange(lines, stepIndex) {
   return ranges[stepIndex] || { start: -1, end: -1 };
 }
 
+function cosineScoresKernelCodeRange(lines) {
+  const start = lines.findIndex((line) => /^__global__ void cosine_scores_kernel\(/.test(line.trim()));
+  let depth = 0;
+  let end = -1;
+  for (let index = start; index >= 0 && index < lines.length; index += 1) {
+    depth += (lines[index].match(/\{/g) || []).length;
+    depth -= (lines[index].match(/\}/g) || []).length;
+    if (index > start && depth === 0) {
+      end = index;
+      break;
+    }
+  }
+  return { start, end };
+}
+
+async function focusCosineScoresKernel() {
+  const ready = await ensureExactStageCode();
+  const stage = stageDetails[currentStageIndex];
+  if (!ready || stage?.level !== "06" || usesLegacyStageInspector(stage)) return;
+  const range = cosineScoresKernelCodeRange(stage.exactCode.split("\n"));
+  if (!renderFocusedStageSource(stage, range, 2, true)) {
+    console.error("Could not resolve cosine_scores_kernel body");
+    stageCodeSource.textContent = uiText("fullStageError");
+  }
+}
+
 function manualSfaceStageCodeRanges(lines, stepIndex) {
   const find = (pattern, from = 0) => lines.findIndex((line, index) => index >= from && pattern.test(line.trim()));
   const single = (pattern, from = 0) => {
@@ -7259,6 +7285,7 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
   const isActivationHelperFocus = stage?.level === "05"
     && /^__device__ float activate\(/.test(sourceLines[firstFocusedIndex]?.trim() || "");
   const kernelNameAtFocus = sourceLines[firstFocusedIndex]?.trim().match(/^__global__ void (\w+_kernel)\b/)?.[1] || "";
+  const cosineKernelLaunchIndex = sourceLines.findIndex((line) => /^cosine_scores_kernel<<<grid, block>>>\(/.test(line.trim()));
   const isFocused = (index) => ranges.some((item) => index >= item.start && index <= item.end);
   const isFocusStart = (index) => ranges.some((item) => index === item.start);
   const isFocusEnd = (index) => ranges.some((item) => index === item.end);
@@ -7327,7 +7354,7 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
     if (isFocused(index)) row.classList.add("code-focus");
     if (isActivationHelperFocus && isFocused(index)) row.classList.add("code-focus-activation-target");
     if (kernelNameAtFocus && isFocused(index)) row.classList.add("code-focus-kernel-target");
-    if (kernelNameAtFocus && index === firstFocusedIndex) {
+    if (stage.level === "05" && kernelNameAtFocus && index === firstFocusedIndex) {
       row.classList.add("code-focus-kernel-return");
       row.tabIndex = 0;
       row.setAttribute("role", "button");
@@ -7357,6 +7384,19 @@ function renderFocusedStageSource(stage, range, stepIndex, shouldScroll = true, 
           focusManualSfaceKernel(kernelName, { stepIndex, sourceIndex: index });
         });
       }
+    }
+    if (stage.level === "06" && index === cosineKernelLaunchIndex) {
+      row.classList.add("code-focus-primary", "code-focus-kernel-link");
+      row.tabIndex = 0;
+      row.setAttribute("role", "button");
+      row.setAttribute("aria-label", "Open the cosine score CUDA kernel body");
+      row.title = "Open cosine_scores_kernel()";
+      row.addEventListener("click", () => focusCosineScoresKernel());
+      row.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        focusCosineScoresKernel();
+      });
     }
     if (isActivationCallLine(line)) {
       row.classList.add("code-focus-activation-link");
