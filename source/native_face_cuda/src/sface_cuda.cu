@@ -1,3 +1,15 @@
+// -----------------------------------------------------------------------------
+// Copyright (C) Shenkar College
+// Electronics & Electrical Engineering Department
+// All rights reserved.
+// Owner        : Yaroslav Holodinin and Goldstein Adi and Faraj Kharbaoui
+// FILE NAME    : sface_cuda.cu
+// DATE         : 23/08/2026
+// DESCRIPTION  : Implements the CUDA cosine-score kernel for matching query embeddings against references.
+// -----------------------------------------------------------------------------
+// CUDA Unit : sface_cuda
+// Purpose     : Implements the CUDA cosine-score kernel for matching query embeddings against references.
+// -----------------------------------------------------------------------------
 #include <cuda_runtime.h>
 
 #include <stdexcept>
@@ -11,6 +23,7 @@ void check_cuda(cudaError_t status, const char* operation) {
     }
 }
 
+// Map one thread to each normalized query/reference pair; no pair depends on another pair.
 __global__ void cosine_scores_kernel(
     const float* queries,
     const float* references,
@@ -32,6 +45,7 @@ __global__ void cosine_scores_kernel(
 }
 }
 
+// Transfer both embedding matrices once, launch the full score grid, and copy only final scores back to the host.
 std::vector<float> sface_cuda_scores(
     const std::vector<float>& queries,
     const std::vector<float>& references,

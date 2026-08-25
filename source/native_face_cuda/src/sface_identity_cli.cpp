@@ -1,3 +1,15 @@
+// -----------------------------------------------------------------------------
+// Copyright (C) Shenkar College
+// Electronics & Electrical Engineering Department
+// All rights reserved.
+// Owner        : Yaroslav Holodinin and Goldstein Adi and Faraj Kharbaoui
+// FILE NAME    : sface_identity_cli.cpp
+// DATE         : 23/08/2026
+// DESCRIPTION  : Provides the persistent command-line worker for sequential CPU and batched CUDA face recognition.
+// -----------------------------------------------------------------------------
+// Source Unit : sface_identity_cli
+// Purpose     : Provides the persistent command-line worker for sequential CPU and batched CUDA face recognition.
+// -----------------------------------------------------------------------------
 #include "sface_engine.hpp"
 
 #include <algorithm>
@@ -57,6 +69,7 @@ std::string escape_json(const std::string& value) {
     return result;
 }
 
+// Serialize a stable JSON contract consumed by the Python Hive bridge.
 std::string result_json(const SFaceResult& result, const fs::path& image, const std::string& backend) {
     std::ostringstream output;
     output << std::fixed << std::setprecision(6)
@@ -79,6 +92,7 @@ std::string result_json(const SFaceResult& result, const fs::path& image, const 
 }
 }
 
+// Start one reusable engine and support line-oriented batch commands without respawning the native process.
 int main(int argc, char** argv) {
     try {
         const fs::path references = widen_utf8(argument(argc, argv, "--references"));

@@ -1,3 +1,15 @@
+// -----------------------------------------------------------------------------
+// Copyright (C) Shenkar College
+// Electronics & Electrical Engineering Department
+// All rights reserved.
+// Owner        : Yaroslav Holodinin and Goldstein Adi and Faraj Kharbaoui
+// FILE NAME    : sface_engine.cpp
+// DATE         : 23/08/2026
+// DESCRIPTION  : Coordinates YuNet detection, landmark alignment, CPU SFace, and the project-owned manual CUDA SFace path.
+// -----------------------------------------------------------------------------
+// Source Unit : sface_engine
+// Purpose     : Coordinates YuNet detection, landmark alignment, CPU SFace, and the project-owned manual CUDA SFace path.
+// -----------------------------------------------------------------------------
 #include "sface_engine.hpp"
 #include "sface_manual_cuda.hpp"
 
@@ -81,6 +93,7 @@ float pixel_bgr(const Image& image, float x, float y, int channel) {
     return top * (1.0f - ty) + bottom * ty;
 }
 
+// Pad all images to one dynamic tensor shape so YuNet can process the request as a single batch.
 PreparedBatch prepare_detection_batch(const std::vector<Image>& images) {
     // Build one dynamic NCHW tensor. All images share the largest padded shape
     // so ONNX Runtime can execute the entire request as one CUDA batch.
@@ -116,6 +129,7 @@ PreparedBatch prepare_detection_batch(const std::vector<Image>& images) {
     return batch;
 }
 
+// Estimate a five-landmark similarity transform and resample every face to the canonical 112 x 112 SFace input.
 std::vector<float> align_faces(
     const PreparedBatch& batch,
     const std::vector<DetectedFace>& faces
@@ -484,6 +498,7 @@ NativeSFaceEngine::NativeSFaceEngine(
 
 NativeSFaceEngine::~NativeSFaceEngine() = default;
 
+// Preserve batch order from detection through embedding and scoring so each result maps to its original frame.
 std::vector<SFaceResult> NativeSFaceEngine::recognize(
     const std::vector<fs::path>& paths,
     const std::vector<std::string>&

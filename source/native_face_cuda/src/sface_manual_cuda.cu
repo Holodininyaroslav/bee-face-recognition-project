@@ -1,3 +1,15 @@
+// -----------------------------------------------------------------------------
+// Copyright (C) Shenkar College
+// Electronics & Electrical Engineering Department
+// All rights reserved.
+// Owner        : Yaroslav Holodinin and Goldstein Adi and Faraj Kharbaoui
+// FILE NAME    : sface_manual_cuda.cu
+// DATE         : 23/08/2026
+// DESCRIPTION  : Implements the trained SFace forward pass with project-owned CUDA kernels and no SFace inference-library call.
+// -----------------------------------------------------------------------------
+// CUDA Unit : sface_manual_cuda
+// Purpose     : Implements the trained SFace forward pass with project-owned CUDA kernels and no SFace inference-library call.
+// -----------------------------------------------------------------------------
 #include "sface_manual_cuda.hpp"
 
 #include <cuda_runtime.h>
@@ -41,6 +53,7 @@ T read_value(std::ifstream& stream, const char* field) {
     return value;
 }
 
+// Validate the custom binary header and tensor metadata before any trained weight reaches device memory.
 std::unordered_map<std::string, HostTensor> load_weight_file(const std::filesystem::path& path) {
     std::ifstream stream(path, std::ios::binary);
     if (!stream) throw std::runtime_error("Manual SFace weight file is missing: " + path.string());
@@ -240,6 +253,7 @@ __global__ void depthwise_conv3x3_kernel(
     output[index] = activate(sum, scale, shift, slope, channel);
 }
 
+// Express each 1x1 convolution as a tiled GEMM and reuse input and weight tiles through shared memory.
 __global__ void pointwise_gemm_kernel(
     const float* input,
     const float* transposed_weights,
@@ -309,6 +323,7 @@ __global__ void affine_in_place_kernel(
     values[index] = values[index] * scale[channel] + shift[channel];
 }
 
+// Compute the 128-value embedding directly from flattened features and apply the trained output transform.
 __global__ void fully_connected_kernel(
     const float* input,
     const float* transposed_weights,
@@ -514,6 +529,7 @@ void destroy_manual_sface_cuda(ManualSFaceCudaContext* context) noexcept {
     release_context(context);
 }
 
+// Execute every trained SFace layer with project-owned kernels while keeping the complete image batch on the GPU.
 std::vector<float> manual_sface_cuda_forward(
     ManualSFaceCudaContext* context,
     const std::vector<float>& aligned_nchw_rgb,

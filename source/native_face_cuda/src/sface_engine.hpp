@@ -1,3 +1,15 @@
+// -----------------------------------------------------------------------------
+// Copyright (C) Shenkar College
+// Electronics & Electrical Engineering Department
+// All rights reserved.
+// Owner        : Yaroslav Holodinin and Goldstein Adi and Faraj Kharbaoui
+// FILE NAME    : sface_engine.hpp
+// DATE         : 23/08/2026
+// DESCRIPTION  : Declares the native YuNet/SFace recognition engine, configuration, and result interface.
+// -----------------------------------------------------------------------------
+// Header Name : sface_engine
+// Purpose     : Declares the native YuNet/SFace recognition engine, configuration, and result interface.
+// -----------------------------------------------------------------------------
 #pragma once
 
 #include "image_io.hpp"
@@ -7,6 +19,7 @@
 #include <string>
 #include <vector>
 
+// Return identity, confidence, acceptance, and timing together for both CLI and Hive consumers.
 struct SFaceResult {
     bool accepted = false;
     bool face_found = false;
@@ -20,6 +33,7 @@ struct SFaceResult {
     double recognition_ms = 0.0;
 };
 
+// Own long-lived model sessions, references, and CUDA state to avoid reinitialization between requests.
 class NativeSFaceEngine {
 public:
     NativeSFaceEngine(

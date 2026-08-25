@@ -185,7 +185,16 @@ Use the full suite package first:
 bee_face_full_local_suite_installer.zip
 ```
 
-It is intended to install the local Hive service, local detector, CPU/OpenCL executables, model weights, reference images, BeeBoard assets, Bgame, physical/mechanics tools, concept pages, and launch scripts as one synchronized package.
+It installs the local Hive service, the native C++ CPU baseline, the native
+C++/CUDA worker with the project-owned manual SFace kernels, model weights,
+reference images, BeeBoard assets, Bgame, physical/mechanics tools, concept
+pages, and launch scripts as one synchronized package.
+
+After extraction, run `Install_Hive.bat`. The installer validates every payload
+file, creates an isolated Python environment, tests CPU recognition, tests the
+`manual-cuda-sface` backend on NVIDIA systems, checks the Hive API, and creates
+the desktop/startup shortcuts. The stable local address is
+`http://127.0.0.1:8890/`.
 
 Detailed steps:
 

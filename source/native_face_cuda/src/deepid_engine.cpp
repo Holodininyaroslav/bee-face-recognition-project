@@ -1,3 +1,15 @@
+// -----------------------------------------------------------------------------
+// Copyright (C) Shenkar College
+// Electronics & Electrical Engineering Department
+// All rights reserved.
+// Owner        : Yaroslav Holodinin and Goldstein Adi and Faraj Kharbaoui
+// FILE NAME    : deepid_engine.cpp
+// DATE         : 23/08/2026
+// DESCRIPTION  : Implements the C++ DeepID host pipeline, preprocessing, references, and backend dispatch.
+// -----------------------------------------------------------------------------
+// Source Unit : deepid_engine
+// Purpose     : Implements the C++ DeepID host pipeline, preprocessing, references, and backend dispatch.
+// -----------------------------------------------------------------------------
 #include "deepid_engine.hpp"
 
 #include <algorithm>
@@ -488,6 +500,7 @@ DeepIDModel::DeepIDModel(const fs::path& weights_path) {
     fc12_bias_ = require_weight(weights, "fc12/bias", 160);
 }
 
+// Route one prepared tensor through the selected native backend while preserving the same model weights.
 std::vector<float> DeepIDModel::embed(const Image& image) const {
     const auto input = resize_letterbox_bgr(image);
 
@@ -539,6 +552,7 @@ std::vector<float> DeepIDModel::embed(const Image& image) const {
     return embedding;
 }
 
+// Keep the batch intact for CUDA so kernels can expose parallelism across images as well as tensor elements.
 std::vector<std::vector<float>> DeepIDModel::embed_batch(const std::vector<Image>& images) const {
     if (images.empty()) {
         return {};
@@ -599,6 +613,7 @@ FaceMatcher::FaceMatcher(fs::path weights_path, fs::path reference_dir, float th
     reload_references();
 }
 
+// Recompute normalized reference embeddings whenever the reference directory changes.
 void FaceMatcher::reload_references() {
     references_.clear();
     if (!fs::exists(reference_dir_)) {

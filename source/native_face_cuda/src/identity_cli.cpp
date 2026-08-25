@@ -1,3 +1,15 @@
+// -----------------------------------------------------------------------------
+// Copyright (C) Shenkar College
+// Electronics & Electrical Engineering Department
+// All rights reserved.
+// Owner        : Yaroslav Holodinin and Goldstein Adi and Faraj Kharbaoui
+// FILE NAME    : identity_cli.cpp
+// DATE         : 23/08/2026
+// DESCRIPTION  : Provides the command-line entry point for native DeepID CPU and CUDA recognition.
+// -----------------------------------------------------------------------------
+// Source Unit : identity_cli
+// Purpose     : Provides the command-line entry point for native DeepID CPU and CUDA recognition.
+// -----------------------------------------------------------------------------
 #include "deepid_engine.hpp"
 #include "image_io.hpp"
 
@@ -124,6 +136,7 @@ float cosine(const std::vector<float>& a, const std::vector<float>& b) {
     return std::inner_product(a.begin(), a.end(), b.begin(), 0.0f);
 }
 
+// Load references once and reuse the detector for every request in persistent server mode.
 class IdentityDetector {
 public:
     IdentityDetector(const fs::path& weights, const fs::path& reference_root, float min_score, float min_margin)
@@ -264,6 +277,7 @@ std::string result_json(const RecognitionResult& result, const fs::path& path) {
 }
 }
 
+// Parse single-image or persistent batch commands and serialize each recognition result as machine-readable output.
 int main(int argc, char** argv) {
     try {
         const fs::path references = widen_utf8(arg_value(argc, argv, "--references"));

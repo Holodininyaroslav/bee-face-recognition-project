@@ -1,3 +1,15 @@
+// -----------------------------------------------------------------------------
+// Copyright (C) Shenkar College
+// Electronics & Electrical Engineering Department
+// All rights reserved.
+// Owner        : Yaroslav Holodinin and Goldstein Adi and Faraj Kharbaoui
+// FILE NAME    : image_io.cpp
+// DATE         : 23/08/2026
+// DESCRIPTION  : Implements Windows image decoding and conversion to the tensor layout used by the recognition engines.
+// -----------------------------------------------------------------------------
+// Source Unit : image_io
+// Purpose     : Implements Windows image decoding and conversion to the tensor layout used by the recognition engines.
+// -----------------------------------------------------------------------------
 #include "image_io.hpp"
 
 #include <stdexcept>
@@ -12,6 +24,7 @@
 #pragma comment(lib, "gdiplus.lib")
 
 namespace {
+// Initialize GDI+ exactly once for the process and release it automatically during shutdown.
 class GdiPlusSession {
 public:
     GdiPlusSession() {
@@ -57,6 +70,7 @@ std::wstring widen_utf8(const std::string& value) {
 #endif
 }
 
+// Decode into a fixed RGBA byte layout so CPU and CUDA preprocessing observe identical pixels.
 Image load_image_rgba(const std::filesystem::path& path) {
 #ifndef _WIN32
     throw std::runtime_error("Image loading currently uses Windows GDI+");

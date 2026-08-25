@@ -1,3 +1,15 @@
+// -----------------------------------------------------------------------------
+// Copyright (C) Shenkar College
+// Electronics & Electrical Engineering Department
+// All rights reserved.
+// Owner        : Yaroslav Holodinin and Goldstein Adi and Faraj Kharbaoui
+// FILE NAME    : deepid_cuda.cu
+// DATE         : 23/08/2026
+// DESCRIPTION  : Implements manual CUDA convolution, pooling, dense, normalization, and cosine kernels for DeepID.
+// -----------------------------------------------------------------------------
+// CUDA Unit : deepid_cuda
+// Purpose     : Implements manual CUDA convolution, pooling, dense, normalization, and cosine kernels for DeepID.
+// -----------------------------------------------------------------------------
 #include <cuda_runtime.h>
 
 #include <algorithm>
@@ -25,6 +37,7 @@ constexpr int kInputW = 47;
 constexpr int kInputC = 3;
 constexpr int kEmbedding = 160;
 
+// Wrap cudaMalloc and cudaFree in RAII so exceptions cannot leak device memory.
 class DeviceBuffer {
 public:
     DeviceBuffer() = default;
@@ -61,6 +74,7 @@ void copy_to_device(DeviceBuffer& destination, const std::vector<float>& source)
     ));
 }
 
+// Assign one thread to each output activation and fuse convolution with ReLU to avoid an extra memory pass.
 __global__ void conv_relu_kernel(
     const float* input,
     const float* weights,
@@ -193,6 +207,7 @@ __global__ void normalize_embeddings_kernel(float* embeddings, int batch_size, i
     }
 }
 
+// Evaluate independent query/reference embedding pairs in parallel and write the complete score matrix.
 __global__ void cosine_scores_kernel(
     const float* queries,
     const float* references,

@@ -1,3 +1,15 @@
+// -----------------------------------------------------------------------------
+// Copyright (C) Shenkar College
+// Electronics & Electrical Engineering Department
+// All rights reserved.
+// Owner        : Yaroslav Holodinin and Goldstein Adi and Faraj Kharbaoui
+// FILE NAME    : deepid_engine.hpp
+// DATE         : 23/08/2026
+// DESCRIPTION  : Declares the native DeepID engine interface and recognition result structures.
+// -----------------------------------------------------------------------------
+// Header Name : deepid_engine
+// Purpose     : Declares the native DeepID engine interface and recognition result structures.
+// -----------------------------------------------------------------------------
 #pragma once
 
 #include "image_io.hpp"
@@ -17,6 +29,7 @@ struct MatchResult {
     std::string reason;
 };
 
+// Present one model interface while compile-time flags select sequential CPU or native CUDA execution.
 class DeepIDModel {
 public:
     struct Tensor {
@@ -47,6 +60,7 @@ private:
     std::vector<float> fc12_bias_;
 };
 
+// Separate embedding generation from identity matching so references can be cached across requests.
 class FaceMatcher {
 public:
     FaceMatcher(std::filesystem::path weights_path, std::filesystem::path reference_dir, float threshold);
