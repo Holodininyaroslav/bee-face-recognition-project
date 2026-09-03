@@ -42,8 +42,6 @@ the verified native benchmark results. Regenerate them with
   tensors to `models/sface_manual_weights.bin`; it does not execute inference.
 - `src/deepid_cuda.cu`: complete fallback DeepID CUDA implementation with
   convolution, ReLU, max-pooling, dense, normalization and score kernels.
-- `../latest_repo/source/attention/attention_cuda.cu`: course attention example
-  with basic and tiled CUDA kernels and exact CPU/CUDA validation.
 
 The fallback binaries are preserved as `identity_deepid_cpu.exe` and
 `identity_deepid_cuda.exe`; they are not used by Hive by default.

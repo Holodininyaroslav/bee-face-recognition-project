@@ -2,7 +2,7 @@
 
 ![Bee Face Recognition Project](assets/project-social-preview.png)
 
-Bee Face Recognition Project is an AI-assisted engineering prototype by **Yaroslav Kholodinin**, a student at **Shenkar College, Israel**.
+Bee Face Recognition Project is an AI-assisted engineering prototype by **Yaroslav Kholodinin**, a student at **Shenkar College, Israel**. Its primary implementation is native face recognition in **C++ and CUDA** using YuNet detection, SFace embeddings, and a project-owned CUDA similarity kernel.
 
 The project combines a local face-recognition pipeline, an AI MIPS Hive interface, bee / board / mechanics simulations, partial SystemVerilog AI MIPS hardware sources, and several research-concept modules for future swarm communication.
 
@@ -18,29 +18,14 @@ It is not a commercial production service. It is a portfolio and course-style sy
   https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_face_full_local_suite_installer.zip
 - Optional Colab notebook:  
   https://colab.research.google.com/github/Holodininyaroslav/bee-face-recognition-project/blob/main/colab/colab_public_one_image_site.ipynb
-- Required CUDA Attention source:
-  https://github.com/Holodininyaroslav/bee-face-recognition-project/blob/main/source/attention/attention_cuda.cu
 - Native CUDA face-recognition source:
   https://github.com/Holodininyaroslav/bee-face-recognition-project/tree/main/source/native_face_cuda
 
-## CUDA Course Assignment
+## Primary Native C++ / CUDA Implementation
 
-The graded CUDA module is the native C++/CUDA implementation of Scaled
-Dot-Product Attention in `source/attention/`:
+Face recognition is the main CUDA workflow in this repository. The native worker decodes and prepares an image in C++, detects and aligns the face with YuNet, generates a 128-dimensional SFace embedding through the CUDA execution path, and compares it with stored reference embeddings using the explicit `sface_cuda.cu` kernel. A sequential native CPU path provides the correctness and performance baseline.
 
-`Attention(Q,K,V) = softmax((Q*K^T)/sqrt(d))*V`
-
-It contains the required basic kernels for `Q*K^T`, scaling, stable row-wise
-softmax, and `P*V`; an optimized shared-memory tiled path; an independent
-sequential C++ CPU reference; explicit CUDA allocation and transfers; numerical
-verification; and reproducible CPU/basic-CUDA/optimized-CUDA timings for
-`N=512`, `d=64`. Run `source/attention/verify_cuda_assignment.bat` to build
-with NVCC, execute the benchmark, validate both GPU outputs against the CPU
-result, and regenerate the CSV report.
-
-The native YuNet/SFace face-recognition pipeline and Hive swarm simulation are
-the applied demonstration built around the course work. They do not replace
-the required Attention implementation.
+The GitHub Pages portal presents this recognition pipeline first and exposes its exact active C++/CUDA source in seven inspectable stages. The surrounding Hive, bee-simulation, hardware, and communication modules remain integrations around this central recognition engine.
 
 ## What Works Now
 

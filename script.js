@@ -279,8 +279,6 @@ const translations = {
     toolColabText: "Open the CUDA/Colab detector notebook from this repository.",
     toolFullSuite: "Full local suite installer",
     toolFullSuiteText: "Install the Hive service, local simulations, BeeBoard 3D review, Bgame, orbital mechanics, models, and launchers together.",
-    toolAttention: "CPU / OpenCL / CUDA course project",
-    toolAttentionText: "Inspect the exact Scaled Dot-Product Attention source in six stages with line-specific English, Russian, and Hebrew explanations.",
     toolHiveInstaller: "AI MIPS Hive Service installer",
     toolHiveInstallerText: "Download the local Hive menu and backend service package.",
     toolUrsina: "Bgame installer",
@@ -600,49 +598,6 @@ const fullSourceMeta = document.getElementById("fullSourceMeta");
 const detectorVariantDescription = document.getElementById("detectorVariantDescription");
 const detectorVariantSource = document.getElementById("detectorVariantSource");
 const detectorVariantButtons = Array.from(document.querySelectorAll("[data-detector-variant]"));
-const courseRequirementButtons = document.getElementById("courseRequirementButtons");
-const courseRequirementsKicker = document.getElementById("courseRequirementsKicker");
-const courseRequirementsTitle = document.getElementById("courseRequirementsTitle");
-const courseRequirementsIntro = document.getElementById("courseRequirementsIntro");
-const courseRequirementsSource = document.getElementById("courseRequirementsSource");
-const attentionStageButtons = document.getElementById("attentionStageButtons");
-const attentionStagesLabel = document.getElementById("attentionStagesLabel");
-const courseRequirementListLabel = document.getElementById("courseRequirementListLabel");
-const requirementProof = document.getElementById("requirementProof");
-const requirementProofKicker = document.getElementById("requirementProofKicker");
-const requirementProofTitle = document.getElementById("requirementProofTitle");
-const requirementProofText = document.getElementById("requirementProofText");
-const requirementProofStage = document.getElementById("requirementProofStage");
-const requirementCode = document.getElementById("requirementCode");
-
-const courseRequirements = [
-  { key: "attention", stage: 2, step: 0, start: /__global__ void qk_matmul_basic/, end: /__global__ void attention_v_basic/, label: { en: "Scaled Dot-Product Attention", ru: "Scaled Dot-Product Attention", he: "Scaled Dot-Product Attention" }, text: { en: "The required formula is implemented as QK transpose, scaling, stable Softmax, then P times V.", ru: "Требуемая формула реализована как QK transpose, масштабирование, стабильный Softmax и затем P умножить на V.", he: "הנוסחה הנדרשת ממומשת כ-QK transpose, קנה מידה, Softmax יציב ולאחר מכן P כפול V." } },
-  { key: "qk", stage: 2, step: 0, start: /__global__ void qk_matmul_basic/, wholeBlock: true, label: { en: "Q x K transpose", ru: "Q x K transpose", he: "Q x K transpose" }, text: { en: "One CUDA thread computes one score matrix element by accumulating d features.", ru: "Один CUDA-поток вычисляет один элемент матрицы оценок, суммируя d признаков.", he: "כל thread של CUDA מחשב איבר אחד במטריצת הציונים על ידי צבירת d מאפיינים." } },
-  { key: "scale", stage: 2, step: 0, start: /__global__ void scale_scores/, wholeBlock: true, label: { en: "Scale 1 / sqrt(d)", ru: "Масштаб 1 / sqrt(d)", he: "קנה מידה 1 / sqrt(d)" }, text: { en: "The basic kernel scales scores separately; the optimized tiled QK kernel fuses the same scale.", ru: "Базовый вариант масштабирует оценки отдельным kernel; оптимизированный tiled QK объединяет ту же операцию.", he: "הגרסה הבסיסית מבצעת קנה מידה ב-kernel נפרד; QK המרוצף הממוטב ממזג את אותה הפעולה." } },
-  { key: "softmax", stage: 2, step: 1, start: /__global__ void row_softmax/, end: /__global__ void attention_v_basic/, label: { en: "Stable Softmax", ru: "Численно стабильный Softmax", he: "Softmax יציב נומרית" }, text: { en: "Each row subtracts its maximum before exponentiation, then normalizes by the reduced sum.", ru: "Из каждой строки вычитается максимум до экспоненты, затем строка нормализуется по сумме.", he: "מכל שורה מחסרים את המקסימום לפני האקספוננטה, ולאחר מכן מנרמלים לפי הסכום." } },
-  { key: "pv", stage: 2, step: 3, start: /__global__ void attention_v_basic/, end: /__global__ void qk_matmul_tiled_scaled/, label: { en: "P x V", ru: "P x V", he: "P x V" }, text: { en: "The probability matrix is multiplied by V to produce the attention output.", ru: "Матрица вероятностей умножается на V и формирует выход Attention.", he: "מטריצת ההסתברויות מוכפלת ב-V ומפיקה את פלט ה-Attention." } },
-  { key: "shape", stage: 1, step: 3, start: /int n = 512;/, end: /int d = 64;/, label: { en: "N = 512, d = 64", ru: "Размеры N = 512, d = 64", he: "ממדים N = 512, d = 64" }, text: { en: "The CUDA executable defaults to the exact required sequence length and embedding dimension.", ru: "CUDA executable по умолчанию использует требуемую длину последовательности и размер embedding.", he: "קובץ ה-CUDA משתמש כברירת מחדל באורך הרצף ובממד embedding הנדרשים." } },
-  { key: "cpu", stage: 5, step: 0, start: /std::vector<float> run_cpu_average\(/, wholeBlock: true, label: { en: "CPU reference", ru: "CPU-версия для сравнения", he: "גרסת CPU להשוואה" }, text: { en: "The sequential CPU implementation is executed as the correctness baseline for the CUDA results.", ru: "Последовательная CPU-реализация запускается как эталон корректности для CUDA-результатов.", he: "מימוש ה-CPU הסדרתי מופעל כקו בסיס לנכונות תוצאות ה-CUDA." } },
-  { key: "variants", stage: 4, step: 8, start: /void launch_pipeline\(/, end: /struct CudaRunResult/, label: { en: "CUDA basic and optimized", ru: "CUDA basic и optimized", he: "CUDA basic ו-optimized" }, text: { en: "The dispatcher launches either basic kernels or tiled shared-memory optimized kernels.", ru: "Диспетчер запускает либо basic kernels, либо оптимизированные tiled kernels с shared memory.", he: "ה-dispatcher מפעיל kernels בסיסיים או kernels ממוטבים ומרוצפים עם shared memory." } },
-  { key: "validate", stage: 5, step: 2, start: /const attention::ErrorStats error =/, end: /passed = passed && correct;/, label: { en: "CPU/GPU validation", ru: "Проверка CPU/GPU результатов", he: "אימות תוצאות CPU/GPU" }, text: { en: "The program compares CUDA output to the CPU reference and reports absolute and relative errors.", ru: "Программа сравнивает выход CUDA с CPU-эталоном и сообщает абсолютную и относительную ошибки.", he: "התוכנית משווה את פלט ה-CUDA לייחוס ה-CPU ומדווחת שגיאות מוחלטות ויחסיות." } },
-  { key: "timing", stage: 5, step: 3, start: /cudaEvent_t start/, end: /result.end_to_end_milliseconds/, label: { en: "Timing and speedup", ru: "Замер времени и ускорение", he: "מדידת זמן והאצה" }, text: { en: "CUDA events measure kernel time, while end-to-end timing includes transfers; both are reported for comparison.", ru: "CUDA events измеряют время kernels, а end-to-end учитывает переносы; оба значения выводятся для сравнения.", he: "אירועי CUDA מודדים זמן kernels, ומדידת end-to-end כוללת העברות; שני הערכים מוצגים להשוואה." } },
-  { key: "memory", stage: 4, step: 7, start: /CudaRunResult run_cuda\(/, end: /std::vector<float> run_cpu_average\(/, label: { en: "GPU memory transfers", ru: "Память GPU и Host-Device копии", he: "זיכרון GPU והעתקות Host-Device" }, text: { en: "Q, K, V, scores, and output have explicit device allocation, H2D copies, D2H readback, and cleanup.", ru: "Для Q, K, V, scores и output есть явное выделение device-памяти, H2D-копии, D2H-чтение и очистка.", he: "ל-Q, K, V, scores ול-output יש הקצאת זיכרון התקן מפורשת, העתקות H2D, קריאת D2H וניקוי." } },
-  { key: "threads", stage: 4, step: 2, start: /__global__ void qk_matmul_basic/, end: /__global__ void scale_scores/, label: { en: "Thread mapping and bounds", ru: "Распараллеливание и boundary checks", he: "מיפוי threads ובדיקות גבול" }, text: { en: "2D blocks map rows and columns to score elements, with explicit bounds checks for partial tiles.", ru: "Двумерные блоки сопоставляют строки и столбцы элементам оценок, а boundary checks обрабатывают неполные tiles.", he: "בלוקים דו-ממדיים ממפים שורות ועמודות לאיברי ציונים, עם בדיקות גבול מפורשות עבור tiles חלקיים." } }
-];
-let activeCourseRequirement = "";
-let activeAttentionStage = "";
-let attentionCourseSource = "";
-const finalAttentionSourceUrl = "https://raw.githubusercontent.com/Holodininyaroslav/bee-face-recognition-project/77c0dc8/source/attention/attention_cuda.cu";
-
-const attentionStages = [
-  { key: "shape", number: "01", label: { en: "Input dimensions", ru: "Размеры входа", he: "ממדי קלט" }, note: { en: "Required N = 512 and d = 64", ru: "Требуемые N = 512 и d = 64", he: "N = 512 ו-d = 64 הנדרשים" } },
-  { key: "qk", number: "02", label: { en: "Q x K transpose", ru: "Q x K transpose", he: "Q x K transpose" }, note: { en: "One CUDA thread produces one score", ru: "Один CUDA-поток создаёт одну оценку", he: "כל thread CUDA מפיק ציון אחד" } },
-  { key: "scale", number: "03", label: { en: "Scale scores", ru: "Масштабирование оценок", he: "קנה מידה לציונים" }, note: { en: "Multiply by 1 / sqrt(d)", ru: "Умножение на 1 / sqrt(d)", he: "כפל ב-1 / sqrt(d)" } },
-  { key: "softmax", number: "04", label: { en: "Stable Softmax", ru: "Стабильный Softmax", he: "Softmax יציב" }, note: { en: "Max reduction, exp, normalization", ru: "Максимум, exp, нормализация", he: "הפחתת מקסימום, exp, נרמול" } },
-  { key: "pv", number: "05", label: { en: "P x V output", ru: "Выход P x V", he: "פלט P x V" }, note: { en: "Probabilities form the output embedding", ru: "Вероятности формируют выходной embedding", he: "ההסתברויות יוצרות את embedding הפלט" } },
-  { key: "variants", number: "06", label: { en: "CUDA pipeline launch", ru: "Запуск CUDA-конвейера", he: "הפעלת צינור CUDA" }, note: { en: "Basic or tiled optimized kernels", ru: "Basic или tiled optimized kernels", he: "kernels בסיסיים או מרוצפים ממוטבים" } }
-];
-
 const stageDetails = [
   {
     level: "01",
@@ -1327,8 +1282,6 @@ const cleanRuTranslations = {
   toolColabText: "Открыть CUDA/Colab-версию детектора из этого репозитория.",
   toolFullSuite: "Полный локальный установщик",
   toolFullSuiteText: "Устанавливает Hive-сервис, локальные симуляции, BeeBoard 3D, Bgame, орбитальную механику, модели и ярлыки одним пакетом.",
-  toolAttention: "Курсовой проект CPU / OpenCL / CUDA",
-  toolAttentionText: "Изучить точный исходник Scaled Dot-Product Attention по шести этапам с отдельными пояснениями каждой строки на английском, русском и иврите.",
   toolHiveInstaller: "Установщик AI MIPS Hive Service",
   toolHiveInstallerText: "Скачать локальное меню Hive и backend-сервис.",
   toolUrsina: "Установщик Bgame",
@@ -1423,8 +1376,6 @@ const cleanHeTranslations = {
   toolColabText: "פתיחת גרסת CUDA/Colab של הגלאי מתוך המאגר.",
   toolFullSuite: "מתקין מקומי מלא",
   toolFullSuiteText: "מתקין יחד את שירות Hive, הסימולציות המקומיות, BeeBoard 3D, Bgame, מכניקה מסלולית, מודלים וקיצורי הפעלה.",
-  toolAttention: "פרויקט קורס CPU / OpenCL / CUDA",
-  toolAttentionText: "עיון בקוד המקור המדויק של Scaled Dot-Product Attention בשישה שלבים, עם הסבר ייעודי לכל שורה באנגלית, ברוסית ובעברית.",
   toolHiveInstaller: "מתקין AI MIPS Hive Service",
   toolHiveInstallerText: "הורדת תפריט Hive המקומי וחבילת ה-backend.",
   toolUrsina: "מתקין Bgame",
@@ -2909,13 +2860,17 @@ function sfaceOnnxLineAnnotation(item) {
 
 Object.assign(translations.en, {
   kicker: "NATIVE C++ / CUDA FACE RECOGNITION / AI MIPS HIVE",
+  title: "Face recognition with native C++ and CUDA",
   lead: "Run the native YuNet and SFace pipeline through CUDA or the sequential CPU baseline, inspect the exact C++/CUDA source, and open the integrated AI MIPS Hive view.",
+  simple: "Open native face recognition",
+  simpleKicker: "PRIMARY NATIVE C++ / CUDA PIPELINE",
+  simpleTitle: "Face recognition with native C++ and CUDA",
   toolColab: "Native CUDA recognition engine",
   toolColabText: "Open the active C++ YuNet/SFace engine used by identity_cuda.exe.",
-  toolAttention: "CUDA Attention course implementation",
-  toolAttentionText: "Open the required Scaled Dot-Product Attention implementation: basic kernels, optimized tiled kernels, memory transfers, validation, and timing.",
-  simpleNote: "Upload one screenshot, choose CUDA or CPU, and press Recognize.",
+  simpleNote: "Upload one screenshot, run the native YuNet/SFace pipeline through CUDA or CPU, and inspect the exact source stages.",
   dropHint: "Choose one screenshot for CUDA/CPU analysis.",
+  howKicker: "PRIMARY RECOGNITION PIPELINE",
+  howTitle: "Face recognition with native C++ and CUDA",
   howIntro: "This inspector documents the active native path: C++ image preparation and alignment, CUDA YuNet/SFace inference, the explicit sface_cuda.cu score kernel, and one Hive result.",
   variantKicker: "NATIVE C++ / CUDA RUNTIME",
   variantTitle: "Active recognition path",
@@ -2934,13 +2889,17 @@ Object.assign(translations.en, {
 });
 Object.assign(translations.ru, {
   kicker: "NATIVE C++ / CUDA РАСПОЗНАВАНИЕ ЛИЦ / AI MIPS HIVE",
+  title: "Распознавание лиц на native C++ и CUDA",
   lead: "Запустите native-конвейер YuNet и SFace через CUDA либо последовательный CPU baseline, изучите точный исходник C++/CUDA и откройте интегрированный AI MIPS Hive.",
+  simple: "Открыть native-распознавание лиц",
+  simpleKicker: "ОСНОВНОЙ NATIVE C++ / CUDA КОНВЕЙЕР",
+  simpleTitle: "Распознавание лиц на native C++ и CUDA",
   toolColab: "Native CUDA-движок распознавания",
   toolColabText: "Открыть активный C++-движок YuNet/SFace, используемый identity_cuda.exe.",
-  toolAttention: "Курсовая реализация CUDA Attention",
-  toolAttentionText: "Открыть обязательную реализацию Scaled Dot-Product Attention: базовые kernels, оптимизированные tiled kernels, переносы памяти, проверку и измерение времени.",
-  simpleNote: "Загрузите один снимок, выберите CUDA или CPU и нажмите «Распознать».",
+  simpleNote: "Загрузите один снимок, запустите native-конвейер YuNet/SFace через CUDA или CPU и изучите точные этапы исходного кода.",
   dropHint: "Выберите один снимок для анализа через CUDA/CPU.",
+  howKicker: "ОСНОВНОЙ КОНВЕЙЕР РАСПОЗНАВАНИЯ",
+  howTitle: "Распознавание лиц на native C++ и CUDA",
   howIntro: "Инспектор описывает активный native-путь: подготовку и выравнивание в C++, инференс YuNet/SFace на CUDA, явный kernel оценок из sface_cuda.cu и один результат Hive.",
   variantKicker: "NATIVE C++ / CUDA RUNTIME",
   variantTitle: "Активный путь распознавания",
@@ -2959,13 +2918,17 @@ Object.assign(translations.ru, {
 });
 Object.assign(translations.he, {
   kicker: "זיהוי פנים NATIVE C++ / CUDA / ‏AI MIPS HIVE",
+  title: "זיהוי פנים ב-native C++ וב-CUDA",
   lead: "הריצו את צינור YuNet ו-SFace המקורי דרך CUDA או דרך קו הבסיס הסדרתי של CPU, בדקו את מקור C++/CUDA המדויק ופתחו את תצוגת AI MIPS Hive המשולבת.",
+  simple: "פתיחת זיהוי הפנים ב-native",
+  simpleKicker: "צינור NATIVE C++ / CUDA הראשי",
+  simpleTitle: "זיהוי פנים ב-native C++ וב-CUDA",
   toolColab: "מנוע זיהוי native CUDA",
   toolColabText: "פתיחת מנוע C++ הפעיל של YuNet/SFace שבו משתמש identity_cuda.exe.",
-  toolAttention: "מימוש הקורס CUDA Attention",
-  toolAttentionText: "פתיחת המימוש הנדרש של Scaled Dot-Product Attention: kernels בסיסיים, kernels מרוצפים וממוטבים, העברות זיכרון, אימות ומדידת זמן.",
-  simpleNote: "העלו צילום מסך אחד, בחרו CUDA או CPU ולחצו על זיהוי.",
+  simpleNote: "העלו צילום מסך אחד, הריצו את צינור YuNet/SFace ב-CUDA או ב-CPU ובדקו את שלבי קוד המקור המדויקים.",
   dropHint: "בחרו צילום מסך אחד לניתוח באמצעות CUDA/CPU.",
+  howKicker: "צינור זיהוי הפנים הראשי",
+  howTitle: "זיהוי פנים ב-native C++ וב-CUDA",
   howIntro: "הבודק מתאר את מסלול ה-native הפעיל: הכנה ויישור ב-C++, הסקת YuNet/SFace ב-CUDA, ה-kernel המפורש מתוך sface_cuda.cu ותוצאת Hive אחת.",
   variantKicker: "NATIVE C++ / CUDA RUNTIME",
   variantTitle: "מסלול הזיהוי הפעיל",
@@ -2981,43 +2944,6 @@ Object.assign(translations.he, {
   fullStageDetector: "בלוק מדויק מתוך ה-native worker הפעיל",
   fullStageNotebook: "בלוק מדויק מתוך ה-native worker הפעיל",
   sourceLoaded: "אומת: {total} שורות מקור מדויקות במסלול «{variant}» = {sum} שורות בשלבים 1–7."
-});
-
-Object.assign(translations.en, {
-  kicker: "CUDA COURSE PROJECT / SCALED DOT-PRODUCT ATTENTION",
-  title: "Scaled Dot-Product Attention on CUDA",
-  lead: "Start with the required CUDA C/C++ Attention implementation: QK transpose, scaling, stable Softmax, P times V, validation, and timing. Face recognition is an additional CUDA demonstration below.",
-  simpleKicker: "CUDA COURSE REQUIREMENT",
-  simple: "Open CUDA Attention",
-  simpleTitle: "Scaled Dot-Product Attention on CUDA",
-  simpleNote: "The required CUDA Attention implementation is shown first. The native face-recognition demonstration appears below as an additional CUDA capability.",
-  howKicker: "ADDITIONAL CUDA DEMONSTRATION",
-  howTitle: "Face recognition with native C++ and CUDA",
-  howIntro: "This separate, expanded demonstration follows one image through native C++ preparation, CUDA YuNet/SFace inference, an explicit CUDA score kernel, and one identity result. It supplements, but does not replace, the required Attention assignment."
-});
-Object.assign(translations.ru, {
-  kicker: "КУРСОВОЙ CUDA-ПРОЕКТ / SCALED DOT-PRODUCT ATTENTION",
-  title: "Scaled Dot-Product Attention на CUDA",
-  lead: "Сначала показана обязательная реализация Attention на CUDA C/C++: QK transpose, масштабирование, стабильный Softmax, P умножить на V, проверка и измерение времени. Распознавание лиц ниже — дополнительная CUDA-демонстрация.",
-  simpleKicker: "ОБЯЗАТЕЛЬНОЕ ЗАДАНИЕ CUDA-КУРСА",
-  simple: "Открыть CUDA Attention",
-  simpleTitle: "Scaled Dot-Product Attention на CUDA",
-  simpleNote: "Сначала расположена обязательная реализация CUDA Attention. Native-демонстрация распознавания лиц ниже показывает дополнительные возможности CUDA.",
-  howKicker: "ДОПОЛНИТЕЛЬНАЯ CUDA-ДЕМОНСТРАЦИЯ",
-  howTitle: "Распознавание лиц на native C++ и CUDA",
-  howIntro: "Это отдельная расширенная демонстрация: одно изображение проходит подготовку native C++, инференс YuNet/SFace на CUDA, явный CUDA kernel оценок и выдачу одной личности. Она дополняет, но не заменяет обязательное Attention-задание."
-});
-Object.assign(translations.he, {
-  kicker: "פרויקט קורס CUDA / ‏SCALED DOT-PRODUCT ATTENTION",
-  title: "Scaled Dot-Product Attention ב-CUDA",
-  lead: "תחילה מוצג מימוש ה-Attention הנדרש ב-CUDA C/C++: ‏QK transpose, קנה מידה, Softmax יציב, P כפול V, אימות ומדידת זמן. זיהוי הפנים למטה הוא הדגמת CUDA נוספת.",
-  simpleKicker: "דרישת קורס CUDA",
-  simple: "פתיחת CUDA Attention",
-  simpleTitle: "Scaled Dot-Product Attention ב-CUDA",
-  simpleNote: "תחילה מוצג מימוש CUDA Attention הנדרש. הדגמת זיהוי הפנים ב-native למטה מציגה יכולות CUDA נוספות.",
-  howKicker: "הדגמת CUDA נוספת",
-  howTitle: "זיהוי פנים ב-native C++ וב-CUDA",
-  howIntro: "זוהי הדגמה מורחבת ונפרדת: תמונה אחת עוברת הכנת native C++, הסקת YuNet/SFace ב-CUDA, kernel CUDA מפורש לציונים ותוצאת זהות אחת. היא משלימה את מטלת Attention אך אינה מחליפה אותה."
 });
 
 function activeVariantDefinition() {
@@ -3085,11 +3011,6 @@ function setLanguage(lang) {
     button.classList.toggle("active", button.dataset.lang === lang);
   });
   renderDetectorVariantUi();
-  renderCourseRequirements();
-  if (activeCourseRequirement) {
-    const activeRequirement = courseRequirements.find((item) => item.key === activeCourseRequirement);
-    if (activeRequirement) renderCourseProof(activeRequirement);
-  }
   if (!imageInput.files?.length) renderPreviews([]);
   if (currentStageIndex >= 0 && !stageDetail.classList.contains("hidden")) {
     renderStageDetail(currentStageIndex, false);
@@ -3118,317 +3039,6 @@ function localized(value) {
   const lang = document.documentElement.lang || "en";
   const selected = value[lang] || value.en || "";
   return Array.isArray(selected) ? selected.map((item) => repairLocalizedText(item)) : repairLocalizedText(selected);
-}
-
-function courseRequirementsText() {
-  const lang = document.documentElement.lang || "en";
-  return {
-    en: {
-      kicker: "CUDA COURSE REQUIREMENTS",
-      title: "Walk through the exact CUDA Attention source",
-      intro: "Choose an Attention execution stage or a course requirement. The complete final CUDA source stays open and scrolls to the exact implementation.",
-      source: "Open final attention_cuda.cu",
-      stages: "ATTENTION EXECUTION STAGES",
-      checks: "COURSE REQUIREMENT CHECKS",
-      proof: "SELECTED CUDA CODE STEP",
-      stage: "Final course source",
-      loading: "Loading the exact CUDA Attention source...",
-      error: "The source could not be loaded. Use the source link above.",
-      codeNote: "The full final source is shown; highlighted lines implement the selected item."
-    },
-    ru: {
-      kicker: "ТРЕБОВАНИЯ CUDA-КУРСА",
-      title: "Поэтапный разбор точного CUDA-исходника Attention",
-      intro: "Выберите этап выполнения Attention или требование курса. Полный финальный CUDA-исходник остаётся открытым и прокручивается к точной реализации.",
-      source: "Открыть финальный attention_cuda.cu",
-      stages: "ЭТАПЫ ВЫПОЛНЕНИЯ ATTENTION",
-      checks: "ПРОВЕРКИ ТРЕБОВАНИЙ КУРСА",
-      proof: "ВЫБРАННЫЙ ШАГ CUDA-КОДА",
-      stage: "Финальный исходник курса",
-      loading: "Загружается точный CUDA Attention исходник...",
-      error: "Не удалось загрузить исходник. Используйте ссылку выше.",
-      codeNote: "Показан полный финальный исходник; подсвеченные строки реализуют выбранный пункт."
-    },
-    he: {
-      kicker: "דרישות קורס CUDA",
-      title: "מעבר שלבי על קוד ה-CUDA המדויק של Attention",
-      intro: "בחרו שלב ביצוע של Attention או דרישת קורס. קוד ה-CUDA הסופי המלא נשאר פתוח וגולל אל המימוש המדויק.",
-      source: "פתיחת attention_cuda.cu הסופי",
-      stages: "שלבי ביצוע ATTENTION",
-      checks: "בדיקות דרישות הקורס",
-      proof: "שלב קוד CUDA שנבחר",
-      stage: "קוד מקור סופי של הקורס",
-      loading: "טוען את מקור CUDA Attention המדויק...",
-      error: "לא ניתן לטעון את קוד המקור. השתמשו בקישור שמעל.",
-      codeNote: "קוד המקור הסופי המלא מוצג; השורות המודגשות מממשות את הפריט שנבחר."
-    }
-  }[lang] || courseRequirementsText.en;
-}
-
-function attentionRequirementRange(lines, requirement) {
-  const start = lines.findIndex((line) => requirement.start.test(line));
-  if (start < 0) return { start: -1, end: -1 };
-  if (requirement.wholeBlock) {
-    let depth = 0;
-    let opened = false;
-    for (let index = start; index < lines.length; index += 1) {
-      const line = lines[index];
-      const opens = (line.match(/\{/g) || []).length;
-      const closes = (line.match(/\}/g) || []).length;
-      if (opens > 0) opened = true;
-      depth += opens - closes;
-      if (opened && depth === 0) return { start, end: index };
-    }
-  }
-  const end = requirement.end
-    ? lines.findIndex((line, index) => index >= start && requirement.end.test(line))
-    : start;
-  return { start, end: end >= start ? end : start };
-}
-
-function attentionSourceAnnotation(line, lineIndex = -1, lines = []) {
-  const source = line.trim();
-  const lang = document.documentElement.lang || "en";
-  const say = (en, ru, he) => ({ en, ru, he }[lang] || en);
-  const enclosingKernel = lineIndex >= 0
-    ? [...lines.slice(0, lineIndex + 1)].reverse().find((item) => /__global__ void|void launch_pipeline|CudaRunResult run_cuda|std::vector<float> run_cpu_average/.test(item))?.trim() || ""
-    : "";
-  const isIn = (name) => enclosingKernel.includes(name);
-  const ordinal = (pattern) => lineIndex >= 0
-    ? lines.slice(0, lineIndex + 1).filter((item) => pattern.test(item)).length
-    : 1;
-  if (!source || source === "{" || source === "}") return "";
-  if (source === "int main(int argc, char** argv) {") return say("Program entry point: it reads options, prepares data, runs CPU and CUDA variants, then reports the comparison.", "Точка входа программы: здесь читаются параметры, готовятся данные, запускаются CPU- и CUDA-варианты и выводится сравнение.", "נקודת הכניסה: קוראת אפשרויות, מכינה נתונים, מריצה גרסאות CPU ו-CUDA ומדפיסה השוואה.");
-  if (source === "int n = 512;") return say("Sets the required sequence length N to 512 by default.", "Задаёт обязательную длину последовательности N = 512 по умолчанию.", "מגדירה את אורך הרצף הנדרש N = 512 כברירת מחדל.");
-  if (source === "int d = 64;") return say("Sets the required vector dimension d to 64 by default.", "Задаёт обязательную размерность вектора d = 64 по умолчанию.", "מגדירה את ממד הווקטור הנדרש d = 64 כברירת מחדל.");
-  if (/int warmup_iterations = 3/.test(source)) return say("Runs three warm-up passes that are not included in the timing result.", "Задаёт три прогревочных запуска, которые не входят в замер времени.", "מגדירה שלוש הרצות חימום שאינן נכללות במדידת הזמן.");
-  if (/int iterations = 30/.test(source)) return say("Measures thirty runs and averages their time to reduce random variation.", "Задаёт 30 измеряемых запусков и усредняет их время, чтобы уменьшить случайные колебания.", "מגדירה 30 הרצות נמדדות וממוצע לזמן כדי לצמצם תנודות אקראיות.");
-  if (/unsigned seed = 2026/.test(source)) return say("Fixes the random seed so the input data and benchmark can be reproduced.", "Фиксирует seed случайных чисел, чтобы входные данные и замер можно было повторить.", "מקבעת seed אקראי כדי שניתן יהיה לשחזר את נתוני הקלט ואת המדידה.");
-  if (/float tolerance = 2\.0e-4f/.test(source)) return say("Sets the maximum allowed CPU/GPU output difference for a passing validation.", "Задаёт максимальное допустимое расхождение выходов CPU и GPU для успешной проверки.", "מגדירה את ההפרש המרבי המותר בין פלטי CPU ו-GPU לאימות מוצלח.");
-  if (/std::string variant = "all"/.test(source)) return say("Selects both the basic and optimized CUDA implementations unless the user chooses one.", "По умолчанию выбирает и basic-, и optimized-вариант CUDA, если пользователь не указал один из них.", "בוחרת כברירת מחדל גם את גרסת CUDA הבסיסית וגם הממוטבת, אלא אם המשתמש בחר אחת מהן.");
-  if (/std::filesystem::path csv_path/.test(source)) return say("Reserves an optional path for exporting reproducible benchmark results to CSV.", "Резервирует необязательный путь для выгрузки воспроизводимых результатов замера в CSV.", "שומרת נתיב אופציונלי לייצוא תוצאות benchmark שחזוריות ל-CSV.");
-  if (/for \(int i = 1; i < argc; \+\+i\)/.test(source)) return say("Walks through the command-line options supplied to the executable.", "Перебирает параметры командной строки, переданные программе.", "עוברת על אפשרויות שורת הפקודה שנמסרו לתוכנית.");
-  if (/const std::string argument = argv\[i\]/.test(source)) return say("Reads the current command-line option as text.", "Считывает текущий параметр командной строки как текст.", "קוראת את האפשרות הנוכחית משורת הפקודה כטקסט.");
-  if (/auto value = \[&\]\(\)/.test(source)) return say("Creates a helper that safely obtains the value following an option such as --n.", "Создаёт помощник, который безопасно получает значение после параметра, например --n.", "יוצרת עזר שמקבל בבטחה את הערך שאחרי אפשרות כמו --n.");
-  if (/\+\+i >= argc/.test(source)) return say("Stops with a clear error when an option is missing its required value.", "Останавливает программу с понятной ошибкой, если после параметра нет обязательного значения.", "עוצרת עם שגיאה ברורה כאשר לאפשרות חסר הערך הנדרש.");
-  if (/return argv\[i\]/.test(source)) return say("Returns the value belonging to the current command-line option.", "Возвращает значение, принадлежащее текущему параметру командной строки.", "מחזירה את הערך ששייך לאפשרות הנוכחית.");
-  if (/argument == "--n"/.test(source)) return say("Lets the user override the sequence length N for another test size.", "Позволяет пользователю изменить длину последовательности N для другого размера теста.", "מאפשרת למשתמש לשנות את אורך הרצף N לגודל בדיקה אחר.");
-  if (/argument == "--d"/.test(source)) return say("Lets the user override the vector dimension d.", "Позволяет пользователю изменить размерность вектора d.", "מאפשרת למשתמש לשנות את ממד הווקטור d.");
-  if (/argument == "--warmup"/.test(source)) return say("Lets the user choose how many unmeasured warm-up runs to perform.", "Позволяет пользователю выбрать число прогревочных запусков без замера.", "מאפשרת למשתמש לבחור את מספר הרצות החימום שאינן נמדדות.");
-  if (/argument == "--iterations"/.test(source)) return say("Lets the user choose the number of timed repetitions.", "Позволяет пользователю выбрать число измеряемых повторов.", "מאפשרת למשתמש לבחור את מספר החזרות הנמדדות.");
-  if (/argument == "--seed"/.test(source)) return say("Lets the user choose a different reproducible random input.", "Позволяет пользователю задать другой воспроизводимый случайный вход.", "מאפשרת למשתמש לבחור קלט אקראי אחר שניתן לשחזור.");
-  if (/argument == "--tolerance"/.test(source)) return say("Lets the user adjust the validation tolerance.", "Позволяет пользователю изменить допуск проверки.", "מאפשרת למשתמש לשנות את טולרנס האימות.");
-  if (/argument == "--variant"/.test(source)) return say("Lets the user run only the basic or only the optimized CUDA path.", "Позволяет запустить только basic- или только optimized-путь CUDA.", "מאפשרת להריץ רק את מסלול ה-CUDA הבסיסי או רק את הממוטב.");
-  if (/argument == "--csv"/.test(source)) return say("Lets the user save the measured results in a CSV file.", "Позволяет сохранить результаты замера в CSV-файл.", "מאפשרת לשמור את תוצאות המדידה בקובץ CSV.");
-  if (/CudaRunResult run_cuda/.test(source)) return say("Starts the host-side CUDA run: it allocates GPU buffers, transfers data, times kernels and reads the output back.", "Начинает CUDA-запуск на стороне host: выделяет GPU-буферы, передаёт данные, измеряет kernels и читает результат обратно.", "מתחילה הרצת CUDA בצד המארח: מקצה מאגרי GPU, מעבירה נתונים, מודדת kernels וקוראת את הפלט חזרה.");
-  if (/qkv_bytes =/.test(source)) return say("Computes the byte size needed for one Q, K or V matrix on the GPU.", "Вычисляет размер в байтах для одной матрицы Q, K или V на GPU.", "מחשבת את מספר הבתים הדרוש למטריצת Q, K או V אחת ב-GPU.");
-  if (/scores_bytes =/.test(source)) return say("Computes the larger byte size of the N by N score matrix.", "Вычисляет больший размер в байтах матрицы оценок N на N.", "מחשבת את מספר הבתים הגדול יותר של מטריצת הציונים N על N.");
-  if (/cudaMalloc\(&memory\.q/.test(source)) return say("Allocates GPU memory for the query matrix Q.", "Выделяет GPU-память для матрицы запросов Q.", "מקצה זיכרון GPU למטריצת השאילתות Q.");
-  if (/cudaMalloc\(&memory\.k/.test(source)) return say("Allocates GPU memory for the key matrix K.", "Выделяет GPU-память для матрицы ключей K.", "מקצה זיכרון GPU למטריצת המפתחות K.");
-  if (/cudaMalloc\(&memory\.v/.test(source)) return say("Allocates GPU memory for the value matrix V.", "Выделяет GPU-память для матрицы значений V.", "מקצה זיכרון GPU למטריצת הערכים V.");
-  if (/cudaMalloc\(&memory\.scores/.test(source)) return say("Allocates GPU memory for all QK Attention scores.", "Выделяет GPU-память для всех оценок QK Attention.", "מקצה זיכרון GPU לכל ציוני QK של Attention.");
-  if (/cudaMalloc\(&memory\.output/.test(source)) return say("Allocates GPU memory for the final Attention output.", "Выделяет GPU-память для итогового выхода Attention.", "מקצה זיכרון GPU לפלט Attention הסופי.");
-  if (/cudaMemcpy\(memory\.q/.test(source)) return say("Copies the Q input matrix from host RAM to its GPU buffer.", "Копирует входную матрицу Q из RAM host в её GPU-буфер.", "מעתיקה את מטריצת הקלט Q מזיכרון המארח למאגר ה-GPU שלה.");
-  if (/cudaMemcpy\(memory\.k/.test(source)) return say("Copies the K input matrix from host RAM to its GPU buffer.", "Копирует входную матрицу K из RAM host в её GPU-буфер.", "מעתיקה את מטריצת הקלט K מזיכרון המארח למאגר ה-GPU שלה.");
-  if (/cudaMemcpy\(memory\.v/.test(source)) return say("Copies the V input matrix from host RAM to its GPU buffer.", "Копирует входную матрицу V из RAM host в её GPU-буфер.", "מעתיקה את מטריצת הקלט V מזיכרון המארח למאגר ה-GPU שלה.");
-  if (/cudaMemcpy\(result\.output/.test(source)) return say("Copies the completed Attention vectors from GPU memory back to the host result.", "Копирует готовые векторы Attention из GPU-памяти обратно в результат host.", "מעתיקה את וקטורי Attention המלאים מזיכרון ה-GPU חזרה לתוצאת המארח.");
-  if (source === "const float* q,") return say("Receives the query matrix Q: one vector for every sequence position.", "Получает матрицу запросов Q: по одному вектору на каждую позицию последовательности.", "מקבלת את מטריצת השאילתות Q: וקטור אחד לכל מיקום ברצף.");
-  if (source === "const float* k,") return say("Receives the key matrix K used to compare every query with every position.", "Получает матрицу ключей K для сравнения каждого запроса со всеми позициями.", "מקבלת את מטריצת המפתחות K להשוואת כל שאילתה עם כל מיקום.");
-  if (source === "const float* probabilities,") return say("Receives the normalized attention probabilities produced by Softmax.", "Получает нормализованные вероятности Attention, созданные Softmax.", "מקבלת את הסתברויות Attention המנורמלות שנוצרו על ידי Softmax.");
-  if (source === "const float* v,") return say("Receives the value matrix V whose information is combined by the attention weights.", "Получает матрицу значений V, информация из которой объединяется весами Attention.", "מקבלת את מטריצת הערכים V שהמידע ממנה משולב בעזרת משקלי Attention.");
-  if (source === "float* scores,") return say("Provides writable GPU memory for the N by N similarity-score matrix.", "Передаёт доступную для записи GPU-память для матрицы оценок похожести N на N.", "מספקת זיכרון GPU לכתיבה עבור מטריצת ציוני הדמיון N על N.");
-  if (source === "float* output,") return say("Provides writable GPU memory for the final Attention output vectors.", "Передаёт доступную для записи GPU-память для итоговых выходных векторов Attention.", "מספקת זיכרון GPU לכתיבה עבור וקטורי פלט Attention הסופיים.");
-  if (source === "int n," && isIn("qk_matmul_basic")) return say("Passes the sequence length used to size both axes of the QK score matrix.", "Передаёт длину последовательности, которая задаёт обе оси матрицы оценок QK.", "מעבירה את אורך הרצף שקובע את שני צירי מטריצת ציוני QK.");
-  if (source === "int d" && isIn("qk_matmul_basic")) return say("Passes the number of features multiplied inside each QK dot product.", "Передаёт число признаков, умножаемых внутри каждого скалярного произведения QK.", "מעבירה את מספר המאפיינים שמוכפלים בכל מכפלה פנימית של QK.");
-  if (source === "int n" && isIn("row_softmax")) return say("Passes the number of scores in every Softmax row.", "Передаёт число оценок в каждой строке Softmax.", "מעבירה את מספר הציונים בכל שורת Softmax.");
-  if (source === "int n," && isIn("attention_v_basic")) return say("Passes the number of probability columns summed for each output vector.", "Передаёт число столбцов вероятностей, суммируемых для каждого выходного вектора.", "מעבירה את מספר עמודות ההסתברות שמסוכמות לכל וקטור פלט.");
-  if (source === "int d" && isIn("attention_v_basic")) return say("Passes the number of features written into every output vector.", "Передаёт число признаков, записываемых в каждый выходной вектор.", "מעבירה את מספר המאפיינים שנכתבים לכל וקטור פלט.");
-  if (/const int column = blockIdx\.x/.test(source)) return say("Chooses the K-column handled by this thread in the score matrix.", "Выбирает столбец K матрицы оценок, который обрабатывает этот поток.", "בוחרת את עמודת K במטריצת הציונים שמטופלת על ידי thread זה.");
-  if (/const int row = blockIdx\.y/.test(source) && isIn("qk_matmul_basic")) return say("Chooses the Q-row handled by this thread in the score matrix.", "Выбирает строку Q матрицы оценок, которую обрабатывает этот поток.", "בוחרת את שורת Q במטריצת הציונים שמטופלת על ידי thread זה.");
-  if (/const int index = blockIdx\.x/.test(source)) return say("Assigns one linear score-array position to this scaling thread.", "Назначает этому потоку одну линейную позицию массива оценок для масштабирования.", "מקצה ל-thread זה מיקום ליניארי אחד במערך הציונים לקנה מידה.");
-  if (/const int row = blockIdx\.x/.test(source) && isIn("row_softmax")) return say("Assigns one full score row to the current Softmax CUDA block.", "Назначает одну полную строку оценок текущему CUDA-блоку Softmax.", "מקצה שורת ציונים שלמה לבלוק ה-CUDA הנוכחי של Softmax.");
-  if (/const int lane = threadIdx\.x/.test(source)) return say("Identifies this thread's lane inside the row-level Softmax block.", "Определяет номер текущего потока внутри блочного Softmax для одной строки.", "מזהה את ה-lane של thread זה בתוך בלוק Softmax של שורה אחת.");
-  if (/float local_maximum = -CUDART_INF_F/.test(source)) return say("Starts this thread's local maximum at negative infinity before scanning its score columns.", "Начинает локальный максимум потока с минус бесконечности перед просмотром его столбцов оценок.", "מאתחלת את המקסימום המקומי של ה-thread למינוס אינסוף לפני סריקת עמודות הציונים שלו.");
-  if (/for \(int column = lane; column < n; column \+= blockDim\.x\)/.test(source) && ordinal(/for \(int column = lane;/) === 1) return say("Distributes the row's columns across the threads while searching for the maximum.", "Распределяет столбцы строки между потоками при поиске максимума.", "מחלקת את עמודות השורה בין ה-threads בעת חיפוש המקסימום.");
-  if (/local_maximum = fmaxf/.test(source)) return say("Updates this thread's local maximum with the next score it owns.", "Обновляет локальный максимум потока следующей принадлежащей ему оценкой.", "מעדכנת את המקסימום המקומי של ה-thread עם הציון הבא ששייך לו.");
-  if (/scratch\[lane\] = local_maximum/.test(source)) return say("Stores each thread's local maximum in shared memory for the block reduction.", "Сохраняет локальный максимум каждого потока в shared memory для редукции блока.", "שומרת את המקסימום המקומי של כל thread בזיכרון משותף עבור רדוקציית הבלוק.");
-  if (/for \(int stride = blockDim\.x \/ 2/.test(source) && ordinal(/for \(int stride = blockDim\.x \/ 2/) === 1) return say("Begins the tree reduction that combines all local maxima into one row maximum.", "Начинает древовидную редукцию, объединяющую локальные максимумы в максимум строки.", "מתחילה רדוקציית עץ שמאחדת את המקסימומים המקומיים למקסימום שורה אחד.");
-  if (/scratch\[lane\] = fmaxf/.test(source)) return say("Combines two shared-memory maxima during this reduction step.", "Объединяет два максимума из shared memory на текущем шаге редукции.", "מאחדת שני מקסימומים מהזיכרון המשותף בצעד רדוקציה זה.");
-  if (/const float row_maximum = scratch\[0\]/.test(source)) return say("Reads the completed maximum score for this row before exponentiation.", "Считывает готовый максимум оценок строки перед вычислением экспоненты.", "קוראת את הציון המרבי המלא של השורה לפני חישוב האקספוננטה.");
-  if (/float local_sum = 0\.0f/.test(source)) return say("Starts this thread's partial sum of exponentiated scores at zero.", "Начинает частичную сумму экспонент оценок для потока с нуля.", "מאתחלת את הסכום החלקי של ציונים שעברו אקספוננטה לאפס.");
-  if (/const float value = expf/.test(source)) return say("Subtracts the row maximum before exp, preventing numerical overflow.", "Вычитает максимум строки перед exp, предотвращая численное переполнение.", "מחסירה את מקסימום השורה לפני exp וכך מונעת גלישה נומרית.");
-  if (/scores\[row \* n \+ column\] = value/.test(source)) return say("Replaces the raw score with its exponentiated unnormalized probability.", "Заменяет исходную оценку её экспонентой, то есть ненормализованной вероятностью.", "מחליפה את הציון הגולמי בהסתברות הלא מנורמלת שלו לאחר אקספוננטה.");
-  if (/local_sum \+= value/.test(source)) return say("Adds this probability contribution to the thread's partial row sum.", "Добавляет этот вклад вероятности к частичной сумме строки потока.", "מוסיפה את תרומת ההסתברות לסכום השורה החלקי של ה-thread.");
-  if (/scratch\[lane\] = local_sum/.test(source)) return say("Moves each partial probability sum into shared memory for a second reduction.", "Переносит частичную сумму вероятностей каждого потока в shared memory для второй редукции.", "מעבירה את סכום ההסתברויות החלקי של כל thread לזיכרון משותף עבור רדוקציה שנייה.");
-  if (/scratch\[lane\] \+= scratch\[lane \+ stride\]/.test(source)) return say("Combines partial sums until the block has the total Softmax denominator.", "Объединяет частичные суммы, пока блок не получит полный знаменатель Softmax.", "מאחדת סכומים חלקיים עד שלבלוק יש את המכנה המלא של Softmax.");
-  if (/const float inverse_sum = 1\.0f \/ scratch\[0\]/.test(source)) return say("Builds the reciprocal of the full row sum used for normalization.", "Получает обратную величину полной суммы строки для нормализации.", "יוצרת את ההופכי של סכום השורה המלא לנרמול.");
-  if (/scores\[row \* n \+ column\] \*= inverse_sum/.test(source)) return say("Normalizes every exponentiated score so the row probabilities sum to one.", "Нормализует каждую экспоненту оценки, чтобы вероятности строки давали сумму один.", "מנרמלת כל ציון שעבר אקספוננטה כך שהסתברויות השורה יסתכמו לאחת.");
-  if (/const int feature = blockIdx\.x/.test(source)) return say("Chooses one output-feature position for this P times V calculation.", "Выбирает одну позицию выходного признака для текущего вычисления P на V.", "בוחרת מיקום של מאפיין פלט אחד לחישוב P כפול V זה.");
-  if (/const int row = blockIdx\.y/.test(source) && isIn("attention_v_basic")) return say("Chooses the sequence row whose Attention output is being built.", "Выбирает строку последовательности, для которой строится выход Attention.", "בוחרת את שורת הרצף שעבורה נבנה פלט Attention.");
-  if (/float sum = 0\.0f/.test(source) && isIn("attention_v_basic")) return say("Starts the weighted value sum for this output feature at zero.", "Начинает взвешенную сумму значений для этого выходного признака с нуля.", "מאתחלת את סכום הערכים המשוקלל עבור מאפיין פלט זה לאפס.");
-  if (/for \(int column = 0; column < n; \+\+column\)/.test(source)) return say("Visits every value row that can contribute to this Attention output.", "Проходит по всем строкам значений, которые могут внести вклад в выход Attention.", "עוברת על כל שורות הערכים שיכולות לתרום לפלט Attention זה.");
-  if (/sum \+= probabilities/.test(source)) return say("Multiplies one attention probability by its V feature and accumulates the result.", "Умножает одну вероятность Attention на соответствующий признак V и накапливает результат.", "מכפילה הסתברות Attention אחת במאפיין V המתאים וצוברת את התוצאה.");
-  if (/output\[row \* d \+ feature\] = sum/.test(source)) return say("Writes the completed Attention feature for this sequence row.", "Записывает готовый признак Attention для этой строки последовательности.", "כותבת את מאפיין Attention המלא עבור שורת רצף זו.");
-  if (source.startsWith("__global__")) return say("Declares a CUDA kernel executed by many GPU threads.", "Объявляет CUDA kernel, выполняемый множеством потоков GPU.", "מכריזה על CUDA kernel שמבוצע על ידי threads רבים של GPU.");
-  if (/blockIdx|threadIdx/.test(source)) return say("Maps this thread to one logical output coordinate.", "Сопоставляет текущий поток с координатой логического выходного элемента.", "ממפה את ה-thread הנוכחי לקואורדינטטה לוגית של פלט.");
-  if (/row >= n|column >= n|feature >= d|index < count/.test(source)) return say("Boundary check: extra threads leave without accessing invalid memory.", "Boundary check: лишние потоки завершаются без доступа к недопустимой памяти.", "בדיקת גבול: threads עודפים מסיימים ללא גישה לזיכרון לא תקין.");
-  if (/sum \+= q\[/.test(source)) return say("Accumulates one Q row against one K row: one QK transpose score.", "Накапливает одну строку Q по одной строке K: один элемент QK transpose.", "צובר שורת Q מול שורת K אחת: ציון אחד של QK transpose.");
-  if (/scores\[.*\] = sum/.test(source)) return say("Writes the completed score into the QK score matrix.", "Записывает готовую оценку в матрицу QK.", "כותבת את הציון המלא למטריצת QK.");
-  if (/sqrt\(static_cast<float>\(d\)\)/.test(source)) return say("Computes the required 1 divided by sqrt(d) scale factor.", "Вычисляет обязательный коэффициент 1 / sqrt(d).", "מחשבת את מקדם הקנה הנדרש 1 / sqrt(d).");
-  if (/scores\[index\] \*= scale/.test(source)) return say("Applies the scale factor to every QK score in the basic CUDA path.", "Применяет масштабирование к каждой QK-оценке в basic CUDA-пути.", "מחילה את מקדם הקנה על כל ציון QK במסלול CUDA הבסיסי.");
-  if (/local_maximum|row_maximum/.test(source)) return say("Finds the maximum of this row before exponentiation for numerical stability.", "Находит максимум строки до экспоненты для численной стабильности.", "מוצאת את מקסימום השורה לפני האקספוננטה ליציבות נומרית.");
-  if (/__syncthreads/.test(source)) return say("Synchronizes the block before shared memory is read or reused.", "Синхронизирует block перед чтением или повторным использованием shared memory.", "מסנכרנת את ה-block לפני קריאה או שימוש חוזר ב-shared memory.");
-  if (/expf\(/.test(source)) return say("Exponentiates the score after subtracting the row maximum.", "Вычисляет экспоненту оценки после вычитания максимума строки.", "מחשבת אקספוננטה של הציון לאחר חיסור מקסימום השורה.");
-  if (/inverse_sum|\*= inverse_sum/.test(source)) return say("Normalizes the row so its Softmax probabilities sum to one.", "Нормализует строку, чтобы вероятности Softmax давали сумму один.", "מנרמלת את השורה כך שהסתברויות Softmax יסתכמו לאחת.");
-  if (/sum \+= probabilities/.test(source)) return say("Accumulates one P row times one V column for the Attention output.", "Накапливает одну строку P на один столбец V для выхода Attention.", "צוברת שורת P אחת כפול עמודת V אחת עבור פלט Attention.");
-  if (/cudaMalloc/.test(source)) return say("Allocates an explicit device-memory buffer on the GPU.", "Выделяет явный буфер device-памяти на GPU.", "מקצה מאגר זיכרון מפורש על ה-GPU.");
-  if (/cudaMemcpy/.test(source)) return say("Copies data between host RAM and GPU device memory.", "Копирует данные между host RAM и device-памятью GPU.", "מעתיקה נתונים בין RAM של המארח לזיכרון ההתקן של GPU.");
-  if (/cudaEvent/.test(source)) return say("Uses CUDA events to measure completed GPU kernel time.", "Использует CUDA events для измерения завершённого времени GPU kernels.", "משתמשת באירועי CUDA למדידת זמן kernels שהושלמו ב-GPU.");
-  if (/compare_outputs|maximum_absolute|verification/.test(source)) return say("Compares the CUDA output with the CPU reference within the allowed tolerance.", "Сравнивает CUDA-выход с CPU-эталоном в пределах заданного допуска.", "משווה את פלט ה-CUDA לייחוס ה-CPU בתוך הטולרנס המותר.");
-  if (/run_cpu_average\(/.test(source)) return say("Runs the CPU implementation used as the correctness reference for CUDA.", "Запускает CPU-реализацию, которая служит эталоном корректности для CUDA.", "מריצה את מימוש ה-CPU שמשמש כייחוס נכונות ל-CUDA.");
-  if (/scaled_dot_product_attention_cpu_into/.test(source)) return say("Calls the sequential CPU Attention calculation for the same Q, K and V values.", "Вызывает последовательный расчёт Attention на CPU для тех же Q, K и V.", "קוראת לחישוב Attention סדרתי ב-CPU עבור אותם Q, K ו-V.");
-  if (/total_milliseconds \+= timing\.milliseconds/.test(source)) return say("Adds this CPU run to the total time used for the average.", "Добавляет время текущего запуска CPU к сумме для среднего значения.", "מוסיפה את זמן הרצת ה-CPU הנוכחית לסכום עבור הממוצע.");
-  if (/average_milliseconds =/.test(source)) return say("Computes the average CPU reference time across the measured runs.", "Вычисляет среднее время CPU-эталона по измеренным запускам.", "מחשבת את זמן ייחוס ה-CPU הממוצע על פני ההרצות הנמדדות.");
-  if (/void launch_pipeline/.test(source)) return say("Coordinates the four Attention operations in their execution order.", "Координирует четыре операции Attention в порядке их выполнения.", "מתאמת את ארבע פעולות Attention בסדר הביצוע שלהן.");
-  if (/const dim3 block/.test(source)) return say("Defines a 16 by 16 CUDA thread block for the matrix operations.", "Задаёт CUDA-блок 16 на 16 потоков для матричных операций.", "מגדירה בלוק CUDA של 16 על 16 threads עבור פעולות מטריצה.");
-  if (/score_grid|output_grid/.test(source)) return say("Calculates enough CUDA blocks to cover every output element, including partial edges.", "Вычисляет число CUDA-блоков, достаточное для покрытия каждого элемента выхода, включая неполные края.", "מחשבת מספיק בלוקי CUDA לכיסוי כל איבר פלט, כולל קצוות חלקיים.");
-  if (/qk_matmul_tiled_scaled/.test(source)) return say("Launches the optimized tiled QK kernel, which applies scaling in the same pass.", "Запускает оптимизированный tiled QK-kernel, который применяет масштабирование за тот же проход.", "מפעילה kernel QK ממוטב ומרוצף שמחיל קנה מידה באותו מעבר.");
-  if (/qk_matmul_basic/.test(source)) return say("Launches the basic QK kernel before the separate scaling kernel.", "Запускает базовый QK-kernel перед отдельным kernel масштабирования.", "מפעילה kernel QK בסיסי לפני kernel קנה המידה הנפרד.");
-  if (/row_softmax<</.test(source)) return say("Launches one CUDA block per score row to compute stable Softmax.", "Запускает один CUDA-блок на строку оценок для стабильного Softmax.", "מפעילה בלוק CUDA אחד לכל שורת ציונים לחישוב Softmax יציב.");
-  if (/attention_v_tiled/.test(source)) return say("Launches the optimized tiled multiplication of probabilities by V.", "Запускает оптимизированное tiled-умножение вероятностей на V.", "מפעילה כפל ממוטב ומרוצף של ההסתברויות ב-V.");
-  if (/attention_v_basic/.test(source)) return say("Launches the basic multiplication of probabilities by V.", "Запускает базовое умножение вероятностей на V.", "מפעילה את הכפל הבסיסי של ההסתברויות ב-V.");
-  if (/cudaGetLastError/.test(source)) return say("Checks immediately whether a CUDA kernel launch failed.", "Сразу проверяет, не завершился ли запуск CUDA-kernel ошибкой.", "בודקת מיד אם שיגור kernel CUDA נכשל.");
-  return "";
-}
-
-function renderCourseRequirements() {
-  if (!courseRequirementButtons) return;
-  const text = courseRequirementsText();
-  courseRequirementsKicker.textContent = text.kicker;
-  courseRequirementsTitle.textContent = text.title;
-  courseRequirementsIntro.textContent = text.intro;
-  courseRequirementsSource.textContent = text.source;
-  requirementProofKicker.textContent = text.proof;
-  if (attentionStagesLabel) attentionStagesLabel.textContent = text.stages;
-  if (courseRequirementListLabel) courseRequirementListLabel.textContent = text.checks;
-  if (attentionStageButtons) {
-    attentionStageButtons.innerHTML = "";
-    attentionStages.forEach((stage) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "attention-stage-button";
-      const active = activeAttentionStage === stage.key;
-      button.classList.toggle("active", active);
-      button.setAttribute("aria-pressed", active ? "true" : "false");
-      button.setAttribute("aria-label", `${stage.number}. ${localized(stage.label)}`);
-      const number = document.createElement("span");
-      number.className = "attention-stage-number";
-      number.textContent = stage.number;
-      const details = document.createElement("span");
-      const title = document.createElement("strong");
-      title.textContent = localized(stage.label);
-      const note = document.createElement("small");
-      note.textContent = localized(stage.note);
-      details.append(title, note);
-      button.append(number, details);
-      button.addEventListener("click", () => openAttentionStage(stage));
-      attentionStageButtons.appendChild(button);
-    });
-  }
-  courseRequirementButtons.innerHTML = "";
-  courseRequirements.forEach((requirement) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "requirement-button";
-    button.textContent = localized(requirement.label);
-    const active = activeCourseRequirement === requirement.key;
-    button.classList.toggle("active", active);
-    button.setAttribute("aria-pressed", active ? "true" : "false");
-    button.addEventListener("click", () => openCourseRequirement(requirement));
-    courseRequirementButtons.appendChild(button);
-  });
-}
-
-async function renderCourseProof(requirement) {
-  if (!requirementProof || !requirementCode) return;
-  const text = courseRequirementsText();
-  requirementProof.classList.remove("hidden");
-  requirementProofTitle.textContent = localized(requirement.label);
-  requirementProofText.textContent = `${localized(requirement.text)} ${text.codeNote}`;
-  requirementProofStage.textContent = "final attention_cuda.cu";
-  if (!attentionCourseSource) {
-    requirementCode.textContent = text.loading;
-    try {
-      const response = await fetch(finalAttentionSourceUrl, { cache: "no-store" });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      attentionCourseSource = await response.text();
-    } catch (error) {
-      console.error("Could not load CUDA Attention source", error);
-      requirementCode.textContent = text.error;
-      return;
-    }
-  }
-  const lines = attentionCourseSource.replace(/\r\n/g, "\n").split("\n");
-  const range = attentionRequirementRange(lines, requirement);
-  if (range.start < 0) {
-    requirementCode.textContent = text.error;
-    return;
-  }
-  requirementCode.innerHTML = "";
-  let firstFocused = null;
-  const usedAnnotations = new Set();
-  lines.forEach((line, index) => {
-    const row = document.createElement("div");
-    row.className = `code-line-note${line.trim() ? "" : " blank"}`;
-    const code = document.createElement("code");
-    code.textContent = `${String(index + 1).padStart(3, " ")}  ${line || " "}`;
-    const note = document.createElement("span");
-    note.className = "code-note";
-    const selected = index >= range.start && index <= range.end;
-    const annotation = selected ? attentionSourceAnnotation(line, index, lines) : "";
-    note.textContent = annotation && !usedAnnotations.has(annotation) ? annotation : "";
-    if (note.textContent) usedAnnotations.add(note.textContent);
-    row.append(code, note);
-    if (selected) {
-      row.classList.add("code-focus");
-      if (!firstFocused) firstFocused = row;
-    }
-    if (index === range.start) row.classList.add("code-focus-start");
-    if (index === range.end) row.classList.add("code-focus-end");
-    requirementCode.appendChild(row);
-  });
-  if (firstFocused) {
-    requestAnimationFrame(() => {
-      requirementCode.scrollTop = Math.max(0, firstFocused.offsetTop - requirementCode.offsetTop - 18);
-    });
-  }
-}
-
-function focusCourseStageSubstep(requirement) {
-  const stage = stageDetails[currentStageIndex];
-  if (!stage) return;
-  activeStageFiveCodeStep = requirement.step;
-  renderStageCode(stage);
-  const labels = localized(stage.diagram);
-  buildStageDiagram(labels, detectorDiagramNotes(stage, labels), stage);
-}
-
-function openCourseRequirement(requirement) {
-  activeCourseRequirement = requirement.key;
-  activeAttentionStage = attentionStages.some((stage) => stage.key === requirement.key) ? requirement.key : "";
-  renderCourseRequirements();
-  renderCourseProof(requirement);
-  requirementProof.scrollIntoView({ behavior: "smooth", block: "nearest" });
-}
-
-function openAttentionStage(stage) {
-  const requirement = courseRequirements.find((item) => item.key === stage.key);
-  if (!requirement) return;
-  activeAttentionStage = stage.key;
-  activeCourseRequirement = requirement.key;
-  renderCourseRequirements();
-  renderCourseProof(requirement);
-  requirementProof.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 const codeAnnotationFallback = {

@@ -12,7 +12,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <title>Bee Face Recognition Project</title>
   <link rel="icon" type="image/png" href="assets/project-avatar.png">
-  <link rel="stylesheet" href="styles.css?v=sface-kernel-muted-cyan-20260824a">
+  <link rel="stylesheet" href="styles.css?v=face-primary-20260904a">
 </head>
 <body>
   <header class="topbar">
@@ -31,12 +31,12 @@
     <section id="home" class="hero view active">
       <div class="hero-copy">
         <p class="kicker" data-i18n="kicker">NATIVE C++ / CUDA FACE RECOGNITION / AI MIPS HIVE</p>
-        <h2 data-i18n="title">Welcome to Bee Face Recognition Project</h2>
+        <h2 data-i18n="title">Face recognition with native C++ and CUDA</h2>
         <p class="lead" data-i18n="lead">
           Run the native YuNet and SFace pipeline through CUDA or the sequential CPU baseline, inspect the exact C++/CUDA source, and open the integrated AI MIPS Hive view.
         </p>
         <div class="actions">
-          <button class="primary" data-target="simple" type="button" data-i18n="simple">Simple demonstration</button>
+          <button class="primary" data-target="simple" type="button" data-i18n="simple">Open native face recognition</button>
           <button class="secondary" data-target="complex" type="button" data-i18n="complex">Complex demonstration integrated into the project</button>
         </div>
         <div class="tool-links" aria-label="Project tools">
@@ -47,10 +47,6 @@
           <a class="tool-card" href="https://github.com/Holodininyaroslav/bee-face-recognition-project/releases/latest/download/bee_face_full_local_suite_installer.zip" target="_blank" rel="noreferrer">
             <strong data-i18n="toolFullSuite">Full local suite installer</strong>
             <span data-i18n="toolFullSuiteText">Install the Hive service, local simulations, BeeBoard 3D review, Bgame, orbital mechanics, models, and launchers together.</span>
-          </a>
-          <a class="tool-card" href="source/attention/attention_cuda.cu" target="_blank" rel="noreferrer">
-            <strong data-i18n="toolAttention">CUDA Attention course implementation</strong>
-            <span data-i18n="toolAttentionText">Open the required Scaled Dot-Product Attention implementation: basic kernels, optimized tiled kernels, memory transfers, validation, and timing.</span>
           </a>
         </div>
       </div>
@@ -63,47 +59,11 @@
     <section id="simple" class="view panel full">
       <div class="panel-head">
         <div>
-          <p class="kicker" data-i18n="simpleKicker">CUDA COURSE REQUIREMENT</p>
-          <h2 data-i18n="simpleTitle">Scaled Dot-Product Attention on CUDA</h2>
-          <p class="panel-note" data-i18n="simpleNote">The required CUDA Attention implementation comes first. Face recognition below is an additional CUDA demonstration.</p>
+          <p class="kicker" data-i18n="simpleKicker">NATIVE C++ / CUDA RUNTIME</p>
+          <h2 data-i18n="simpleTitle">Face recognition with native C++ and CUDA</h2>
+          <p class="panel-note" data-i18n="simpleNote">Upload one screenshot, run the native YuNet/SFace pipeline through CUDA or CPU, and inspect the exact source stages.</p>
         </div>
         <button class="ghost" data-target="home" type="button" data-i18n="back">Back</button>
-      </div>
-
-      <section class="requirements-panel attention-course-section" aria-labelledby="courseRequirementsTitle">
-        <div class="requirements-head">
-          <div>
-            <p class="kicker" id="courseRequirementsKicker">CUDA COURSE REQUIREMENTS</p>
-            <h4 id="courseRequirementsTitle">Verify a requirement in the exact CUDA source</h4>
-            <p id="courseRequirementsIntro">Choose a requirement to inspect its exact implementation in the final Scaled Dot-Product Attention CUDA source.</p>
-          </div>
-          <a class="ghost link" href="https://github.com/Holodininyaroslav/bee-face-recognition-project/blob/77c0dc8/source/attention/attention_cuda.cu" target="_blank" rel="noreferrer" id="courseRequirementsSource">Open final attention_cuda.cu</a>
-        </div>
-        <div class="attention-stage-nav">
-          <p class="attention-stage-label" id="attentionStagesLabel">ATTENTION EXECUTION STAGES</p>
-          <div id="attentionStageButtons" class="attention-stage-buttons" role="group" aria-label="Attention execution stages"></div>
-        </div>
-        <p class="requirement-list-label" id="courseRequirementListLabel">COURSE REQUIREMENT CHECKS</p>
-        <div id="courseRequirementButtons" class="requirement-buttons" role="group" aria-label="CUDA course requirements"></div>
-        <section id="requirementProof" class="requirement-proof hidden" aria-live="polite">
-          <div class="requirement-proof-head">
-            <div>
-              <p class="kicker" id="requirementProofKicker">REQUIREMENT PROOF</p>
-              <h4 id="requirementProofTitle"></h4>
-              <p id="requirementProofText"></p>
-            </div>
-            <span id="requirementProofStage" class="requirement-stage"></span>
-          </div>
-          <div id="requirementCode" class="requirement-code" tabindex="0"></div>
-        </section>
-      </section>
-
-      <div class="section-transition" role="separator" aria-label="Additional CUDA face recognition demonstration">
-        <strong>02</strong>
-        <div>
-          <p class="kicker" data-i18n="howKicker">ADDITIONAL CUDA DEMONSTRATION</p>
-          <span data-i18n="howTitle">Face recognition with native C++ and CUDA</span>
-        </div>
       </div>
 
       <div class="simple-grid">
@@ -156,7 +116,7 @@
 
       <section class="explain-card" aria-labelledby="howItWorksTitle">
         <div class="explain-head">
-          <p class="kicker" data-i18n="howKicker">ADDITIONAL CUDA DEMONSTRATION</p>
+          <p class="kicker" data-i18n="howKicker">PRIMARY RECOGNITION PIPELINE</p>
           <h3 id="howItWorksTitle" data-i18n="howTitle">Face recognition with native C++ and CUDA</h3>
           <p data-i18n="howIntro">
             This inspector follows the native C++ path from one screenshot through host preparation, CUDA YuNet/SFace inference, the explicit CUDA score kernel, and one identity result.
@@ -328,6 +288,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=cosine-kernel-navigation-20260825a"></script>
+  <script src="script.js?v=face-primary-20260904a"></script>
 </body>
 </html>
