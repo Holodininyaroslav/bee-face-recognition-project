@@ -1,4 +1,5 @@
 import asyncio
+import ast
 import base64
 import importlib.util
 import io
@@ -14,6 +15,16 @@ sys.path[:0] = [str(APP)]
 import app
 import local_security as sec
 from PIL import Image
+
+
+def test_installer_has_no_executable_pickle_loads():
+    for path in (ROOT/'installers/physical_wings_source').rglob('*.py'):
+        tree=ast.parse(path.read_text(encoding='utf-8-sig'))
+        for node in ast.walk(tree):
+            if isinstance(node,ast.Call) and isinstance(node.func,ast.Attribute):
+                assert not (isinstance(node.func.value,ast.Name)
+                            and node.func.value.id in {'pickle','cPickle'}
+                            and node.func.attr in {'load','loads'}), str(path)
 
 
 async def request(path='/', method='GET', body=b'', headers=None):
