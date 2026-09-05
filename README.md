@@ -1,5 +1,8 @@
 # Bee Face Recognition Project
 
+> **Security update (2026-09-05):** restart/update local installations; replace previously downloaded installers. Read [SECURITY.md](SECURITY.md) for protected APIs, migration instructions and limitations.
+
+
 ![Bee Face Recognition Project](assets/project-social-preview.png)
 
 Bee Face Recognition Project is an AI-assisted engineering prototype by **Yaroslav Kholodinin**, a student at **Shenkar College, Israel**. Its primary implementation is native face recognition in **C++ and CUDA** using YuNet detection, SFace embeddings, and a project-owned CUDA similarity kernel.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import io
 import json
 import os
 import subprocess
@@ -15,6 +16,8 @@ from pathlib import Path
 from starlette.applications import Starlette
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
 from starlette.routing import Route
+from starlette.middleware import Middleware
+from api_security import LocalSecurityMiddleware
 
 from circuit_sim import from_query, simulate
 
@@ -60,6 +63,21 @@ SOC_KEY_FILES = [
 SOC_PROCESS: subprocess.Popen | None = None
 HONEYBIRD_PROCESS: subprocess.Popen | None = None
 AI_MIPS_PROCESS: subprocess.Popen | None = None
+
+
+def proxy_headers(base, request):
+    headers = {"Content-Type": request.headers.get("content-type", "application/json"),
+               "Accept": request.headers.get("accept", "*/*")}
+    if request.method == "POST":
+        # A protected upstream has a different session; never reuse a browser
+        # token as authentication to a different local application.
+        try:
+            with urllib.request.urlopen(base + "/api/security-token", timeout=3) as response:
+                headers["X-Local-CSRF"] = json.loads(response.read(4096))["token"]
+        except urllib.error.HTTPError as error:
+            if error.code != 404:
+                raise
+    return headers
 
 
 def ensure_colab_bridge_dirs() -> None:
@@ -215,10 +233,7 @@ async def honeybird_live_proxy(request):
         target_url,
         data=body if request.method != "GET" else None,
         method=request.method,
-        headers={
-            "Content-Type": request.headers.get("content-type", "application/octet-stream"),
-            "Accept": request.headers.get("accept", "*/*"),
-        },
+        headers=proxy_headers(HONEYBIRD_PROXY_BASE, request),
     )
 
     try:
@@ -233,7 +248,7 @@ async def honeybird_live_proxy(request):
         text = text.replace('fetch("/api/', 'fetch("/honeybird/live/api/')
         text = text.replace("fetch('/api/", "fetch('/honeybird/live/api/")
         text = text.replace('fetch(`/api/', 'fetch(`/honeybird/live/api/')
-        return HTMLResponse(text)
+        return HTMLResponse(text.replace('<head>', '<head><script src="/local-api-security.js"></script>', 1))
 
     return Response(content, media_type=content_type)
 
@@ -253,10 +268,7 @@ async def processors_live_proxy(request):
         target_url,
         data=body if request.method != "GET" else None,
         method=request.method,
-        headers={
-            "Content-Type": request.headers.get("content-type", "application/octet-stream"),
-            "Accept": request.headers.get("accept", "*/*"),
-        },
+        headers=proxy_headers(AI_MIPS_PROXY_BASE, request),
     )
 
     try:
@@ -271,13 +283,14 @@ async def processors_live_proxy(request):
         text = text.replace('fetch("/api/', 'fetch("/processors/live/api/')
         text = text.replace("fetch('/api/", "fetch('/processors/live/api/")
         text = text.replace('fetch(`/api/', 'fetch(`/processors/live/api/')
-        return HTMLResponse(text)
+        return HTMLResponse(text.replace('<head>', '<head><script src="/local-api-security.js"></script>', 1))
 
     return Response(content, media_type=content_type)
 
 
 async def ai_mips_api_proxy(request):
-    await api_open_processors(request)
+    if request.method == "POST":
+        await api_open_processors(request)
     target_path = request.path_params.get("path") or ""
     query = request.url.query
     target_url = f"{AI_MIPS_PROXY_BASE}/api/{target_path}"
@@ -289,10 +302,7 @@ async def ai_mips_api_proxy(request):
         target_url,
         data=body if request.method != "GET" else None,
         method=request.method,
-        headers={
-            "Content-Type": request.headers.get("content-type", "application/json"),
-            "Accept": request.headers.get("accept", "application/json"),
-        },
+        headers=proxy_headers(AI_MIPS_PROXY_BASE, request),
     )
 
     try:
@@ -331,6 +341,17 @@ async def api_colab_capture(request):
 
     if len(image_bytes) < 128:
         return JSONResponse({"ok": False, "error": "image payload is too small"}, status_code=400)
+    from PIL import Image
+    try:
+        with Image.open(io.BytesIO(image_bytes)) as image:
+            if image.format not in {"PNG", "JPEG"} or image.width * image.height > 16_000_000:
+                raise ValueError("Only PNG/JPEG up to 16 megapixels are accepted")
+            image.verify()
+    except Exception:
+        return JSONResponse({"ok": False, "error": "Invalid or oversized image"}, status_code=400)
+    queued = list(COLAB_INBOX_DIR.rglob("*.png"))
+    if len(queued) >= 500 or sum(path.stat().st_size for path in queued) + len(image_bytes) > 256 * 1024 * 1024:
+        return JSONResponse({"ok": False, "error": "Capture queue is full; archive or remove old captures"}, status_code=429)
 
     capture_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{backend}_{uuid.uuid4().hex[:8]}"
     backend_dir = COLAB_INBOX_DIR / backend
@@ -408,10 +429,11 @@ async def index(_request):
         """<!doctype html>
 <html lang="ru">
 <head>
+  <script src="/local-api-security.js"></script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BeeBoard v0.1 Lab</title>
-  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <script type="module" src="/vendor/model-viewer.min.js"></script>
   <style>
     :root {
       color-scheme: dark;
@@ -1641,7 +1663,7 @@ nop</textarea>
       const statusEl = $("processorsStatus");
       if (statusEl) statusEl.textContent = "Opening AI MIPS processor API...";
       try {
-        const data = await fetch("/api/open-processors").then((r) => r.json());
+        const data = await fetch("/api/open-processors", {method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}).then((r) => r.json());
         if (!data.ok) throw new Error(data.error || "failed to launch AI MIPS");
         if (statusEl) statusEl.textContent = data.already_open ? `AI MIPS API already open. PID ${data.pid}` : `AI MIPS API launched. PID ${data.pid}`;
         await loadProcessorState();
@@ -1860,7 +1882,7 @@ nop</textarea>
       const statusEl = $("socOpenStatus");
       if (statusEl) statusEl.textContent = "Opening SoC interactive map...";
       try {
-        const data = await fetch("/api/open-soc-project").then((r) => r.json());
+        const data = await fetch("/api/open-soc-project", {method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}).then((r) => r.json());
         if (statusEl) {
           statusEl.textContent = data.ok
             ? (data.already_open ? `SoC interactive map already open. PID ${data.pid}` : `SoC interactive map launched. PID ${data.pid}`)
@@ -1943,7 +1965,7 @@ nop</textarea>
       const statusEl = $("honeybirdStatus");
       if (statusEl) statusEl.textContent = "Opening Honeybird physical simulation...";
       try {
-        const data = await fetch("/api/open-honeybird").then((r) => r.json());
+        const data = await fetch("/api/open-honeybird", {method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}).then((r) => r.json());
         if (statusEl) {
           statusEl.textContent = data.ok
             ? (data.already_open ? `Honeybird already open. PID ${data.pid}` : `Honeybird launched. PID ${data.pid}`)
@@ -2113,19 +2135,25 @@ nop</textarea>
     )
 
 
+async def model_viewer_script(request):
+    return FileResponse(Path(__file__).parent / "vendor/model-viewer.min.js", media_type="text/javascript")
+
+
 app = Starlette(
-    debug=True,
+    debug=False,
+    middleware=[Middleware(LocalSecurityMiddleware)],
     routes=[
         Route("/", index),
+        Route("/vendor/model-viewer.min.js", model_viewer_script),
         Route("/api/health", health),
         Route("/api/simulate", api_simulate),
         Route("/api/soc-project", api_soc_project),
-        Route("/api/open-soc-project", api_open_soc_project),
+        Route("/api/open-soc-project", api_open_soc_project, methods=["POST"]),
         Route("/api/processors", api_processors),
-        Route("/api/open-processors", api_open_processors),
+        Route("/api/open-processors", api_open_processors, methods=["POST"]),
         Route("/api/ai-mips/{path:path}", ai_mips_api_proxy, methods=["GET", "POST"]),
         Route("/api/honeybird", api_honeybird),
-        Route("/api/open-honeybird", api_open_honeybird),
+        Route("/api/open-honeybird", api_open_honeybird, methods=["POST"]),
         Route("/api/colab/status", api_colab_status),
         Route("/api/colab/capture/{backend}", api_colab_capture, methods=["POST"]),
         Route("/board/BeeBoard_v0_1_Micro.glb", board_model),

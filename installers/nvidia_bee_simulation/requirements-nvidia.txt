@@ -1,5 +1,5 @@
 # Install a CUDA-enabled PyTorch build using the official PyTorch selector:
 # https://pytorch.org/get-started/locally/
-torch>=2.4
+torch==2.14.0
 
 -r Bee_3D_Standalone/requirements.txt

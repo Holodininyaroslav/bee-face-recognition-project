@@ -1,4 +1,9 @@
 __pycache__/
+parser_security_test.cpp
+parser_security_test
+parser-canary.bin
+core
+core.*
 *.py[cod]
 *.log
 *.npz

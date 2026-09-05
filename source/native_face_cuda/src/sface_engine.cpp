@@ -327,7 +327,17 @@ struct NativeSFaceEngine::Impl {
                 const int stride = kStrides[level];
                 const int columns = prepared.width / stride;
                 const auto shape = outputs[level + 6].GetTensorTypeAndShapeInfo().GetShape();
+                if (shape.size() != 3 || shape[0] != static_cast<int64_t>(images.size()) ||
+                    shape[1] <= 0 || shape[1] > 100000 || shape[2] != 4)
+                    throw std::runtime_error("Invalid YuNet bbox shape");
                 const int anchors = static_cast<int>(shape[1]);
+                for (const auto item : {std::pair<int,int>{level,1}, {level+3,1}, {level+6,4}, {level+9,10}}) {
+                    const auto info = outputs[item.first].GetTensorTypeAndShapeInfo();
+                    const auto dims = info.GetShape();
+                    if (info.GetElementType() != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT ||
+                        dims != std::vector<int64_t>{static_cast<int64_t>(images.size()), anchors, item.second})
+                        throw std::runtime_error("Inconsistent YuNet output tensor");
+                }
                 const float* cls = outputs[level].GetTensorData<float>();
                 const float* obj = outputs[level + 3].GetTensorData<float>();
                 const float* bbox = outputs[level + 6].GetTensorData<float>();

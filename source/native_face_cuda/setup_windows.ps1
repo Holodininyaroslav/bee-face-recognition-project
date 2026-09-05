@@ -9,21 +9,33 @@ $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $thirdParty = Join-Path $root "third_party"
 $runtimeRoot = Join-Path $thirdParty "onnxruntime"
 $build = Join-Path (Split-Path -Parent $root) "build\native_face_cuda"
+$integrity = Get-Content -LiteralPath (Join-Path $root "nuget-integrity.json") -Raw | ConvertFrom-Json
+function Confirm-PackageHash([string]$Path, [string]$Name) {
+    $record = $integrity.$Name
+    if (-not $record -or $record.version -ne $OnnxRuntimeVersion) { throw "Unreviewed ONNX Runtime version; update nuget-integrity.json first." }
+    $stream = [IO.File]::OpenRead($Path)
+    $hasher = [Security.Cryptography.SHA512]::Create()
+    try { $actual = [Convert]::ToBase64String($hasher.ComputeHash($stream)) }
+    finally { $stream.Dispose(); $hasher.Dispose() }
+    if ($actual -ne $record.sha512) { throw "Package integrity verification failed: $Name" }
+}
 New-Item -ItemType Directory -Force -Path $thirdParty | Out-Null
 
 if (-not (Test-Path -LiteralPath (Join-Path $runtimeRoot "build\native\include\onnxruntime_cxx_api.h"))) {
-    $cpuPackage = Join-Path $thirdParty "onnxruntime.nupkg"
+    $cpuPackage = Join-Path $thirdParty "onnxruntime.zip"
     $cpuUrl = "https://api.nuget.org/v3-flatcontainer/microsoft.ml.onnxruntime/$OnnxRuntimeVersion/microsoft.ml.onnxruntime.$OnnxRuntimeVersion.nupkg"
     Invoke-WebRequest -UseBasicParsing -Uri $cpuUrl -OutFile $cpuPackage
+    Confirm-PackageHash $cpuPackage "microsoft.ml.onnxruntime"
     Expand-Archive -LiteralPath $cpuPackage -DestinationPath $runtimeRoot -Force
 }
 
 $nativeRuntime = Join-Path $runtimeRoot "runtimes\win-x64\native"
 if (-not (Test-Path -LiteralPath (Join-Path $nativeRuntime "onnxruntime_providers_cuda.dll"))) {
-    $gpuPackage = Join-Path $thirdParty "onnxruntime-gpu-windows.nupkg"
+    $gpuPackage = Join-Path $thirdParty "onnxruntime-gpu-windows.zip"
     $gpuRoot = Join-Path $thirdParty "onnxruntime-gpu-windows"
     $gpuUrl = "https://api.nuget.org/v3-flatcontainer/microsoft.ml.onnxruntime.gpu.windows/$OnnxRuntimeVersion/microsoft.ml.onnxruntime.gpu.windows.$OnnxRuntimeVersion.nupkg"
     Invoke-WebRequest -UseBasicParsing -Uri $gpuUrl -OutFile $gpuPackage
+    Confirm-PackageHash $gpuPackage "microsoft.ml.onnxruntime.gpu.windows"
     Expand-Archive -LiteralPath $gpuPackage -DestinationPath $gpuRoot -Force
     $provider = Get-ChildItem -LiteralPath $gpuRoot -Recurse -File -Filter "onnxruntime_providers_cuda.dll" | Select-Object -First 1
     if (-not $provider) { throw "The official GPU package did not contain onnxruntime_providers_cuda.dll" }

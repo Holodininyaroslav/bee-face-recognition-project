@@ -45,6 +45,19 @@ struct HostTensor {
     std::vector<float> values;
 };
 
+constexpr std::uint64_t kMaxTensorElements = 16 * 1024 * 1024;
+constexpr std::uint64_t kMaxFileBytes = 256 * 1024 * 1024;
+std::uint64_t checked_elements(const std::vector<std::uint64_t>& dimensions) {
+    if (dimensions.size() > 4) throw std::runtime_error("Invalid SFace rank");
+    std::uint64_t count = 1; // Rank-zero scalars contain one value.
+    for (auto dimension : dimensions) {
+        if (dimension == 0 || dimension > 65536 || count > kMaxTensorElements / dimension)
+            throw std::runtime_error("SFace tensor exceeds allocation limit");
+        count *= dimension;
+    }
+    return count;
+}
+
 template <typename T>
 T read_value(std::ifstream& stream, const char* field) {
     T value{};
@@ -55,6 +68,8 @@ T read_value(std::ifstream& stream, const char* field) {
 
 // Validate the custom binary header and tensor metadata before any trained weight reaches device memory.
 std::unordered_map<std::string, HostTensor> load_weight_file(const std::filesystem::path& path) {
+    const auto file_bytes = std::filesystem::file_size(path);
+    if (file_bytes > kMaxFileBytes) throw std::runtime_error("SFace file exceeds size limit");
     std::ifstream stream(path, std::ios::binary);
     if (!stream) throw std::runtime_error("Manual SFace weight file is missing: " + path.string());
     std::array<char, 8> magic{};
@@ -65,28 +80,40 @@ std::unordered_map<std::string, HostTensor> load_weight_file(const std::filesyst
     const auto version = read_value<std::uint32_t>(stream, "version");
     const auto tensor_count = read_value<std::uint32_t>(stream, "tensor count");
     if (version != 1) throw std::runtime_error("Unsupported manual SFace weight version");
+    if (tensor_count == 0 || tensor_count > 1024) throw std::runtime_error("Invalid SFace tensor count");
 
     std::unordered_map<std::string, HostTensor> tensors;
     tensors.reserve(tensor_count);
     for (std::uint32_t index = 0; index < tensor_count; ++index) {
         const auto name_size = read_value<std::uint32_t>(stream, "name length");
+        if (name_size == 0 || name_size > 256) throw std::runtime_error("Invalid tensor name length");
         std::string name(name_size, '\0');
         stream.read(name.data(), static_cast<std::streamsize>(name_size));
         const auto rank = read_value<std::uint32_t>(stream, "rank");
+        if (rank > 4 || name.find('\0') != std::string::npos || tensors.count(name))
+            throw std::runtime_error("Invalid or duplicate SFace tensor metadata");
         HostTensor tensor;
         tensor.dimensions.resize(rank);
         for (auto& dimension : tensor.dimensions) {
             dimension = read_value<std::uint64_t>(stream, "dimension");
         }
         const auto element_count = read_value<std::uint64_t>(stream, "element count");
+        const auto position = stream.tellg();
+        if (element_count != checked_elements(tensor.dimensions) || position < 0 ||
+            static_cast<std::uint64_t>(position) > file_bytes ||
+            element_count > (file_bytes - static_cast<std::uint64_t>(position)) / sizeof(float))
+            throw std::runtime_error("SFace tensor shape/length mismatch");
         tensor.values.resize(static_cast<std::size_t>(element_count));
         stream.read(
             reinterpret_cast<char*>(tensor.values.data()),
             static_cast<std::streamsize>(tensor.values.size() * sizeof(float))
         );
         if (!stream) throw std::runtime_error("Truncated manual SFace tensor: " + name);
+        if (!std::all_of(tensor.values.begin(), tensor.values.end(), [](float value) { return std::isfinite(value); }))
+            throw std::runtime_error("Non-finite SFace weight");
         tensors.emplace(std::move(name), std::move(tensor));
     }
+    if (stream.peek() != std::char_traits<char>::eof()) throw std::runtime_error("Unexpected trailing SFace data");
     return tensors;
 }
 
@@ -116,6 +143,8 @@ float* upload(const std::vector<float>& values, const char* operation) {
 
 std::vector<float> transpose_weights(const HostTensor& source) {
     if (source.dimensions.size() < 2) throw std::runtime_error("SFace matrix weight has invalid rank");
+    if (checked_elements(source.dimensions) != source.values.size())
+        throw std::runtime_error("SFace matrix shape does not match storage");
     const int rows = static_cast<int>(source.dimensions[0]);
     std::size_t columns = 1;
     for (std::size_t index = 1; index < source.dimensions.size(); ++index) {
@@ -434,6 +463,13 @@ DeviceLayer make_layer(
     int stride
 ) {
     const auto& weight = tensor(tensors, convolution + "_weight");
+    const bool pointwise = kind == DeviceLayer::Kind::Pointwise1x1;
+    const bool depthwise = kind == DeviceLayer::Kind::Depthwise3x3;
+    if (weight.dimensions.size() != 4 || weight.dimensions[0] > 2048 ||
+        weight.dimensions[1] != static_cast<std::uint64_t>(depthwise ? 1 : input_channels) ||
+        weight.dimensions[2] != (pointwise ? 1 : 3) || weight.dimensions[3] != (pointwise ? 1 : 3) ||
+        (depthwise && weight.dimensions[0] != static_cast<std::uint64_t>(input_channels)))
+        throw std::runtime_error("SFace convolution shape violates kernel schema");
     DeviceLayer layer;
     layer.kind = kind;
     layer.input_channels = input_channels;
@@ -446,14 +482,20 @@ DeviceLayer make_layer(
     if (kind == DeviceLayer::Kind::Pointwise1x1) {
         layer.output_height = input_height;
         layer.output_width = input_width;
-        layer.weights = upload(transpose_weights(weight), "upload pointwise SFace weights");
-    } else {
-        layer.weights = upload(weight.values, "upload convolution SFace weights");
     }
     auto [scale, shift] = fused_batch_norm(tensors, batch_norm, kConvBatchNormEpsilon);
-    layer.scale = upload(scale, "upload SFace BatchNorm scale");
-    layer.shift = upload(shift, "upload SFace BatchNorm shift");
-    layer.slope = upload(tensor(tensors, prelu + "_gamma").values, "upload SFace PReLU slope");
+    if (scale.size() != static_cast<std::size_t>(layer.output_channels) ||
+        tensor(tensors, prelu + "_gamma").values.size() != scale.size())
+        throw std::runtime_error("SFace channel parameter mismatch");
+    try {
+        layer.weights = upload(pointwise ? transpose_weights(weight) : weight.values, "upload SFace weights");
+        layer.scale = upload(scale, "upload SFace BatchNorm scale");
+        layer.shift = upload(shift, "upload SFace BatchNorm shift");
+        layer.slope = upload(tensor(tensors, prelu + "_gamma").values, "upload SFace PReLU slope");
+    } catch (...) {
+        cudaFree(layer.weights); cudaFree(layer.scale); cudaFree(layer.shift); cudaFree(layer.slope);
+        throw;
+    }
     return layer;
 }
 }
@@ -509,13 +551,19 @@ ManualSFaceCudaContext* create_manual_sface_cuda(const std::filesystem::path& we
             channels = context->layers.back().output_channels;
         }
         auto [feature_scale, feature_shift] = fused_batch_norm(tensors, "bn1", kFinalBatchNormEpsilon);
+        if (height != 7 || width != 7 || feature_scale.size() != static_cast<std::size_t>(channels))
+            throw std::runtime_error("SFace final feature shape mismatch");
         context->final_feature_scale = upload(feature_scale, "upload final feature BatchNorm scale");
         context->final_feature_shift = upload(feature_shift, "upload final feature BatchNorm shift");
         const auto& fc_weight = tensor(tensors, "pre_fc1_weight");
+        if (fc_weight.dimensions != std::vector<std::uint64_t>{kEmbeddingSize, static_cast<std::uint64_t>(channels * 49)} ||
+            tensor(tensors, "pre_fc1_bias").values.size() != kEmbeddingSize)
+            throw std::runtime_error("SFace dense layer shape mismatch");
         context->final_dimensions = static_cast<int>(fc_weight.dimensions.at(1));
         context->fc_weights = upload(transpose_weights(fc_weight), "upload manual SFace FC weights");
         context->fc_bias = upload(tensor(tensors, "pre_fc1_bias").values, "upload manual SFace FC bias");
         auto [embedding_scale, embedding_shift] = fused_batch_norm(tensors, "fc1", kFinalBatchNormEpsilon);
+        if (embedding_scale.size() != kEmbeddingSize) throw std::runtime_error("SFace embedding shape mismatch");
         context->embedding_scale = upload(embedding_scale, "upload embedding BatchNorm scale");
         context->embedding_shift = upload(embedding_shift, "upload embedding BatchNorm shift");
         return context;
@@ -537,6 +585,7 @@ std::vector<float> manual_sface_cuda_forward(
 ) {
     if (!context) throw std::runtime_error("Manual SFace CUDA context is not initialized");
     if (batch_size <= 0) return {};
+    if (batch_size > 64) throw std::runtime_error("SFace batch exceeds safe limit (64)");
     const std::size_t input_elements =
         static_cast<std::size_t>(batch_size) * kInputChannels * kInputSize * kInputSize;
     if (aligned_nchw_rgb.size() != input_elements) {

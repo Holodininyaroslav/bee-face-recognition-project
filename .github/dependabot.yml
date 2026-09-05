@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /source/beeboard/BeeBoard_Interface
+    schedule:
+      interval: weekly
+  - package-ecosystem: pip
+    directory: /installers/nvidia_bee_simulation/Bee_3D_Standalone
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

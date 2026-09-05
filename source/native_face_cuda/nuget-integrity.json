@@ -1,0 +1,10 @@
+{
+  "microsoft.ml.onnxruntime": {
+    "version": "1.28.0",
+    "sha512": "2X2D0DH6dEzWfath6I3uzItsPBGxqYlRsPz3OFK7S9Tfk10McWdKGegNjT8KmOAtkSno3yTF9eo43mDvn9salw=="
+  },
+  "microsoft.ml.onnxruntime.gpu.windows": {
+    "version": "1.28.0",
+    "sha512": "wmalURFg3baMfp0kKydOL2c1DzKVWDY76PBarIdCCoPpuUG26GQaKppL7PTk8FRD71sG+/sTt3ktRu4qEzjo0g=="
+  }
+}
