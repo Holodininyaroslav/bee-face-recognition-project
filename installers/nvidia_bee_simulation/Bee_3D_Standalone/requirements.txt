@@ -3,5 +3,5 @@ numpy>=1.26
 opencv-python>=4.9
 Pillow==12.3.0
 rapidocr-onnxruntime==1.4.4
-pygame>=2.6
+pygame>=2.6.1
 torch==2.14.0
