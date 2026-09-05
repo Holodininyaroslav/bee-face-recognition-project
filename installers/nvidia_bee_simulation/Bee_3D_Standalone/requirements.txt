@@ -1,6 +1,6 @@
 ursina==8.3.0
 numpy>=1.26
-opencv-python>=4.9
+opencv-python>=5.0.0.93
 Pillow==12.3.0
 rapidocr-onnxruntime==1.4.4
 pygame>=2.6
