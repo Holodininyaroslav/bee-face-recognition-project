@@ -1,5 +1,5 @@
 ursina==8.3.0
-numpy>=1.26
+numpy>=2.5.2
 opencv-python>=4.9
 Pillow==12.3.0
 rapidocr-onnxruntime==1.4.4
