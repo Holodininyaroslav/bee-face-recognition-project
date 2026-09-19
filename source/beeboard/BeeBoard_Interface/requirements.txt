@@ -2,5 +2,5 @@ numpy
 pandas
 plotly
 starlette==1.6.0
-uvicorn==0.52.4
+uvicorn==0.53.0
 Pillow==12.3.0
