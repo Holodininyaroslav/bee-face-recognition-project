@@ -4,4 +4,4 @@ opencv-python>=4.9
 Pillow==12.3.0
 rapidocr-onnxruntime==1.4.4
 pygame>=2.6
-torch==2.14.0
+torch==2.14.1
