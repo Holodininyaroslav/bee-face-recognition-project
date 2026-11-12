@@ -129,25 +129,14 @@
       "description": "Browser CAD-style mechanics simulation for the robo-bee mechanism, using local Three.js and CAD resources."
     },
     {
-      "id": "neutrino_basic_concept",
-      "name": "Neutrino Basic Concept / Rock Penetration Lab",
-      "status": "working local concept simulation",
-      "entrypoints": [
-        "Hive hex menu: Network simulator -> neutrino communication -> Basic concept",
-        "local compatibility route: http://127.0.0.1:8891/",
-        "Hive route: http://127.0.0.1:8876/neutrino-basic-simulator/"
-      ],
-      "description": "Browser Neutrino Rock Penetration Lab for simulated message transfer through shielded rock where ordinary electromagnetic communication is impractical. It can receive detected names from Hive through the local neutrino message API when the simulation is open."
-    },
-    {
       "id": "satellite_communication",
       "name": "Satellite communication",
       "status": "concept local simulation",
       "entrypoints": [
-        "Hive hex menu: Network simulator -> neutrino communication -> Satellite communication",
+        "Hive hex menu: Network simulator -> Satellite communication",
         "release: satellite_communication_installer.zip"
       ],
-      "description": "Local satellite/orbital communication simulation used from the neutrino communication branch."
+      "description": "Local satellite/orbital communication simulation."
     },
     {
       "id": "eos_blockchain_sandbox",

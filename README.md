@@ -41,7 +41,6 @@ The current project package is built around the local Hive service.
 - Integrated AI MIPS Hive interface with processor hexes, detections, events, and local tool launch buttons.
 - Bee/statue 3D swarm simulation where bee processors can capture a face view and send it to the detector.
 - Automatic detection logging in the Hive detection stream.
-- Neutrino simulation message handoff: when a face is recognized and the neutrino page is open, the recognized name can be queued as a simulated neutrino message.
 - BeeBoard 3D review with GLB / STEP / KiCad assets.
 - Physical wing calibration / bee-shell simulation.
 - Browser CAD mechanics simulation.
@@ -81,7 +80,6 @@ loaded source-block line count before displaying it. Batch controls and the
 5. **Explicit CUDA reference comparison** - `sface_cuda.cu`, compiled by NVCC, assigns one CUDA thread to each query/reference cosine score and returns the score matrix.
 6. **One JSON response** - only the final small scores and indices return to the host; Hive receives one label, score, runner-up, margin, provider, timing, and accepted/rejected state.
 7. **Hive event logging** - the result is written into the Hive detection stream.
-8. **Optional neutrino handoff** - if the neutrino concept simulator is open, the recognized name is inserted into its message flow.
 
 ## Local Detector Modes
 
@@ -92,7 +90,7 @@ The installer includes the local detector pieces required for a fresh machine:
 - optional OpenCL detector executable for the legacy AMD path
 - CPU detector executable
 - neural model weights
-- Hive server routes for `/api/detect`, `/api/detector-status`, and `/api/neutrino-outbox`
+- Hive server routes for `/api/detect` and `/api/detector-status`
 
 Recommended behavior:
 
@@ -136,11 +134,9 @@ flowchart LR
     LocalSuite --> Game["Bgame 2D/3D demo"]
     LocalSuite --> Network["Network concepts"]
     Network --> Lifi["Li-Fi concept"]
-    Network --> Neutrino["Neutrino concept"]
     Network --> EOS["EOS smart-contract sandbox"]
-    Neutrino --> Satellite["Satellite/orbital concept"]
+    Network --> Satellite["Satellite/orbital concept"]
     LocalDetector --> Log["Hive detections and timing log"]
-    Log --> Neutrino
 ```
 
 ## Working vs Concept Modules
@@ -160,7 +156,6 @@ flowchart LR
 | AI MIPS RTL | Partial hardware source / educational prototype |
 | Li-Fi | Physical hardware prototype exists; software module is a project concept layer |
 | Quadcopter bee proxy | Physical prototype exists as a bee-like hardware platform |
-| Neutrino communication | Concept / simulation only; not a real neutrino communication system |
 | Satellite communication | Concept / local orbital simulation only |
 | EOS blockchain | Local sandbox / concept smart contract; not live mainnet infrastructure |
 | Bioreactor / plastic-to-energy | Future concept stage |
@@ -217,8 +212,7 @@ SECURITY_LOCAL_BRIDGE.md
 These are included as research extensions, not as finished production systems.
 
 - **Li-Fi communication** is the nearest hardware-related communication direction. The project has physical Li-Fi work/prototype context, and the software branch is used to document and expand the swarm-network idea.
-- **Neutrino communication** is a speculative simulation concept for data transfer from deep underground or shielded locations where electromagnetic communication is impractical. Its Basic Concept branch opens the local **Neutrino Rock Penetration Lab** (`127.0.0.1:8891`) and can receive recognized names from Hive as simulated neutrino messages.
-- **Satellite communication** is a local orbital/satellite concept simulator connected to the neutrino branch.
+- **Satellite communication** is a local simulator for satellite orbits.
 - **EOS smart contract sandbox** simulates a treasury, node registry, job ledger, result ledger, and installer hash registry. It is a local educational smart-contract concept, not a live blockchain deployment.
 
 ## Roadmap
@@ -265,7 +259,7 @@ This project was built with AI-assisted development. The engineering work includ
 
 ## Resume Summary
 
-**Bee Face Recognition Project** - AI-assisted engineering prototype by Yaroslav Kholodinin integrating local CPU/OpenCL face recognition, optional Colab/CUDA inference, an AI MIPS Hive interface, bee/statue 3D simulation, BeeBoard 3D review, physical and CAD mechanics simulations, partial SystemVerilog AI MIPS hardware sources, local installers, and research-concept modules for Li-Fi, neutrino, satellite, and EOS-based swarm infrastructure.
+**Bee Face Recognition Project** - AI-assisted engineering prototype by Yaroslav Kholodinin integrating local CPU/OpenCL face recognition, optional Colab/CUDA inference, an AI MIPS Hive interface, bee/statue 3D simulation, BeeBoard 3D review, physical and CAD mechanics simulations, partial SystemVerilog AI MIPS hardware sources, local installers, and research-concept modules for Li-Fi, satellite, and EOS-based swarm infrastructure.
 
 ## Final Satellite And BeeBoard Packages
 

@@ -1,6 +1,6 @@
 ﻿# Satellite Communication
 
-Local browser-based Earth Satellite Orbit simulator used by the Neutrino communication branch of the Bee Face Recognition Project.
+Local browser-based Earth Satellite Orbit simulator for the Bee Face Recognition Project.
 
 ## Launch
 
